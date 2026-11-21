@@ -3550,7 +3550,17 @@ def set_drum_choke(ctx: Context, track_index: int, notes: List[int], group: int 
 
 # Main execution
 def main():
-    """Run the MCP server"""
+    """Run the MCP server, or `doctor` to check the installation."""
+    import sys
+
+    args = sys.argv[1:]
+    if args and args[0] == "doctor":
+        from .doctor import main as doctor_main
+        sys.exit(doctor_main(args[1:]))
+    if args and args[0] in ("-V", "--version"):
+        from .doctor import _package_version
+        print(f"ableton-studio-mcp {_package_version()}")
+        return
     mcp.run()
 
 if __name__ == "__main__":
