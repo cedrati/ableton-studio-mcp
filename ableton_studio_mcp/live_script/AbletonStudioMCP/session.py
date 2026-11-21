@@ -90,7 +90,10 @@ class SessionCommands(object):
 
     @command("start_playback")
     def _start_playback(self):
-        self._song.start_playing()
+        # From the playhead: start_playing() would use Live's start marker,
+        # which scripts can't move reliably (see recording.py).
+        song = self._song
+        (song.continue_playing if hasattr(song, "continue_playing") else song.start_playing)()
         return {"playing": True}
 
     @command("stop_playback")

@@ -1,7 +1,7 @@
 """Recording the Arrangement."""
 from __future__ import absolute_import, print_function, unicode_literals
 
-from .constants import PLAYHEAD_SETTLE_TICKS, RECORDING_POLL_TICKS
+from .constants import PLAYHEAD_SETTLE_TICKS, RECORDING_POLL_TICKS, RECORD_PREROLL_BEATS, TIME_TOLERANCE
 from .deferred import Deferred
 from .registry import command
 
@@ -16,20 +16,28 @@ class RecordingCommands(object):
                 armed.append({"index": i, "name": track.name})
         return armed
 
+    # Transport and loop settings a recording changes and puts back.
+    _SAVED_TRANSPORT = ("loop", "loop_start", "loop_length", "punch_in", "punch_out")
+
     @command("record_arrangement")
     def _record_arrangement(self, start_time, end_time):
-        """Record armed tracks into the Arrangement from start_time to end_time.
+        """Record armed tracks into the Arrangement, exactly from start_time to
+        end_time, and reply once recording is under way.
 
-        Moves the playhead, turns on Arrangement Record and starts playback,
-        then replies at once: a watcher stops playback and recording when the
-        playhead reaches end_time (or when playback is stopped by hand).
-        Poll get_recording_status for the outcome.
+        Measured in Live 12.4: playback started by a script does not reliably
+        begin where current_song_time was set (start_playing() uses Live's
+        start marker), and moving the playhead while recording splits the
+        take. So the passage is set as the punch-in/out range, playback
+        starts, the playhead jumps one beat before the range (a jump during
+        playback is reliable), and Arrangement Record is switched on only
+        once the playhead is confirmed in that pre-roll: Live then records
+        exactly the range. Loop and punch settings are put back afterwards.
+        A watcher stops at end_time (or when playback is stopped by hand).
         """
         song = self._song
-        start = float(start_time)
-        if end_time is None or float(end_time) <= start:
-            raise ValueError("end_time must be after start_time")
-        end = float(end_time)
+        start, end = float(start_time), (float(end_time) if end_time is not None else None)
+        if start < 0 or end is None or end <= start:
+            raise ValueError("end_time must be after start_time (and start_time >= 0)")
         armed = self._armed_tracks()
         if not armed:
             raise ValueError("No armed track: arm the track(s) to record first")
@@ -37,27 +45,39 @@ class RecordingCommands(object):
             raise RuntimeError("A recording is already running")
         if song.is_playing:
             song.stop_playing()
-        song.current_song_time = start
+        song.record_mode = False
+        saved = dict((k, getattr(song, k)) for k in self._SAVED_TRANSPORT if hasattr(song, k))
+        if hasattr(song, "punch_in"):
+            song.loop = False
+            song.loop_start = start
+            song.loop_length = end - start
+            song.punch_in = True
+            song.punch_out = True
+        preroll = max(0.0, start - RECORD_PREROLL_BEATS)
+        (song.continue_playing if hasattr(song, "continue_playing") else song.start_playing)()
+        self._recording = {"start_time": start, "end_time": end, "armed": armed, "finished": False,
+                           "stopped_at": None, "saved_transport": saved, "recording": False}
 
         def start_deferred(resolve, reject):
-            def go(settled):
-                song.record_mode = True
-                song.start_playing()
-                self._recording = {
-                    "start_time": start, "end_time": end, "armed": armed,
-                    "finished": False, "stopped_at": None,
-                    "playhead_settled": settled,
-                }
-                self.schedule_message(RECORDING_POLL_TICKS, self._recording_watch)
-                resolve(dict(self._recording, status="recording"))
+            def in_preroll():
+                now = float(song.current_song_time)
+                if song.is_playing and preroll - TIME_TOLERANCE <= now < max(start, preroll + 0.25):
+                    return True
+                song.current_song_time = preroll      # not there yet: jump (again)
+                return False
 
-            self._poll_until(
-                lambda: self._playhead_at(start),
-                on_ready=lambda: go(True),
-                on_timeout=lambda: go(False),
-                reject=reject,
-                max_ticks=PLAYHEAD_SETTLE_TICKS,
-            )
+            def armed_now():
+                song.record_mode = True
+                self._recording["recording"] = True
+                self.schedule_message(RECORDING_POLL_TICKS, self._recording_watch)
+                resolve(dict(self._recording, status="recording", saved_transport=None))
+
+            def give_up():
+                self._finish_recording("could not position the playhead before beat %s" % start)
+                reject("Live did not move the playhead before beat %s; nothing was recorded" % start)
+
+            self._poll_until(in_preroll, on_ready=armed_now, on_timeout=give_up,
+                             reject=reject, max_ticks=PLAYHEAD_SETTLE_TICKS)
 
         return Deferred(start_deferred)
 
@@ -84,6 +104,11 @@ class RecordingCommands(object):
         finally:
             if song.is_playing:
                 song.stop_playing()
+            for key, value in (rec.pop("saved_transport", None) or {}).items():
+                try:
+                    setattr(song, key, value)
+                except Exception as e:    # never hide the outcome behind this
+                    self.log_message("could not restore %s: %s" % (key, e))
         rec["finished"] = True
         rec["reason"] = reason
         self._recording = rec

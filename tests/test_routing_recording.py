@@ -622,3 +622,38 @@ def test_delete_locator_tool_needs_a_target(connect):
     conn = connect({})
     assert "name or its time" in call(tools.delete_locator)
     assert conn.sent == []
+
+
+def test_recording_uses_punch_in_after_a_preroll(script_module):
+    """Live 12.4: playback started by a script doesn't reliably begin at
+    current_song_time, and moving the playhead while recording splits the
+    take. Recording sets the passage as the punch range, starts playback,
+    jumps one beat before it, and only then arms Arrangement Record; loop and
+    punch settings are put back at the end."""
+    song = Song()
+    song.tracks[1].arm = True
+    song.loop, song.loop_start, song.loop_length = True, 8.0, 16.0
+    song.punch_in = song.punch_out = False
+    song.continue_playing = lambda: setattr(song, "is_playing", True)
+    inst, run = live_instance(script_module, song)
+    out = resolve(inst._record_arrangement(64.0, 72.0), lambda: None)
+    assert (song.loop, song.loop_start, song.loop_length, song.punch_in, song.punch_out) == (False, 64.0, 8.0, True, True)
+    assert song.current_song_time == 63.0 and not song.record_mode   # jumped to the pre-roll, not armed yet
+    run(limit=1)                                                      # the next tick: in the pre-roll
+    assert song.record_mode and out["ok"]["status"] == "recording"
+    song.current_song_time = 72.1
+    run(limit=3)
+    assert inst._recording["reason"] == "end_reached" and not song.record_mode
+    assert (song.loop, song.loop_start, song.loop_length, song.punch_in, song.punch_out) == (True, 8.0, 16.0, False, False)
+
+
+def test_recording_is_not_armed_until_the_preroll_is_reached(script_module):
+    song = Song()
+    song.tracks[1].arm = True
+
+    song.continue_playing = lambda: setattr(song, "is_playing", True)
+    inst, run = live_instance(script_module, song)
+    inst.schedule_message = lambda delay, cb: None      # ticks never come
+    song.current_song_time = 40.0                       # playback began inside the passage
+    resolve(inst._record_arrangement(32.0, 48.0), lambda: None)
+    assert not song.record_mode                         # never records from the wrong place
