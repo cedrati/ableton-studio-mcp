@@ -222,11 +222,11 @@ async def server_lifespan(server: FastMCP) -> AsyncIterator[Dict[str, Any]]:
 
         script_info = None
         try:
-            ableton = get_ableton_connection()
+            get_ableton_connection()  # handshakes on connect
             logger.info("Successfully connected to Ableton on startup")
-            from .script_handshake import handshake
+            from .script_handshake import get_cached_script_info
 
-            script_info = handshake(ableton.send_command)
+            script_info = get_cached_script_info()
         except Exception as e:
             logger.warning(f"Could not connect to Ableton on startup: {str(e)}")
             logger.warning("Make sure the Ableton Remote Script is running")
@@ -302,6 +302,18 @@ mcp = FastMCP(
 # Global connection for resources
 _ableton_connection = None
 
+def _refresh_handshake():
+    from .script_handshake import _needs_refresh, handshake
+    conn = get_ableton_connection()  # a new connection handshakes by itself
+    if _needs_refresh():
+        handshake(conn.send_command)
+
+
+from .script_handshake import set_refresher as _set_refresher  # noqa: E402
+
+_set_refresher(_refresh_handshake)
+
+
 def get_ableton_connection():
     """Get or create a persistent Ableton connection"""
     global _ableton_connection
@@ -346,6 +358,13 @@ def get_ableton_connection():
                 _ableton_connection = AbletonConnection(host=ABLETON_HOST, port=ABLETON_PORT)
                 if _ableton_connection.connect():
                     logger.info("Created new persistent connection to Ableton")
+                    # Live may have started (or restarted with another script)
+                    # since the last handshake: check the version again.
+                    try:
+                        from .script_handshake import handshake
+                        handshake(_ableton_connection.send_command)
+                    except Exception as e:
+                        logger.warning(f"Remote Script handshake failed: {e}")
                     return _ableton_connection
                 else:
                     _ableton_connection = None
