@@ -9,8 +9,12 @@ The version numbers below are the **Remote Script** version (`SCRIPT_VERSION`), 
 ### Changed
 
 - **Renamed to Ableton Studio MCP** (`cedrati/ableton-studio-mcp`, standalone repository; the old URL redirects). Package `ableton-studio-mcp`; commands `ableton-studio-mcp` and `ableton-studio-mcp-install-script`, the former `ableton-mcp` / `ableton-mcp-install-script` kept as aliases.
-- **Privacy:** the dataset consent question is only asked when data could actually be sent (telemetry credentials configured and telemetry enabled). This repository ships no credentials, so nothing is collected and nobody is asked. `TERMS.md` rewritten for this project: what talks to what, the inactive inherited telemetry, the files the tools create.
+- `TERMS.md` rewritten for this project: what talks to what, and the files the tools create.
 - LICENSE lists Olivier Cedrati first and keeps the original copyright for the portions that come from ableton-mcp, in the standard MIT layout.
+
+### Removed
+
+- **Telemetry and data collection removed entirely.** The usage telemetry and the research-dataset recording inherited from the original project are gone: `telemetry.py`, the `dataset` package, the consent question, the Supabase dependency, the dataset tools (`set_dataset_consent`, `submit_intent`, `rate_last_action`, `prefer_candidate`, `reject_last_action`, `record_audition`) and the `user_prompt` argument every tool carried for telemetry. The Remote Script no longer installs listeners on every track and clip to log your edits in Live (`drain_passive_events` removed). Closes #34.
 
 ### Added
 

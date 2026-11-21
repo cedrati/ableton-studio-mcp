@@ -13,7 +13,6 @@ import pytest
 
 import MCP_Server.server as server
 from test_clip_notes import call, fake_conn, FakeConnection  # noqa: F401  (fixtures)
-from test_clip_notes import _silence_telemetry, _no_consent_prompt  # noqa: F401
 from test_remote_script_bridge import _load_script_module, make_instance
 
 

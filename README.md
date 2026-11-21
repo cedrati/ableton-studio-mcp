@@ -45,7 +45,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (285) and checked end to end in Ableton Live 12. See the [Changelog](CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (252) and checked end to end in Ableton Live 12. See the [Changelog](CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -240,7 +240,6 @@ The mix report checks: integrated / short-term / momentary loudness and loudness
 - **Listening takes real time:** analysing a 3-minute song means playing it for 3 minutes.
 - **Device loading, playhead moves and locators** reply only once Live has applied them. Loading the same device that is already on a track resets it in place (the reply says so).
 - **Destructive tools** (`delete_track`, `delete_scene`, `delete_clip`, `delete_arrangement_clip`) do what they say — save your set before big experiments.
-- **Inherited dataset tools** (`set_dataset_consent`, `submit_intent`, `rate_last_action`, `prefer_candidate`, `reject_last_action`, `record_audition`) belong to the original project's research dataset and do nothing here (see [Privacy](#privacy)).
 
 ---
 
@@ -295,7 +294,7 @@ MCP client (Claude…)  ⇄  MCP server (MCP_Server/, Python)  ⇄  TCP 127.0.0.
 ```bash
 git clone -b feat/mixer-scenes https://github.com/cedrati/ableton-studio-mcp
 cd ableton-studio-mcp
-uv run --with pytest pytest -q             # 285 tests, no Live needed
+uv run --with pytest pytest -q             # 252 tests, no Live needed
 uv run ableton-studio-mcp-install-script   # install your working copy into Live
 ```
 
@@ -305,7 +304,7 @@ When you change the Remote Script, bump `SCRIPT_VERSION` (and `EXPECTED_REMOTE_S
 
 ## Privacy
 
-**Ableton Studio MCP sends nothing anywhere**: the server only talks to Live on your own machine (127.0.0.1). The telemetry and dataset code inherited from the original project stays inactive — it needs credentials that are not part of this repository, and the consent question is never asked without them. Details, and the files the tools may create on your machine, in [TERMS.md](TERMS.md).
+**Ableton Studio MCP sends nothing anywhere**: the server only talks to Live on your own machine (127.0.0.1). It contains no telemetry or data collection: the usage telemetry and research-dataset recording inherited from the original project have been removed, along with the Supabase dependency. Details, and the files the tools may create on your machine, in [TERMS.md](TERMS.md).
 
 ---
 

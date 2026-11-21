@@ -317,14 +317,7 @@ def connect(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _hermetic(monkeypatch):
-    class _Dummy:
-        def record_event(self, *a, **k):
-            pass
-    import MCP_Server.telemetry_decorator as td
-    import MCP_Server.dataset.consent as consent
     import MCP_Server.script_handshake as sh
-    monkeypatch.setattr(td, "get_telemetry", lambda: _Dummy(), raising=False)
-    monkeypatch.setattr(consent, "maybe_consent_notice", lambda: "")
     monkeypatch.setattr(sh, "require_capability", lambda name: None)
 
 
