@@ -41,9 +41,10 @@ jobs:
         run: docker build -t ableton-studio-mcp .
       - name: The container answers tools/list without Live
         run: |
-          printf '%s\n' \
-            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
-            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
-            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+          # keep stdin open a moment: closing it ends the server before it answers
+          { printf '%s\n' \
+              '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+              '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+              '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; sleep 10; } \
             | timeout 60 docker run -i --rm ableton-studio-mcp > out.jsonl
           python3 -c "import json; r=[json.loads(l) for l in open('out.jsonl') if l.strip()]; n=len(next(x for x in r if x.get('id')==2)['result']['tools']); print(n, 'tools'); assert n >= 106"
