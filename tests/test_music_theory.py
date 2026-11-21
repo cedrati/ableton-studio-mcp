@@ -2,8 +2,8 @@
 
 import pytest
 
-from MCP_Server import music_styles as ms
-from MCP_Server import music_theory as mt
+from ableton_studio_mcp import music_styles as ms
+from ableton_studio_mcp import music_theory as mt
 
 
 def N(pitch, start, dur=1.0, vel=100):
@@ -185,7 +185,7 @@ def test_styles_are_consistent():
 
 import json
 
-import MCP_Server.server as server
+from ableton_studio_mcp import live, tools
 from test_clip_notes import call
 
 
@@ -193,7 +193,7 @@ class _Conn:
     def __init__(self, answers):
         self.answers, self.sent = answers, []
 
-    def send_command(self, cmd, params=None):
+    def call(self, cmd, params=None):
         self.sent.append((cmd, params or {}))
         a = self.answers.get(cmd, {})
         return a(params or {}) if callable(a) else a
@@ -201,29 +201,28 @@ class _Conn:
 
 @pytest.fixture
 def conn(monkeypatch):
-    import MCP_Server.script_handshake as sh
-    monkeypatch.setattr(sh, "require_capability", lambda name: None)
+    monkeypatch.setattr(live, "require", lambda name: None)
 
     def make(answers):
         c = _Conn(answers)
-        monkeypatch.setattr(server, "get_ableton_connection", lambda: c)
+        monkeypatch.setattr(live, "client", lambda: c)
         return c
     return make
 
 
 def test_scale_and_style_tools():
-    info = json.loads(call(server.music_scales, None, root="E", scale="phrygian dominant"))
+    info = json.loads(call(tools.music_scales, root="E", scale="phrygian dominant"))
     assert info["notes"] == ["E", "F", "G#", "A", "B", "C", "D"] and info["live_scale_name"] == "Phrygian Dominant"
-    assert any(s["scale"] == "phrygian_dominant" for s in json.loads(call(server.music_scales, None, query="flamenco")))
-    assert json.loads(call(server.music_styles, None, style="Bach"))["style"] == "baroque"
-    ideas = json.loads(call(server.music_chord_ideas, None, "G7", key_root="C"))
+    assert any(s["scale"] == "phrygian_dominant" for s in json.loads(call(tools.music_scales, query="flamenco")))
+    assert json.loads(call(tools.music_styles, style="Bach"))["style"] == "baroque"
+    ideas = json.loads(call(tools.music_chord_ideas, "G7", key_root="C"))
     assert ideas["roman_in_key"] == "V7" and ideas["notes"] == ["G", "B", "D", "F"]
 
 
 def test_transform_clip_into_new_slot(conn):
     src = [N(60 + i, k * 0.5, 0.5) for k, i in enumerate((0, 2, 4, 5, 7, 9, 11, 12))]
     c = conn({"get_clip_notes": {"notes": src, "length": 4.0, "clip_name": "run"}})
-    out = json.loads(call(server.transform_clip, None, 0, 0,
+    out = json.loads(call(tools.transform_clip, 0, 0,
                           [{"op": "change_mode", "root": "C", "from_scale": "major", "to_scale": "dorian"}],
                           target_clip_index=1))
     assert out["written_to"] == "slot 1"
@@ -235,14 +234,14 @@ def test_transform_clip_into_new_slot(conn):
 
 def test_transform_clip_in_place_clears_first(conn):
     c = conn({"get_clip_notes": {"notes": [N(60, 0)], "length": 4.0}})
-    call(server.transform_clip, None, 2, 3, [{"op": "transpose", "semitones": 5}])
+    call(tools.transform_clip, 2, 3, [{"op": "transpose", "semitones": 5}])
     cmds = [cmd for cmd, _ in c.sent]
     assert cmds[:3] == ["get_clip_notes", "clear_notes_from_clip", "add_notes_to_clip"]
 
 
 def test_write_progression_from_style(conn):
     c = conn({"get_track_info": {"clip_slots": [{"has_clip": False}] * 4}})
-    out = json.loads(call(server.write_progression, None, 1, 0, "A", style="house", repeat=2))
+    out = json.loads(call(tools.write_progression, 1, 0, "A", style="house", repeat=2))
     assert out["key"] == "A minor" and out["pattern"] == "offbeat"
     assert [ch["symbol"] for ch in out["chords"]] == ["Am7", "Dm7", "Am7", "Dm7"]
     assert ("create_clip", {"track_index": 1, "clip_index": 0, "length": 32.0}) in c.sent
@@ -250,9 +249,9 @@ def test_write_progression_from_style(conn):
 
 def test_set_song_scale_maps_names(conn):
     c = conn({"set_song_scale": {"scale_name": "Phrygian Dominant"}})
-    call(server.set_song_scale, None, root="E", scale="hijaz")
+    call(tools.set_song_scale, root="E", scale="hijaz")
     assert c.sent[-1] == ("set_song_scale", {"root_note": 4, "scale_name": "Phrygian Dominant"})
-    assert "Live has no" in call(server.set_song_scale, None, scale="bebop dominant")
+    assert "Live has no" in call(tools.set_song_scale, scale="bebop dominant")
 
 
 

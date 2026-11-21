@@ -1,8 +1,34 @@
 # Changelog
 
-Changes in Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp), branch `feat/mixer-scenes`; formerly cedrati/ableton-mcp) relative to the original [ahujasid/ableton-mcp](https://github.com/ahujasid/ableton-mcp).
+Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp)). Versions 1.x were a fork of [ahujasid/ableton-mcp](https://github.com/ahujasid/ableton-mcp); 2.0 is an independent rewrite.
 
-The version numbers below are the **Remote Script** version (`SCRIPT_VERSION`), which the server checks through `get_remote_script_info`. After updating, reinstall the script with `ableton-studio-mcp-install-script` and **restart Live** — re-selecting the control surface does not reload the code.
+Since 2.0 one version number covers the server and the Live control surface; the server refuses a control surface of another version. After updating, run `ableton-studio-mcp install` and **restart Live** — re-selecting the control surface does not reload the code. (1.x versions below are the Remote Script version.)
+
+## 2.0.0
+
+Ableton Studio MCP becomes a project of its own. Everything that still came from the original ableton-mcp has been rewritten: the connection to Live, the installer, the tools' organisation and the whole Live control surface. What remains in common with ableton-mcp is 2.1 % of the lines, all generic (`from __future__ import …`, calls imposed by Live's API such as `song.start_playing()`, protocol field names). The copyright is now Olivier Cedrati's alone (MIT).
+
+**Upgrading from 1.x:** run `ableton-studio-mcp install --remove-legacy`, restart Live and choose **AbletonStudioMCP** as the control surface instead of *AbletonMCP*. Tools, their names and parameters are unchanged.
+
+### Changed
+
+- **New names.** Python package `ableton_studio_mcp` (was `MCP_Server`); Live control surface **AbletonStudioMCP** (was *AbletonMCP*): select it again in Live's Control Surface settings. The `ableton-mcp` / `ableton-mcp-install-script` command aliases are gone.
+- **New installer:** `ableton-studio-mcp install` (`ableton-studio-mcp-install-script` still works). It installs the control surface as a folder, swapped in only once fully copied, offers `--dry-run`, and reports the old *AbletonMCP* folder (`--remove-legacy` deletes it, since both use the same port). The `.bak` backup, `--legacy`, `--force` and `--sync-bundle` options are gone.
+- **One copy of the control surface:** it lives inside the package (`ableton_studio_mcp/live_script/`) instead of a repository folder plus a bundled duplicate; a single version number is checked by the tests and the release workflow.
+- `doctor` also warns when the old *AbletonMCP* control surface is still installed.
+- Dockerfile and `smithery.yaml` rewritten for the new entry point.
+- **Server core rewritten.** New connection to Live (`live.py`): one socket reopened automatically when Live restarts, a stale socket detected before use, one request at a time, per-command timeouts, and the control surface's version checked on every connection (replaces the old handshake module and its retry hook). Typed errors — Live unavailable, Live refused, control surface too old — each reported to the assistant as one clear line by the new `@tool` decorator (`app.py`).
+- **Tools split by domain** into `ableton_studio_mcp/tools/` (session, tracks, clips, devices, browser, routing, listening, midi, theory, drums, evolution) instead of one 3,500-line `server.py`; tool descriptions rewritten. Same 92 tools with the same parameters. Tools no longer take the unused `ctx` argument.
+- Error messages changed: "<tool> failed: <Live's reason>" instead of "Error <doing something>: …".
+- CI now builds the package, installs it in a clean environment and checks that every tool and the control surface are inside (the `tools` subpackage was missing from the first 2.0 build).
+- **Control surface rewritten** as a package of modules instead of one 4,100-line file (now 2,800 lines): a command registry replaces the 460-line `if/elif` dispatcher — each handler's signature is its contract (missing or unknown parameters are refused by name instead of silently defaulting to track 0 or 120 BPM) and the advertised capability list is generated from it; a new socket server; browser, snapshot, clip, note, track, session and device code written anew.
+- **No more threads in the control surface, and much faster.** Live's embedded Python only lets background threads run when Live calls into Python (~10 times a second), so the socket thread of 1.x paid for several of those per request. The control surface now does everything on Live's main thread from `update_display`: non-blocking sockets, requests run and answered in the same pass, and a few milliseconds' wait for the next request of a sequence. Reads (`get_*`) are chained in one pass; after any change Live gets a display update of its own before the next command (changing the routing of a track created in the same pass crashed Live 12.4 during testing). Measured on the same set (Live 12.4, 3 tracks, 2 returns): session or track info 200 ms → under 1 ms, a write (tempo) 409 ms → 100 ms, full snapshot with notes and parameters 5.9 s → 0.23 s. This also means every command runs on the main thread, as Live's API requires (1.x ran reads on the socket thread).
+- **Protocol 2: newline-delimited JSON** both ways (no more re-parsing the whole buffer after every packet). The server still talks to 1.x control surfaces, and the control surface still accepts 1.x servers.
+- Stricter input checks: notes (pitch 0–127, positive duration, start ≥ 0, velocity clamped; a bad note is refused with its position and nothing is written), tempo 20–999, positive clip length, parameter values within the parameter's range, track insert positions, negative song positions.
+- Snapshots no longer ask MIDI clips for warp markers, which filled Live's log with "Warp markers are only available for Audio Clips". Snapshot schema renamed `ableton_studio_mcp.snapshot/1`.
+- Removed six commands nothing used (`get_browser_item`, `get_browser_categories`, `get_browser_items`, `load_instrument_or_effect` on the Live side, `inspect_rack`, `map_rack_magnitude`).
+- Lint (ruff) in CI; 11 new tests for the control surface.
+- 22 new robustness tests against a fake control surface on a real socket: Live closed or restarted, connection lost mid-request, timeouts, fragmented replies, outdated control surface, Live started after the server, parallel calls.
 
 ## Remote Script 1.17.0
 

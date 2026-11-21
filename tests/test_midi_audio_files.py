@@ -9,8 +9,8 @@ import wave
 
 import pytest
 
-from MCP_Server.audio_analysis import AudioFileError, analyze_audio, read_audio
-from MCP_Server.midi_file import MidiFileError, read_midi_file, select_notes, summarize
+from ableton_studio_mcp.audio_analysis import AudioFileError, analyze_audio, read_audio
+from ableton_studio_mcp.midi_file import MidiFileError, read_midi_file, select_notes, summarize
 
 
 # ------------------------------------------------------------------ MIDI
@@ -207,7 +207,7 @@ def test_rejects_unknown_audio(tmp_path):
 
 
 def test_duplicates_are_merged_like_live_does():
-    from MCP_Server.midi_file import merge_duplicates
+    from ableton_studio_mcp.midi_file import merge_duplicates
     notes = [
         {"pitch": 64, "start_time": 1.0, "duration": 0.5, "velocity": 80, "mute": False},
         {"pitch": 64, "start_time": 1.0, "duration": 1.0, "velocity": 60, "mute": False},
