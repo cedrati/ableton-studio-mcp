@@ -228,3 +228,72 @@ def test_apply_device_state_matches_by_index_then_name(script_module):
     ])
     assert freq.value == 0.25 and shape.value == 3.0
     assert out["applied"] == 2 and out["skipped"] == ["Gone"]
+
+
+# ── recipes and auditioning ──────────────────────────────────────────────────
+
+class Recorder(object):
+    def __init__(self, replies):
+        self.sent, self.replies = [], replies
+
+    def call(self, name, params=None):
+        self.sent.append((name, params or {}))
+        reply = self.replies.get(name, {})
+        if isinstance(reply, Exception):
+            raise reply
+        return reply(params or {}) if callable(reply) else reply
+
+
+@pytest.fixture
+def fake_live(monkeypatch):
+    from ableton_studio_mcp import live
+
+    def make(replies):
+        r = Recorder(replies)
+        monkeypatch.setattr(live, "client", lambda: r)
+        monkeypatch.setattr(live, "require", lambda name: None)
+        return r
+    return make
+
+
+def test_every_recipe_is_complete():
+    from ableton_studio_mcp import recipes
+    for name, r in recipes.RECIPES.items():
+        assert {"device", "uri", "role", "values", "play", "listen"} <= set(r), name
+        assert r["role"] in recipes.PHRASES, name
+    with pytest.raises(ValueError, match="No recipe 'banjo'"):
+        recipes.recipe("banjo")
+    assert recipes.recipe("Acid Bass") is recipes.RECIPES["acid_bass"]
+
+
+def test_design_sound_applies_recipe_then_tweaks(fake_live):
+    from ableton_studio_mcp import tools
+    r = fake_live({"load_browser_item": {"loaded": True},
+                   "get_track_info": {"devices": [{"index": 0, "name": "Drift", "class_display_name": "Drift"}]},
+                   "set_device_parameters": lambda p: {"changes": [{"name": k, "now": v} for k, v in p["values"].items()]}})
+    out = json.loads(tools.design_sound(2, "acid_bass", {"LP Freq": "500 Hz"}))
+    sent = dict(r.sent)
+    assert sent["load_browser_item"]["item_uri"] == "query:Synths#Drift"
+    assert sent["set_device_parameters"]["values"]["LP Freq"] == "500 Hz"      # tweak wins
+    assert sent["set_device_parameters"]["values"]["LP Res"] == "0.75"
+    assert out["device_index"] == 0 and out["set"]["Glide Time"] == "60 ms"
+
+
+def test_audition_cleans_up_even_when_listening_fails(fake_live, monkeypatch):
+    from ableton_studio_mcp import tools
+    from ableton_studio_mcp.tools import listening
+
+    def broken(*a, **k):
+        raise RuntimeError("Live stopped")
+    monkeypatch.setattr(listening.listen_to_arrangement, "__wrapped__", broken)
+    r = fake_live({"get_track_info": {"name": "Bass", "clip_slots": [{"index": 0, "has_clip": True},
+                                                                      {"index": 1, "has_clip": False}]},
+                   "get_session_info": {"song_length": 286.0},
+                   "get_arrangement_clips": {"clips": [{"start_time": 32.0}, {"start_time": 292.0}]}})
+    assert "failed" in tools.audition_sound(1, role="bass")
+    names = [n for n, _ in r.sent]
+    assert ("create_clip", {"track_index": 1, "clip_index": 1, "length": 4.0}) in r.sent
+    dup = dict(r.sent)["duplicate_session_clip_to_arrangement"]
+    assert dup["destination_time"] == 292.0       # the song ends inside bar 72: start of bar 74
+    assert ("delete_arrangement_clip", {"track_index": 1, "clip_index": 1}) in r.sent
+    assert names[-1] == "delete_clip"

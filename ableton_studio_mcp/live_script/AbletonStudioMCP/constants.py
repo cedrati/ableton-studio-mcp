@@ -58,6 +58,8 @@ CUE_SETTLE_TICKS = 10
 DEVICE_LOAD_SETTLE_TICKS = 50
 SAME_KIND_RELOAD_SETTLE_TICKS = 20
 RECORDING_POLL_TICKS = 1
+# Playback starts this many beats before a recording (punch-in does the rest).
+RECORD_PREROLL_BEATS = 1.0
 
 # An undo group left open longer than this is closed automatically.
 UNDO_GROUP_MAX_SECONDS = 120

@@ -189,12 +189,22 @@ class SnapshotCommands(object):
             return (round(m.volume.value, 5), round(m.panning.value, 5),
                     read(track, "mute", bool, None), read(track, "solo", bool, None))
 
+        def notes(clip):
+            # How many notes, and where: catches note edits that undo must reach.
+            if not read(clip, "is_midi_clip", bool, False):
+                return None
+            try:
+                return hash(tuple(sorted((n.pitch, round(n.start_time, 4), round(n.duration, 4))
+                                         for n in clip.get_notes_extended(0, 128, -1.0e4, 2.0e4))))
+            except Exception:
+                return None
+
         def slots(track):
-            return tuple((s.clip.name, round(s.clip.length, 5)) if s.has_clip else None
+            return tuple((s.clip.name, round(s.clip.length, 5), notes(s.clip)) if s.has_clip else None
                          for s in read(track, "clip_slots", list, []))
 
         def arranged(track):
-            return tuple((c.name, round(c.start_time, 5), round(c.end_time, 5))
+            return tuple((c.name, round(c.start_time, 5), round(c.end_time, 5), notes(c))
                          for c in read(track, "arrangement_clips", list, []))
 
         main = read(song, "master_track", None, None)

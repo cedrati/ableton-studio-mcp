@@ -11,7 +11,7 @@ By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/cedrati/ableton-studio-mcp/blob/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/ableton-studio-mcp)](https://pypi.org/project/ableton-studio-mcp/)
-![Remote Script](https://img.shields.io/badge/Remote%20Script-2.2.0-blue)
+![Remote Script](https://img.shields.io/badge/Remote%20Script-2.3.0-blue)
 ![Live](https://img.shields.io/badge/Ableton%20Live-11%20%7C%2012-black)
 [![Tests](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml/badge.svg)](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml)
 
@@ -47,7 +47,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (346) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (352) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -121,7 +121,7 @@ Run the built-in check, which looks at Python, uv, the script installed in your 
 uvx ableton-studio-mcp doctor
 ```
 
-Or ask the assistant to run `get_remote_script_info`: it should report `script_version` **2.2.x** and `up_to_date: true`.
+Or ask the assistant to run `get_remote_script_info`: it should report `script_version` **2.3.x** and `up_to_date: true`.
 
 ### Updating
 
@@ -203,6 +203,8 @@ Indexes start at 0. Times and lengths are in **beats**. Notes use MIDI numbers (
 | `find_presets` · `read_preset` | Search the presets of Live's native devices and racks (Core Library, packs, User Library — no Live needed) and read what a preset does: the parameters that differ from the device's default, samples, and for racks the named macros and every chain. |
 | `load_preset` | Load a native preset or rack onto a track by name. |
 | `set_device_parameters` | Set several parameters by name with musical values — "800 Hz", "5 ms", "-6 dB", "35 %", "Bell", "1/16" — found through Live's own display, so it works for every native device; checked before anything changes. |
+| `sound_recipes` · `design_sound` | Starting points for classic sounds on Drift, Wavetable and Operator (sub, acid and reese bass, dub chord stab, pluck, warm pad, supersaw, FM bell), applied in one undo step, with how to play them and what to listen for. |
+| `audition_sound` | Plays a test phrase (bass line, chords or arpeggio) on a track after the end of the song, records and analyses it (loudness, tonal balance, spectrogram), then removes everything: the listen-and-tune loop. |
 | `save_sound` · `list_sounds` · `load_sound` | Keep a designed sound (the device and all its values) in your User Library and put it back on any track; one undo step. |
 
 ### Clips and notes
@@ -333,7 +335,7 @@ MCP client (Claude…)  ⇄  MCP server (ableton_studio_mcp/, Python)  ⇄  TCP 
 ```bash
 git clone -b feat/mixer-scenes https://github.com/cedrati/ableton-studio-mcp
 cd ableton-studio-mcp
-uv run --with pytest pytest -q             # 346 tests, no Live needed
+uv run --with pytest pytest -q             # 352 tests, no Live needed
 uv run ableton-studio-mcp install          # install your working copy into Live
 uv run ableton-studio-mcp doctor           # check the whole chain
 ```

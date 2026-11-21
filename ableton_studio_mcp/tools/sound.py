@@ -1,10 +1,10 @@
-"""Sound design: Live's device presets on disk (no Live needed to read them)."""
+"""Sound design: Live's presets, musical parameter values, recipes, auditioning and saved sounds."""
 
 from __future__ import annotations
 
 from typing import Dict, Union
 
-from .. import live, presets, sounds
+from .. import live, presets, recipes, sounds
 from ..app import as_json, tool, track_target
 
 
@@ -227,3 +227,97 @@ def load_sound(track_index: int, name: str, track_type: str = "track") -> str:
         track_index, track_type, device_index=index, parameters=data["parameters"]))
     skipped = f" ({len(applied['skipped'])} not restored: {', '.join(applied['skipped'][:5])})" if applied["skipped"] else ""
     return f"'{data['name']}' loaded: {data['device']} at position {index}, {applied['applied']} parameters restored{skipped}"
+
+
+# ── recipes and the listen-and-tune loop ─────────────────────────────────────
+
+@tool()
+def sound_recipes(name: str = "") -> str:
+    """
+    Starting points for classic electronic sounds on Live's native synths
+    (sub bass, acid bass, reese, dub chord stab, pluck, warm pad, supersaw,
+    FM bell): device, parameter values, how to play it, what to listen for.
+    Without a name, lists them.
+
+    Parameters:
+    - name: A recipe ("acid_bass") to see in full
+    """
+    if name:
+        return as_json(dict(recipes.recipe(name), name=name))
+    return as_json([{"name": k, "device": r["device"], "role": r["role"], "description": r["description"]}
+                    for k, r in sorted(recipes.RECIPES.items())])
+
+
+@tool(needs=("load_browser_item", "set_device_parameters"), undo_step="Design sound")
+def design_sound(track_index: int, recipe: str, tweaks: Union[Dict[str, Union[float, str]], None] = None) -> str:
+    """
+    Build a sound from a recipe on a MIDI track: loads the recipe's synth and
+    sets its parameters, then applies your tweaks (musical values, as for
+    set_device_parameters). One undo step. Then audition_sound it, adjust
+    with set_device_parameters, and save_sound when it's right.
+
+    Parameters:
+    - track_index: A MIDI track (the synth is added to its chain)
+    - recipe: A recipe name (see sound_recipes)
+    - tweaks: Extra values on top of the recipe, e.g. {"LP Freq": "500 Hz"}
+    """
+    r = recipes.recipe(recipe)
+    loaded = live.call("load_browser_item", {"track_index": track_index, "item_uri": r["uri"]})
+    if not loaded.get("loaded"):
+        raise ValueError(f"Live did not load {r['device']}")
+    devices = live.call("get_track_info", {"track_index": track_index})["devices"]
+    index = max(d["index"] for d in devices if d["name"] == r["device"] or d.get("class_display_name") == r["device"])
+    values = dict(r["values"], **(tweaks or {}))
+    reply = live.call("set_device_parameters", {"track_index": track_index, "device_index": index, "values": values})
+    return as_json({"recipe": recipe, "device": r["device"], "device_index": index,
+                    "set": {c["name"]: c["now"] for c in reply["changes"]},
+                    "play": r["play"], "listen_for": r["listen"]})
+
+
+@tool(needs=("create_clip", "duplicate_session_clip_to_arrangement", "record_arrangement"),
+      undo_step="Audition sound")
+def audition_sound(track_index: int, role: str = "melody", root: Union[int, None] = None,
+                   bars: int = 1, report: str = "mix"):
+    """
+    Listen to a track's sound: plays a short test phrase on it (a bass line,
+    chords or an arpeggio) in an empty stretch after the end of the song,
+    records and analyses it like listen_to_arrangement (loudness, spectrum,
+    spectrogram), then removes everything it added. Use the report to adjust
+    the sound with set_device_parameters, and audition again.
+
+    Parameters:
+    - track_index: The MIDI track to audition
+    - role: "bass", "chords" or "melody" — picks the phrase and its register
+    - root: MIDI note of the phrase's root (default C1 for bass, C3 chords, C4 melody)
+    - bars: How many bars to play (1–4)
+    - report: "mix" (full report and spectrogram) or "basic"
+    """
+    from . import listening
+    if role not in recipes.PHRASES:
+        raise ValueError("role must be 'bass', 'chords' or 'melody'")
+    bars = max(1, min(int(bars), 4))
+    track = live.call("get_track_info", {"track_index": track_index})
+    slot = next((s["index"] for s in track["clip_slots"] if not s["has_clip"]), None)
+    if slot is None:
+        raise ValueError(f"Track {track_index} has no empty clip slot for the test phrase")
+    length = 4.0 * bars
+    notes = [dict(n, start_time=n["start_time"] + 4.0 * b) for b in range(bars) for n in recipes.phrase(role, root)]
+    song_end = float(live.call("get_session_info").get("song_length") or 0.0)
+    start = (int(song_end // 4) + 2) * 4.0          # two bars after the last bar of the song
+    live.call("create_clip", {"track_index": track_index, "clip_index": slot, "length": length})
+    try:
+        live.call("add_notes_to_clip", {"track_index": track_index, "clip_index": slot, "notes": notes})
+        live.call("duplicate_session_clip_to_arrangement",
+                  {"track_index": track_index, "clip_index": slot, "destination_time": start})
+        result = listening.listen_to_arrangement.__wrapped__(start, start + length + 2.0, report=report)
+    finally:
+        clips = live.call("get_arrangement_clips", {"track_index": track_index}).get("clips", [])
+        for i, clip in reversed(list(enumerate(clips))):
+            if abs(clip["start_time"] - start) < 1e-3:
+                live.call("delete_arrangement_clip", {"track_index": track_index, "clip_index": i})
+        live.call("delete_clip", {"track_index": track_index, "clip_index": slot})
+    header = (f"Auditioned track {track_index} ({track['name']}): {role} phrase, {bars} bar(s), "
+              f"root {notes[0]['pitch']}, played after the song at beat {start:g}.")
+    if isinstance(result, list):
+        return [header + "\n" + result[0]] + result[1:]
+    return header + "\n" + result

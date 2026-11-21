@@ -4,7 +4,20 @@ Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](https://gith
 
 Since 2.0 one version number covers the server and the Live control surface; the server refuses a control surface of another version. After updating, run `ableton-studio-mcp install` and **restart Live** — re-selecting the control surface does not reload the code. (1.x versions below are the Remote Script version.)
 
-## 2.2.0
+## 2.3.0
+
+New control surface series: run `ableton-studio-mcp install` and restart Live.
+
+### Added
+
+- **Sound recipes** (`sound_recipes`, `design_sound`): sub, acid and reese bass, dub chord stab, pluck and warm pad on Drift, supersaw on Wavetable, FM bell on Operator — the device, parameter values as musical values, how to play the sound and what to listen for; applied in one undo step, with your own tweaks on top. Every recipe was applied in Live 12.4 without error.
+- **Listen-and-tune loop** (`audition_sound`): plays a bass line, chords or an arpeggio on a track in an empty stretch after the song, records and analyses it like `listen_to_arrangement`, then removes everything it added (one undo step). In Live, a sub bass, a pad, a pluck and an acid bass came out clearly different (e.g. sub +29 dB below 60 Hz, pluck centred on the mids).
+
+### Fixed
+
+- **Listening and recording could capture the wrong passage.** Measured in Live 12.4: playback started by a script begins at Live's own start marker, not where `current_song_time` was set, and moving the playhead while recording splits the take. Recording now sets the passage as the punch-in/out range, starts playback, jumps one beat before the range and only then switches Arrangement Record on, so exactly the requested passage is recorded; loop and punch settings are put back. `start_playback` now plays from the playhead.
+- **Undo of grouped actions** (a tool that records, or loads devices) now steps back until the set matches the fingerprint taken before the action, up to 32 of Live's steps; if that never happens, every step is redone and the action is reported as not undoable — it never undoes an earlier action. The fingerprint now includes the notes of MIDI clips.
+
 
 New control surface series: run `ableton-studio-mcp install` and restart Live.
 
