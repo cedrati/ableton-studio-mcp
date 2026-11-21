@@ -1,12 +1,14 @@
 # Changelog
 
-Changes in Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp), branch `feat/mixer-scenes`; formerly cedrati/ableton-mcp) relative to the original [ahujasid/ableton-mcp](https://github.com/ahujasid/ableton-mcp).
+Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp)). Versions 1.x were a fork of [ahujasid/ableton-mcp](https://github.com/ahujasid/ableton-mcp); 2.0 is an independent rewrite.
 
-The version numbers below are the **Remote Script** version (`SCRIPT_VERSION`), which the server checks through `get_remote_script_info`. After updating, reinstall the script with `ableton-studio-mcp-install-script` and **restart Live** — re-selecting the control surface does not reload the code.
+Since 2.0 one version number covers the server and the Live control surface; the server refuses a control surface of another version. After updating, run `ableton-studio-mcp install` and **restart Live** — re-selecting the control surface does not reload the code. (1.x versions below are the Remote Script version.)
 
-## 2.0.0 (in progress, branch `rewrite/v2`)
+## 2.0.0
 
-Ableton Studio MCP becomes a project of its own: the code that still came from the original ableton-mcp is being rewritten.
+Ableton Studio MCP becomes a project of its own. Everything that still came from the original ableton-mcp has been rewritten: the connection to Live, the installer, the tools' organisation and the whole Live control surface. What remains in common with ableton-mcp is 2.1 % of the lines, all generic (`from __future__ import …`, calls imposed by Live's API such as `song.start_playing()`, protocol field names). The copyright is now Olivier Cedrati's alone (MIT).
+
+**Upgrading from 1.x:** run `ableton-studio-mcp install --remove-legacy`, restart Live and choose **AbletonStudioMCP** as the control surface instead of *AbletonMCP*. Tools, their names and parameters are unchanged.
 
 ### Changed
 
