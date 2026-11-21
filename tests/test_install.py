@@ -110,3 +110,17 @@ def test_legacy_surface_reported_then_removed_on_request(tmp_path, source, monke
 def test_packaged_script_is_where_the_installer_looks():
     assert (install.SCRIPT_SOURCE / "__init__.py").is_file()
     assert install.script_version_in(install.SCRIPT_SOURCE) == install.SCRIPT_VERSION
+
+
+def test_registry_metadata_matches_the_package():
+    """server.json (official MCP Registry) must describe this exact release."""
+    import json
+    from pathlib import Path
+    from ableton_studio_mcp import __version__
+    root = Path(__file__).resolve().parents[1]
+    meta = json.loads((root / "server.json").read_text())
+    assert meta["version"] == __version__
+    assert meta["packages"][0]["version"] == __version__
+    assert meta["packages"][0]["identifier"] == "ableton-studio-mcp"
+    assert f"mcp-name: {meta['name']}" in (root / "README.md").read_text()
+    assert len(meta["description"]) <= 100

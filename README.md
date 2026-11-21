@@ -1,3 +1,4 @@
+<!-- mcp-name: io.github.cedrati/ableton-studio-mcp -->
 <div align="center">
 
 <img src="https://raw.githubusercontent.com/cedrati/ableton-studio-mcp/main/docs/social-preview.png" alt="Ableton Studio MCP — AI music production in Ableton Live with Claude: compose, arrange, mix, master, listen, music theory, techno drums" width="100%">
@@ -46,7 +47,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (307) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (309) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -120,7 +121,7 @@ Run the built-in check, which looks at Python, uv, the script installed in your 
 uvx ableton-studio-mcp doctor
 ```
 
-Or ask the assistant to run `get_remote_script_info`: it should report `script_version` **2.0.0** and `up_to_date: true`.
+Or ask the assistant to run `get_remote_script_info`: it should report `script_version` **2.0.x** and `up_to_date: true`.
 
 ### Updating
 
@@ -321,14 +322,14 @@ MCP client (Claude…)  ⇄  MCP server (ableton_studio_mcp/, Python)  ⇄  TCP 
 ```bash
 git clone -b feat/mixer-scenes https://github.com/cedrati/ableton-studio-mcp
 cd ableton-studio-mcp
-uv run --with pytest pytest -q             # 307 tests, no Live needed
+uv run --with pytest pytest -q             # 309 tests, no Live needed
 uv run ableton-studio-mcp install          # install your working copy into Live
 uv run ableton-studio-mcp doctor           # check the whole chain
 ```
 
-The Live control surface lives in `ableton_studio_mcp/live_script/AbletonStudioMCP/` and is shipped inside the package. One version number covers everything: when the protocol changes, bump `__version__` in `ableton_studio_mcp/__init__.py`, `SCRIPT_VERSION` in the control surface and `version` in `pyproject.toml` (the tests and the release workflow check they match), and add an entry to the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md). GitHub Actions runs the tests on Python 3.10, 3.12 and 3.13 on every push and pull request.
+The Live control surface lives in `ableton_studio_mcp/live_script/AbletonStudioMCP/` and is shipped inside the package. Versions: `__version__` (`ableton_studio_mcp/__init__.py`), `version` in `pyproject.toml` and in `server.json` are the release number; the control surface's `SCRIPT_VERSION` only has to be in the same series (major.minor). A release that changes the control surface starts a new series (2.1.0), so users know to reinstall it; a patch release of the server alone (2.0.1) doesn't touch Live. The tests and the release workflow check all of this. Add an entry to the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md). GitHub Actions runs the tests on Python 3.10, 3.12 and 3.13 on every push and pull request.
 
-**Releasing:** push a tag `vX.Y.Z` matching that version. The `release` workflow checks the versions, runs the tests, builds the package, publishes it to PyPI (trusted publishing, no token stored) and creates the GitHub release.
+**Releasing:** push a tag `vX.Y.Z` matching that version. The `release` workflow checks the versions, runs the tests, builds the package, publishes it to PyPI (trusted publishing, no token stored), creates the GitHub release and publishes `server.json` to the [official MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.cedrati/ableton-studio-mcp` (GitHub OIDC; the `mcp-name:` comment at the top of this README proves the PyPI package is ours).
 
 ---
 

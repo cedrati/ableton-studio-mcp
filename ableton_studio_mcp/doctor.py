@@ -14,9 +14,9 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import SCRIPT_SERIES, __version__, same_series
 from .install import (
     LEGACY_SURFACE_NAME,
-    SCRIPT_VERSION as EXPECTED_REMOTE_SCRIPT_VERSION,
     SURFACE_NAME as REMOTE_SCRIPT_FOLDER_NAME,
     legacy_installs,
     live_preference_dirs as _live_preference_dirs,
@@ -84,11 +84,11 @@ def check_installed_script() -> Check:
         return Check("Remote Script installed", "fail",
                      f"No {REMOTE_SCRIPT_FOLDER_NAME} script in {', '.join(str(r) for r in roots)}",
                      f"Run `{INSTALL_CMD}`, then restart Live.")
-    bad = [(p, v) for p, v in installed if v != EXPECTED_REMOTE_SCRIPT_VERSION]
+    bad = [(p, v) for p, v in installed if not same_series(v)]
     found = "; ".join(f"{v or 'unknown'} at {p}" for p, v in installed)
     if bad:
         return Check("Remote Script installed", "fail", found,
-                     f"This server expects {EXPECTED_REMOTE_SCRIPT_VERSION}: run `{INSTALL_CMD}`, then restart Live.")
+                     f"This server needs {SCRIPT_SERIES}.x: run `{INSTALL_CMD}`, then restart Live.")
     return Check("Remote Script installed", "ok", found)
 
 
@@ -148,13 +148,13 @@ def check_live(host: str, port: int) -> Check:
         return Check("Live connection", "fail", f"Nothing answers on {host}:{port} ({e})", fix)
     loaded = info.get("script_version")
     found = f"Remote Script {loaded} answering on {host}:{port}"
-    if loaded != EXPECTED_REMOTE_SCRIPT_VERSION:
+    if not same_series(loaded):
         installed = {v for _, v in installed_script_versions()}
-        if EXPECTED_REMOTE_SCRIPT_VERSION in installed:
+        if any(same_series(v) for v in installed):
             fix = "The new script is installed but Live still runs the old one: restart Live."
         else:
             fix = f"Run `{INSTALL_CMD}`, then restart Live."
-        return Check("Live connection", "fail", found + f" (expected {EXPECTED_REMOTE_SCRIPT_VERSION})", fix)
+        return Check("Live connection", "fail", found + f" (needs {SCRIPT_SERIES}.x)", fix)
     return Check("Live connection", "ok", found)
 
 
@@ -179,7 +179,7 @@ _ICONS = {"ok": "✓", "warn": "!", "fail": "✗", "skip": "-"}
 
 
 def format_report(checks: list[Check]) -> str:
-    lines = [f"Ableton Studio MCP doctor (expects Remote Script {EXPECTED_REMOTE_SCRIPT_VERSION})", ""]
+    lines = [f"Ableton Studio MCP {__version__} doctor (control surface {SCRIPT_SERIES}.x)", ""]
     for c in checks:
         lines.append(f" {_ICONS.get(c.status, '?')} {c.name}: {c.found}")
         if c.fix and c.status in ("warn", "fail"):
