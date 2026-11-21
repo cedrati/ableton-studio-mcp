@@ -40,7 +40,8 @@ URI_HINTS = (
 
 TREE_DEPTH = 1          # levels shown below a section (get_browser_items_at_path goes further)
 TREE_FANOUT = 64        # children shown per folder
-SEARCH_DEPTH = 10       # how deep a URI search goes
+SEARCH_DEPTH = 10       # how deep a search goes
+SEARCH_BUDGET = 40000   # items looked at, at most, in one name search
 
 
 def _children(item):
@@ -144,6 +145,26 @@ class BrowserCommands(object):
         folder = _describe(current)
         folder.update({"path": path, "items": [_describe(kid) for kid in _children(current)]})
         return folder
+
+    @command("find_browser_items")
+    def _find_browser_items(self, name, sections=None, limit=5):
+        """Loadable items named ``name`` (with or without extension, any
+        case), searched breadth-first in the given sections (all by default)."""
+        wanted = str(name).lower()
+        browser = self._browser()
+        chosen = [(k, i) for k, i in self._sections(browser) if not sections or k in sections]
+        found, visited = [], 0
+        queue = [(item, SECTION_LABELS.get(key, key), 0) for key, item in chosen]
+        while queue and len(found) < limit and visited < SEARCH_BUDGET:
+            item, path, depth = queue.pop(0)
+            visited += 1
+            label = getattr(item, "name", "")
+            stem = label.rsplit(".", 1)[0] if "." in label else label
+            if getattr(item, "is_loadable", False) and wanted in (label.lower(), stem.lower()):
+                found.append({"name": label, "uri": getattr(item, "uri", None), "path": path})
+            if depth < SEARCH_DEPTH:
+                queue.extend((kid, path + "/" + getattr(kid, "name", "?"), depth + 1) for kid in _children(item))
+        return {"items": found, "visited": visited, "complete": not queue}
 
     # ── finding by URI ──────────────────────────────────────────────────────
 

@@ -4,6 +4,17 @@ Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](https://gith
 
 Since 2.0 one version number covers the server and the Live control surface; the server refuses a control surface of another version. After updating, run `ableton-studio-mcp install` and **restart Live** — re-selecting the control surface does not reload the code. (1.x versions below are the Remote Script version.)
 
+## 2.2.0
+
+New control surface series: run `ableton-studio-mcp install` and restart Live.
+
+### Added — sound design
+
+- **Read Live's presets** (`find_presets`, `read_preset`): about 10,000 native device and rack presets on a typical install (Core Library, packs, User Library), searched by name, device, category or library and read straight from their files without Live. A preset is shown as what differs from the device's default preset (Live ships one per device), in the device's own units, with its samples, and for racks the named macros and every chain with its devices.
+- **Load a preset by name** (`load_preset`), found where Live's browser shows it (Core Library racks live under Sounds, Drum Racks under Drums…), with a targeted name search as a fallback.
+- **Musical values** (`set_device_parameters`): "800 Hz", "2.5 kHz", "5 ms", "-6 dB", "-inf dB", "35 %", "+7 st", a named setting ("Bell") or a textual display ("1/16"). The internal value is found by searching the parameter's range until Live's own display matches, so it works for every native device without per-device tables. All values are checked before anything changes.
+- **Save and reload designed sounds** (`save_sound`, `list_sounds`, `load_sound`) as JSON in `<User Library>/Ableton Studio MCP/Sounds/` — Live's API cannot write `.adv` presets. Verified in Live: a Drift sound reloaded with all 66 parameters identical.
+
 ## 2.1.1
 
 ### Fixed
