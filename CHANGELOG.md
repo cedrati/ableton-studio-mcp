@@ -10,6 +10,7 @@ The version numbers below are the **Remote Script** version (`SCRIPT_VERSION`), 
 
 - **Renamed to Ableton Studio MCP** (`cedrati/ableton-studio-mcp`, standalone repository; the old URL redirects). Package `ableton-studio-mcp`; commands `ableton-studio-mcp` and `ableton-studio-mcp-install-script`, the former `ableton-mcp` / `ableton-mcp-install-script` kept as aliases.
 - `TERMS.md` rewritten for this project: what talks to what, and the files the tools create.
+- README links and banner use absolute URLs so they also work on PyPI.
 - LICENSE lists Olivier Cedrati first and keeps the original copyright for the portions that come from ableton-mcp, in the standard MIT layout.
 
 ### Removed
@@ -18,6 +19,8 @@ The version numbers below are the **Remote Script** version (`SCRIPT_VERSION`), 
 
 ### Added
 
+- **`ableton-studio-mcp doctor`:** checks Python, uv, the Remote Script installed in the User Library, the Control Surface setting in Live's preferences and the script actually running in Live, then prints what to fix (e.g. "the new script is installed but Live still runs the old one: restart Live"), with the Remote Script errors from Live's log when Live does not answer. Exit code 1 if something is broken. `ableton-studio-mcp --version` prints the version.
+- **Release workflow:** pushing a `vX.Y.Z` tag checks the versions, runs the tests, builds and publishes the package to PyPI (trusted publishing) and creates the GitHub release.
 - **`delete_locator`:** removes a locator by beat position or by name (refused if several locators share the name, listing their positions). Like `create_locator`, it waits for the playhead to reach the cue, toggles it off, waits until Live has removed it and restores the playhead; it refuses to run while playing.
 - GitHub Actions CI: tests on Python 3.10, 3.12 and 3.13, and a check that the bundled Remote Script copy matches the source.
 

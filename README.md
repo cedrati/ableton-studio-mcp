@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/social-preview.png" alt="Ableton Studio MCP — AI music production in Ableton Live with Claude: compose, arrange, mix, master, listen, music theory, techno drums" width="100%">
+<img src="https://raw.githubusercontent.com/cedrati/ableton-studio-mcp/main/docs/social-preview.png" alt="Ableton Studio MCP — AI music production in Ableton Live with Claude: compose, arrange, mix, master, listen, music theory, techno drums" width="100%">
 
 # Ableton Studio MCP
 
@@ -8,12 +8,12 @@
 
 By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)) — built on [ableton-mcp](https://github.com/ahujasid/ableton-mcp) by Siddharth Ahuja.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/cedrati/ableton-studio-mcp/blob/main/LICENSE)
 ![Remote Script](https://img.shields.io/badge/Remote%20Script-1.17.0-blue)
 ![Live](https://img.shields.io/badge/Ableton%20Live-11%20%7C%2012-black)
 [![Tests](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml/badge.svg)](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml)
 
-[Quickstart](#quickstart) · [Features](#features) · [Tools](#tool-reference) · [FAQ](#faq) · [Roadmap](https://github.com/cedrati/ableton-studio-mcp/issues?q=is%3Aissue+is%3Aopen+label%3Aroadmap) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/cedrati/ableton-studio-mcp/issues)
+[Quickstart](#quickstart) · [Features](#features) · [Tools](#tool-reference) · [FAQ](#faq) · [Roadmap](https://github.com/cedrati/ableton-studio-mcp/issues?q=is%3Aissue+is%3Aopen+label%3Aroadmap) · [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) · [Issues](https://github.com/cedrati/ableton-studio-mcp/issues)
 
 </div>
 
@@ -28,6 +28,8 @@ By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)) — built on [ab
 **Ableton Studio MCP, written and maintained by Olivier Cedrati, builds on it and turns it into a full production assistant.** Beyond writing notes, the assistant can mix (faders, sends, return and main-track effects, routing), **listen** to the result and judge it like a mastering engineer (LUFS, true peak, tonal balance, stereo, a spectrogram it can look at), and compose with real music-theory knowledge (scales and modes, style sheets, key and chord analysis, clip transformations, voice-led progressions).
 
 It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp). The `ableton-mcp` package on PyPI is the **original** project and does not include any of this — install Ableton Studio MCP from this repository as shown below. (The commands `ableton-mcp` and `ableton-mcp-install-script` still work as aliases of the new ones.)
+
+**No data is collected:** no telemetry, no analytics, nothing sent anywhere (see [Privacy](#privacy)).
 
 ## Features
 
@@ -45,7 +47,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (252) and checked end to end in Ableton Live 12. See the [Changelog](CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (260) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -111,7 +113,13 @@ The server and the Remote Script must come from the **same version** — always 
 
 ### 4. Check
 
-Ask the assistant to run `get_remote_script_info`. It should report `script_version` **1.17.0** and `up_to_date: true`.
+Run the built-in check, which looks at Python, uv, the script installed in your User Library, the Control Surface setting and the script actually running in Live, and says what to fix:
+
+```bash
+uvx --from git+https://github.com/cedrati/ableton-studio-mcp@feat/mixer-scenes ableton-studio-mcp doctor
+```
+
+Or ask the assistant to run `get_remote_script_info`: it should report `script_version` **1.17.0** and `up_to_date: true`.
 
 ### Updating
 
@@ -245,6 +253,9 @@ The mix report checks: integrated / short-term / momentary loudness and loudness
 
 ## FAQ
 
+**Does Ableton Studio MCP collect any data?**
+No. There is no telemetry, no analytics and no data collection of any kind, and the server makes no internet connection: everything stays between your MCP client and Live on your computer. See [Privacy](#privacy).
+
 **How do I control Ableton Live with Claude?**
 Install this MCP server in Claude Code, Claude Desktop or Cursor, install the Remote Script into Live, and select *AbletonMCP* as a control surface (see [Quickstart](#quickstart)). Then ask in plain language: *"program 8 bars of rolling techno on the 909 kit"*.
 
@@ -270,6 +281,8 @@ Live's API doesn't let a script save the set, export audio, create group tracks,
 
 ## Troubleshooting
 
+Start with `ableton-studio-mcp doctor` (see [Check](#4-check)): it diagnoses most of the cases below.
+
 | Problem | Fix |
 |---|---|
 | `up_to_date: false`, or "missing capability" errors | The script in Live is older than the server. Re-run the install command, then **restart Live**. |
@@ -294,17 +307,27 @@ MCP client (Claude…)  ⇄  MCP server (MCP_Server/, Python)  ⇄  TCP 127.0.0.
 ```bash
 git clone -b feat/mixer-scenes https://github.com/cedrati/ableton-studio-mcp
 cd ableton-studio-mcp
-uv run --with pytest pytest -q             # 252 tests, no Live needed
+uv run --with pytest pytest -q             # 260 tests, no Live needed
 uv run ableton-studio-mcp-install-script   # install your working copy into Live
+uv run ableton-studio-mcp doctor           # check the whole chain
 ```
 
-When you change the Remote Script, bump `SCRIPT_VERSION` (and `EXPECTED_REMOTE_SCRIPT_VERSION` in `MCP_Server/remote_script_install.py`, and the package `version` in `pyproject.toml`, which follows the script), copy it to `MCP_Server/bundled_ableton_remote_script/AbletonMCP_init.py`, and add an entry to the [Changelog](CHANGELOG.md). GitHub Actions runs the tests on Python 3.10, 3.12 and 3.13 and checks the bundled copy on every push and pull request.
+When you change the Remote Script, bump `SCRIPT_VERSION` (and `EXPECTED_REMOTE_SCRIPT_VERSION` in `MCP_Server/remote_script_install.py`, and the package `version` in `pyproject.toml`, which follows the script), copy it to `MCP_Server/bundled_ableton_remote_script/AbletonMCP_init.py`, and add an entry to the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md). GitHub Actions runs the tests on Python 3.10, 3.12 and 3.13 and checks the bundled copy on every push and pull request.
+
+**Releasing:** push a tag `vX.Y.Z` matching that version. The `release` workflow checks the versions, runs the tests, builds the package, publishes it to PyPI (trusted publishing, no token stored) and creates the GitHub release.
 
 ---
 
 ## Privacy
 
-**Ableton Studio MCP sends nothing anywhere**: the server only talks to Live on your own machine (127.0.0.1). It contains no telemetry or data collection: the usage telemetry and research-dataset recording inherited from the original project have been removed, along with the Supabase dependency. Details, and the files the tools may create on your machine, in [TERMS.md](TERMS.md).
+**No data is collected. None.** Ableton Studio MCP has no telemetry, no analytics, no usage statistics, no crash reporting and no account.
+
+- **Nothing leaves your computer.** The server only talks to Ableton Live on your own machine (127.0.0.1) and makes no internet connection.
+- **Your music, your Live sets and your prompts stay with you.** Tools do not receive your prompts, and nothing about your sessions is recorded or sent.
+- **No tracking in Live.** The Remote Script only answers the commands it is sent; it does not watch or log what you do.
+- The telemetry and research-dataset recording inherited from the original ableton-mcp were **removed from the code entirely** in 1.17.0, along with their online-database dependency (Supabase). Nothing is merely switched off: the code is gone.
+
+The only files the tools write are on your machine (recordings you ask for, temporary spectrogram images, the Remote Script itself): the full list is in [TERMS.md](https://github.com/cedrati/ableton-studio-mcp/blob/main/TERMS.md).
 
 ---
 
@@ -313,4 +336,4 @@ When you change the Remote Script, bump `SCRIPT_VERSION` (and `EXPECTED_REMOTE_S
 - **Original project:** [ableton-mcp](https://github.com/ahujasid/ableton-mcp) by [Siddharth Ahuja](https://x.com/sidahuj).
 - **Ableton Studio MCP:** Olivier Cedrati ([@cedrati](https://github.com/cedrati)) — mixing and routing, listening and mastering analysis, music theory, drums and groove, long-form evolution and arrangement, device knowledge, clip editing, MIDI import and reliability work. Report issues on [cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp/issues).
 
-MIT License — Copyright (c) 2026 Olivier Cedrati; portions Copyright (c) 2025 Siddharth Ahuja (original ableton-mcp, on which Ableton Studio MCP is built). See [LICENSE](LICENSE). This is a third-party integration, not made or endorsed by Ableton.
+MIT License — Copyright (c) 2026 Olivier Cedrati; portions Copyright (c) 2025 Siddharth Ahuja (original ableton-mcp, on which Ableton Studio MCP is built). See [LICENSE](https://github.com/cedrati/ableton-studio-mcp/blob/main/LICENSE). This is a third-party integration, not made or endorsed by Ableton.
