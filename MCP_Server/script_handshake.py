@@ -34,6 +34,32 @@ _LEGACY_CAPABILITIES = frozenset({
 })
 
 
+_refresher = None
+
+
+def set_refresher(fn) -> None:
+    """Register how to redo the handshake (connect to Live, then handshake).
+
+    Used when Live was not running at startup, or the last handshake failed,
+    so a capability check never trusts a stale "nothing loaded" result."""
+    global _refresher
+    _refresher = fn
+
+
+def _needs_refresh() -> bool:
+    info = get_cached_script_info()
+    return not info or info.get("script_version") is None
+
+
+def refresh_if_needed() -> None:
+    if _refresher is None or not _needs_refresh():
+        return
+    try:
+        _refresher()
+    except Exception as e:
+        logger.debug("Handshake retry failed: %s", e)
+
+
 def get_cached_script_info() -> dict[str, Any] | None:
     with _lock:
         return dict(_script_info) if _script_info else None
@@ -116,7 +142,16 @@ def require_capability(name: str) -> str | None:
     """Return an error message if capability missing, else None."""
     if script_has_capability(name):
         return None
+    refresh_if_needed()
+    if script_has_capability(name):
+        return None
     info = get_cached_script_info() or {}
+    if info.get("script_version") is None:
+        return (
+            f"Could not check the Ableton Remote Script for '{name}': Live is not "
+            f"responding. Make sure Live is open with the AbletonMCP control "
+            f"surface selected, then try again."
+        )
     return (
         f"Ableton Remote Script missing capability '{name}' "
         f"(loaded={info.get('script_version')!r}, "
