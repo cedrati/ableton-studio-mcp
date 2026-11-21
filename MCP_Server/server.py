@@ -2510,11 +2510,47 @@ def _resampling_input_name(routing: Dict[str, Any]) -> Union[str, None]:
 MIX_TARGETS = ("streaming", "club", "classical", "broadcast", "podcast")
 
 
+LISTEN_TRACK_NAME = "Claude – écoute"
+SPECTROGRAMS_KEPT = 20
+
+
+def _discard_take(path: str) -> bool:
+    """Delete a listening take and Live's .asd analysis file next to it.
+
+    Only files Live named after the listening track are touched, so a user's
+    own recording can never be removed by mistake."""
+    import unicodedata
+
+    if not path:
+        return False
+    name = unicodedata.normalize("NFC", os.path.basename(path))
+    if not name.startswith(LISTEN_TRACK_NAME) or not name.lower().endswith((".wav", ".aif", ".aiff")):
+        return False
+    removed = False
+    for target in (path, path + ".asd"):
+        try:
+            os.remove(target)
+            removed = removed or target == path
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            logger.warning(f"Could not delete {target}: {e}")
+    return removed
+
+
 def _spectrogram_path(audio_path: str) -> str:
     import tempfile
 
     folder = os.path.join(tempfile.gettempdir(), "ableton-mcp")
     os.makedirs(folder, exist_ok=True)
+    # Keep only the most recent images: older ones have been looked at.
+    try:
+        pngs = sorted((os.path.join(folder, f) for f in os.listdir(folder) if f.endswith("_spectrogram.png")),
+                      key=os.path.getmtime)
+        for old in pngs[:-SPECTROGRAMS_KEPT]:
+            os.remove(old)
+    except OSError:
+        pass
     base = os.path.splitext(os.path.basename(audio_path))[0]
     return os.path.join(folder, base + "_spectrogram.png")
 
@@ -2634,6 +2670,7 @@ def listen_to_arrangement(
     target: str = "streaming",
     report: str = "mix",
     keep_track: bool = False,
+    keep_audio: bool = False,
     segment_seconds: float = 1.0,
     max_wait_seconds: float = 600.0,
     user_prompt: str = "",
@@ -2656,8 +2693,11 @@ def listen_to_arrangement(
     - target: Delivery target for the mix report: "streaming", "club",
       "classical", "broadcast" or "podcast"
     - report: "mix" (default) or "basic"
-    - keep_track: Keep the recording track in the set (default: delete it;
-      the audio file stays in the project's Samples/Recorded folder)
+    - keep_track: Keep the recording track and its take in the set (default:
+      delete both once analysed)
+    - keep_audio: Keep the recorded file in the project's Samples/Recorded
+      folder after deleting the track (default: delete it, so listening never
+      piles up audio files in the project)
     - segment_seconds: Length of each loudness segment (basic report)
     - max_wait_seconds: Safety limit for the recording
     - user_prompt: The original user prompt that led to this tool call (for telemetry)
@@ -2675,6 +2715,7 @@ def listen_to_arrangement(
     ableton = get_ableton_connection()
     track_index = None
     armed_before = []
+    path = None
     try:
         session = ableton.send_command("get_session_info")
         tempo = float(session.get("tempo") or 120.0)
@@ -2687,7 +2728,7 @@ def listen_to_arrangement(
         created = ableton.send_command("create_audio_track", {"index": -1})
         track_index = int(created["index"])
         ableton.send_command("set_track_name", {"track_index": track_index,
-                                                "name": "Claude – écoute"})
+                                                "name": LISTEN_TRACK_NAME})
         routing = ableton.send_command("get_track_routing", {"track_index": track_index})
         resampling = _resampling_input_name(routing)
         if not resampling:
@@ -2750,8 +2791,13 @@ def listen_to_arrangement(
             }
         if not keep_track:
             ableton.send_command("delete_track", {"track_index": track_index})
-            result["recorded"]["track"] = "deleted (file kept)"
             track_index = None
+            if keep_audio:
+                result["recorded"]["track"] = "deleted (file kept)"
+            else:
+                removed = _discard_take(path)
+                result["recorded"]["track"] = "deleted"
+                result["recorded"]["file"] = "deleted" if removed else "kept (could not delete)"
         else:
             result["recorded"]["track_index"] = track_index
         return _with_image(result, png)
@@ -2761,6 +2807,8 @@ def listen_to_arrangement(
             try:
                 ableton.send_command("stop_arrangement_recording")
                 ableton.send_command("delete_track", {"track_index": track_index})
+                if path and not keep_audio:
+                    _discard_take(path)
             except Exception:
                 pass
         return f"Error listening to arrangement: {str(e)}"

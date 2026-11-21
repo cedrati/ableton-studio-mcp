@@ -45,7 +45,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (265) and checked end to end in Ableton Live 12. See the [Changelog](CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (268) and checked end to end in Ableton Live 12. See the [Changelog](CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -197,7 +197,7 @@ Indexes start at 0. Times and lengths are in **beats**. Notes use MIDI numbers (
 
 | Tool | Description |
 |---|---|
-| `listen_to_arrangement` | Records the main output between two song positions on a temporary track (in real time), samples every track's meter, then returns the mix report and the spectrogram image. The track is removed afterwards; the take stays in the project's `Samples/Recorded` folder. |
+| `listen_to_arrangement` | Records the main output between two song positions on a temporary track (in real time), samples every track's meter, then returns the mix report and the spectrogram image. The track and the recorded file are deleted afterwards, so listening never fills the project with audio (`keep_track` / `keep_audio` to keep them). |
 | `analyze_mix` | The same mastering report for any WAV/AIFF file. |
 | `analyze_audio_file` | Lightweight level report (no `numpy` needed). |
 | `record_arrangement` · `get_recording_status` · `stop_arrangement_recording` · `get_audio_clip_file` | Record armed tracks into the Arrangement between two positions; find the recorded file. |
@@ -295,7 +295,7 @@ MCP client (Claude…)  ⇄  MCP server (MCP_Server/, Python)  ⇄  TCP 127.0.0.
 ```bash
 git clone -b feat/mixer-scenes https://github.com/cedrati/ableton-studio-mcp
 cd ableton-studio-mcp
-uv run --with pytest pytest -q             # 265 tests, no Live needed
+uv run --with pytest pytest -q             # 268 tests, no Live needed
 uv run ableton-studio-mcp-install-script   # install your working copy into Live
 ```
 
