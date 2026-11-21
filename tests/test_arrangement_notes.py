@@ -11,7 +11,7 @@ import json
 
 import pytest
 
-import MCP_Server.server as server
+import ableton_studio_mcp.server as server
 from test_clip_notes import call, fake_conn, FakeConnection  # noqa: F401  (fixtures)
 from test_remote_script_bridge import _load_script_module, make_instance
 
@@ -208,7 +208,7 @@ def test_dispatch_routes_location_and_remove_notes(script_module):
 @pytest.fixture
 def capabilities(monkeypatch):
     """Pretend the Remote Script advertises exactly these capabilities."""
-    import MCP_Server.script_handshake as sh
+    import ableton_studio_mcp.script_handshake as sh
 
     def _set(*names):
         monkeypatch.setattr(sh, "require_capability",

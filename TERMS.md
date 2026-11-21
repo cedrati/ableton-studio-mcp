@@ -21,7 +21,7 @@ The original project's data terms apply only to the original `ableton-mcp` packa
 |---|---|
 | `<your Live project>/Samples/Recorded/…` | Takes recorded with `record_arrangement`, like any recording made in Live. Listening takes (`Claude – écoute …`) are deleted right after analysis unless you ask to keep them. |
 | `<system temp folder>/ableton-mcp/*_spectrogram.png` | Spectrogram images of analysed takes; only the 20 most recent are kept. |
-| `<User Library>/Remote Scripts/AbletonMCP/` | The Remote Script, installed by `ableton-studio-mcp-install-script` (the previous version is kept as `__init__.py.bak`). |
+| `<User Library>/Remote Scripts/AbletonStudioMCP/` | The Live control surface, installed by `ableton-studio-mcp install`. (Versions before 2.0 used an `AbletonMCP` folder; `ableton-studio-mcp install --remove-legacy` deletes it.) |
 
 ## Your music
 

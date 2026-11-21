@@ -10,7 +10,7 @@ By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)) — built on [ab
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/cedrati/ableton-studio-mcp/blob/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/ableton-studio-mcp)](https://pypi.org/project/ableton-studio-mcp/)
-![Remote Script](https://img.shields.io/badge/Remote%20Script-1.17.0-blue)
+![Remote Script](https://img.shields.io/badge/Remote%20Script-2.0.0-blue)
 ![Live](https://img.shields.io/badge/Ableton%20Live-11%20%7C%2012-black)
 [![Tests](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml/badge.svg)](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml)
 
@@ -28,7 +28,7 @@ By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)) — built on [ab
 
 **Ableton Studio MCP, written and maintained by Olivier Cedrati, builds on it and turns it into a full production assistant.** Beyond writing notes, the assistant can mix (faders, sends, return and main-track effects, routing), **listen** to the result and judge it like a mastering engineer (LUFS, true peak, tonal balance, stereo, a spectrogram it can look at), and compose with real music-theory knowledge (scales and modes, style sheets, key and chord analysis, clip transformations, voice-led progressions).
 
-It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp). It is published on PyPI as [`ableton-studio-mcp`](https://pypi.org/project/ableton-studio-mcp/). (The `ableton-mcp` package on PyPI is the **original** project and does not include any of this.) (The commands `ableton-mcp` and `ableton-mcp-install-script` still work as aliases of the new ones.)
+It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp). It is published on PyPI as [`ableton-studio-mcp`](https://pypi.org/project/ableton-studio-mcp/). (The `ableton-mcp` package on PyPI is the **original** project and does not include any of this.)
 
 **No data is collected:** no telemetry, no analytics, nothing sent anywhere (see [Privacy](#privacy)).
 
@@ -48,7 +48,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (260) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (271) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -78,7 +78,7 @@ claude mcp add ableton -s user -- uvx ableton-studio-mcp
 ```json
 {
   "mcpServers": {
-    "AbletonMCP": {
+    "AbletonStudioMCP": {
       "command": "uvx",
       "args": ["ableton-studio-mcp"]
     }
@@ -100,17 +100,19 @@ Run the server in **one** client at a time.
 ### 2. Install the Remote Script into Live
 
 ```bash
-uvx --from ableton-studio-mcp ableton-studio-mcp-install-script
+uvx ableton-studio-mcp install
 ```
 
-This copies the script into your User Library's `Remote Scripts/AbletonMCP` folder (found from Live's own settings; `--list-targets` shows where it would go, `--target <folder>` forces a location). A previous version is kept as `__init__.py.bak`.
+This copies the **AbletonStudioMCP** control surface into your User Library's `Remote Scripts` folder, found from Live's own settings (`--list-targets` shows where it would go, `--target <folder>` forces a location, `--dry-run` changes nothing).
+
+**Coming from 1.x?** The control surface was called *AbletonMCP* before 2.0. Deselect it in Live and run `uvx ableton-studio-mcp install --remove-legacy` to delete the old folder: both listen on the same port.
 
 The server and the Remote Script must come from the **same version** — always install both from this repository.
 
 ### 3. Enable it in Live
 
 1. Start (or **restart**) Ableton Live.
-2. **Settings → Link, Tempo & MIDI → Control Surface:** choose **AbletonMCP**, with Input and Output set to **None**.
+2. **Settings → Link, Tempo & MIDI → Control Surface:** choose **AbletonStudioMCP**, with Input and Output set to **None**.
 
 ### 4. Check
 
@@ -120,11 +122,11 @@ Run the built-in check, which looks at Python, uv, the script installed in your 
 uvx ableton-studio-mcp doctor
 ```
 
-Or ask the assistant to run `get_remote_script_info`: it should report `script_version` **1.17.0** and `up_to_date: true`.
+Or ask the assistant to run `get_remote_script_info`: it should report `script_version` **2.0.0** and `up_to_date: true`.
 
 ### Updating
 
-1. Fetch the new version and install its Remote Script: `uvx --refresh --from ableton-studio-mcp ableton-studio-mcp-install-script`
+1. Fetch the new version and install its Remote Script: `uvx --refresh ableton-studio-mcp install`
 2. **Restart Live** — re-selecting the control surface does not reload the code.
 3. Restart your MCP client. If it still runs old code: `uv cache clean ableton-studio-mcp` (with the client closed).
 4. `uvx ableton-studio-mcp doctor` confirms that everything matches.
@@ -261,7 +263,7 @@ The mix report checks: integrated / short-term / momentary loudness and loudness
 No. There is no telemetry, no analytics and no data collection of any kind, and the server makes no internet connection: everything stays between your MCP client and Live on your computer. See [Privacy](#privacy).
 
 **How do I control Ableton Live with Claude?**
-Install this MCP server in Claude Code, Claude Desktop or Cursor, install the Remote Script into Live, and select *AbletonMCP* as a control surface (see [Quickstart](#quickstart)). Then ask in plain language: *"program 8 bars of rolling techno on the 909 kit"*.
+Install this MCP server in Claude Code, Claude Desktop or Cursor, install the Remote Script into Live, and select *AbletonStudioMCP* as a control surface (see [Quickstart](#quickstart)). Then ask in plain language: *"program 8 bars of rolling techno on the 909 kit"*.
 
 **Can an AI mix and master in Ableton Live?**
 It can measure and act: `listen_to_arrangement` records the main output and reports integrated loudness (LUFS, EBU R128), true peak, loudness range, tonal balance, resonances and stereo width against a target (streaming −14 LUFS, club, classical, broadcast, podcast), with a spectrogram image the assistant looks at; the mixer, EQ Eight, Limiter, Compressor sidechain and other devices are then adjusted through the API.
@@ -291,7 +293,7 @@ Start with `ableton-studio-mcp doctor` (see [Check](#4-check)): it diagnoses mos
 |---|---|
 | `up_to_date: false`, or "missing capability" errors | The script in Live is older than the server. Re-run the install command, then **restart Live**. |
 | The server still runs old code after an update | Restart the MCP client; if needed `uv cache clean ableton-studio-mcp` with the client closed. |
-| No connection | Check that **AbletonMCP** is selected as a Control Surface and that only one MCP client runs the server. |
+| No connection | Check that **AbletonStudioMCP** is selected as a Control Surface and that only one MCP client runs the server. |
 | Timeouts on big requests | Ask for the work in smaller steps. |
 
 ---
@@ -299,7 +301,7 @@ Start with `ableton-studio-mcp doctor` (see [Check](#4-check)): it diagnoses mos
 ## How it works
 
 ```
-MCP client (Claude…)  ⇄  MCP server (MCP_Server/, Python)  ⇄  TCP 127.0.0.1:9877  ⇄  Remote Script inside Live (AbletonMCP_Remote_Script/)
+MCP client (Claude…)  ⇄  MCP server (ableton_studio_mcp/, Python)  ⇄  TCP 127.0.0.1:9877  ⇄  AbletonStudioMCP control surface inside Live (ableton_studio_mcp/live_script/)
 ```
 
 - The **Remote Script** runs inside Live and executes commands through Live's Python API. It listens on localhost only (set `ABLETON_MCP_HOST` deliberately to change that).
@@ -311,12 +313,12 @@ MCP client (Claude…)  ⇄  MCP server (MCP_Server/, Python)  ⇄  TCP 127.0.0.
 ```bash
 git clone -b feat/mixer-scenes https://github.com/cedrati/ableton-studio-mcp
 cd ableton-studio-mcp
-uv run --with pytest pytest -q             # 260 tests, no Live needed
-uv run ableton-studio-mcp-install-script   # install your working copy into Live
+uv run --with pytest pytest -q             # 271 tests, no Live needed
+uv run ableton-studio-mcp install          # install your working copy into Live
 uv run ableton-studio-mcp doctor           # check the whole chain
 ```
 
-When you change the Remote Script, bump `SCRIPT_VERSION` (and `EXPECTED_REMOTE_SCRIPT_VERSION` in `MCP_Server/remote_script_install.py`, and the package `version` in `pyproject.toml`, which follows the script), copy it to `MCP_Server/bundled_ableton_remote_script/AbletonMCP_init.py`, and add an entry to the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md). GitHub Actions runs the tests on Python 3.10, 3.12 and 3.13 and checks the bundled copy on every push and pull request.
+The Live control surface lives in `ableton_studio_mcp/live_script/AbletonStudioMCP/` and is shipped inside the package. One version number covers everything: when the protocol changes, bump `__version__` in `ableton_studio_mcp/__init__.py`, `SCRIPT_VERSION` in the control surface and `version` in `pyproject.toml` (the tests and the release workflow check they match), and add an entry to the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md). GitHub Actions runs the tests on Python 3.10, 3.12 and 3.13 on every push and pull request.
 
 **Releasing:** push a tag `vX.Y.Z` matching that version. The `release` workflow checks the versions, runs the tests, builds the package, publishes it to PyPI (trusted publishing, no token stored) and creates the GitHub release.
 

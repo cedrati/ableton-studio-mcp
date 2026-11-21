@@ -17,7 +17,5 @@ jobs:
       - uses: astral-sh/setup-uv@v10.4.0
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Remote Script and its bundled copy are identical
-        run: cmp AbletonMCP_Remote_Script/__init__.py MCP_Server/bundled_ableton_remote_script/AbletonMCP_init.py
       - name: Tests
         run: uv run --with pytest pytest -q

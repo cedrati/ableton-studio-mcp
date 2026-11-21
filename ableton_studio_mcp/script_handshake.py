@@ -6,7 +6,7 @@ import logging
 import threading
 from typing import Any
 
-from .remote_script_install import EXPECTED_REMOTE_SCRIPT_VERSION
+from .install import SCRIPT_VERSION as EXPECTED_REMOTE_SCRIPT_VERSION
 
 logger = logging.getLogger("AbletonMCPServer")
 
@@ -110,7 +110,7 @@ def handshake(send_command) -> dict[str, Any]:
             info["up_to_date"] = False
             logger.warning(
                 "Ableton Remote Script is outdated (no get_script_info). "
-                "Expected %s. Run `ableton-studio-mcp-install-script`, then restart "
+                "Expected %s. Run `ableton-studio-mcp install`, then restart "
                 "Live.",
                 EXPECTED_REMOTE_SCRIPT_VERSION,
             )
@@ -130,7 +130,7 @@ def handshake(send_command) -> dict[str, Any]:
     elif info.get("script_version") and info.get("script_version") != "legacy":
         logger.warning(
             "Remote Script v%s loaded, package expects v%s — run "
-            "`ableton-studio-mcp-install-script`, then restart Ableton.",
+            "`ableton-studio-mcp install`, then restart Ableton.",
             info.get("script_version"),
             EXPECTED_REMOTE_SCRIPT_VERSION,
         )
@@ -149,13 +149,13 @@ def require_capability(name: str) -> str | None:
     if info.get("script_version") is None:
         return (
             f"Could not check the Ableton Remote Script for '{name}': Live is not "
-            f"responding. Make sure Live is open with the AbletonMCP control "
+            f"responding. Make sure Live is open with the AbletonStudioMCP control "
             f"surface selected, then try again."
         )
     return (
         f"Ableton Remote Script missing capability '{name}' "
         f"(loaded={info.get('script_version')!r}, "
         f"expected={EXPECTED_REMOTE_SCRIPT_VERSION}). "
-        f"Run `ableton-studio-mcp-install-script` to update the User Remote Script, "
+        f"Run `ableton-studio-mcp install` to update the User Remote Script, "
         f"then restart Ableton Live."
     )

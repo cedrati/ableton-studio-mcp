@@ -13,7 +13,7 @@ import types
 
 import pytest
 
-from MCP_Server.server import AbletonCommandError, AbletonConnection
+from ableton_studio_mcp.server import AbletonCommandError, AbletonConnection
 from test_remote_script_bridge import _load_script_module, make_instance
 
 

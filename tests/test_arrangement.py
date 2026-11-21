@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-import MCP_Server.server as server
-from MCP_Server import arrangement as ar
+import ableton_studio_mcp.server as server
+from ableton_studio_mcp import arrangement as ar
 from test_clip_notes import call
 
 
@@ -93,7 +93,7 @@ class _Conn:
 
 @pytest.fixture
 def conn(monkeypatch):
-    import MCP_Server.script_handshake as sh
+    import ableton_studio_mcp.script_handshake as sh
     monkeypatch.setattr(sh, "require_capability", lambda name: None)
 
     def make(answers):
