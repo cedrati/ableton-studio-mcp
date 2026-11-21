@@ -321,3 +321,13 @@ def test_garbled_reply_closes_the_connection(fake):
     with pytest.raises(live.LiveUnavailable, match="Unreadable reply"):
         c.call("get_scenes")
     assert not c.connected
+
+
+def test_older_patch_of_the_same_series_is_accepted(fake):
+    """A patch release of the server alone must not make users reinstall the
+    control surface in Live."""
+    from ableton_studio_mcp import SCRIPT_SERIES
+    f = fake(version=SCRIPT_SERIES + ".0")
+    c = live.LiveClient("127.0.0.1", f.port)
+    c.require("set_tempo")
+    assert c.info.up_to_date

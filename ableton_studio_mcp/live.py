@@ -20,7 +20,7 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import __version__
+from . import SCRIPT_SERIES, __version__, same_series
 
 log = logging.getLogger("ableton_studio_mcp")
 
@@ -53,7 +53,7 @@ class ScriptInfo:
 
     @property
     def up_to_date(self) -> bool:
-        return self.version == __version__
+        return same_series(self.version)
 
 
 # Commands that scripts older than the handshake already understood.
@@ -104,8 +104,8 @@ class LiveClient:
             self.info = ScriptInfo("legacy" if legacy else None, _PRE_HANDSHAKE_COMMANDS,
                                    {"script_version": "legacy"} if legacy else {})
         if not self.info.up_to_date:
-            log.warning("Control surface in Live is %s, this server is %s: %s",
-                        self.info.version, __version__, INSTALL_HINT)
+            log.warning("Control surface in Live is %s, this server needs %s.x: %s",
+                        self.info.version, SCRIPT_SERIES, INSTALL_HINT)
 
     def _socket_is_stale(self) -> bool:
         """True if Live closed our socket since the last exchange."""
@@ -212,7 +212,8 @@ class LiveClient:
                 "responding. Make sure Live is open with AbletonStudioMCP selected.")
         raise MissingCapability(
             f"The control surface in Live ({self.info.version}) does not support "
-            f"'{capability}' (this server is {__version__}): {INSTALL_HINT}.")
+            f"'{capability}' (this server is {__version__}, for control surfaces {SCRIPT_SERIES}.x): "
+            f"{INSTALL_HINT}.")
 
 
 _client: LiveClient | None = None

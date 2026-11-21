@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .. import __version__, live
+from .. import SCRIPT_SERIES, __version__, live
 from ..app import as_json, compact, tool
 
 
@@ -26,7 +26,8 @@ def get_remote_script_info() -> str:
     info = dict(client.call("get_script_info"))
     client.info = live.ScriptInfo(info.get("script_version"),
                                   frozenset(info.get("capabilities") or ()), info)
-    info["expected_version"] = __version__
+    info["server_version"] = __version__
+    info["expected_version"] = f"{SCRIPT_SERIES}.x"
     info["up_to_date"] = client.info.up_to_date
     return as_json(info)
 
