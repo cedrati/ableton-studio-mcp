@@ -68,9 +68,20 @@ def test_plan_tiles_clips_and_reports_gaps():
     assert len([p for p in intro if p["track_index"] == 1]) == 8
     drop_hats = [p for p in plan["placements"] if p["track_index"] == 1 and p["start"] >= 32]
     assert drop_hats == [{"track_index": 1, "clip_index": 1, "start": 32.0}]  # the 64-beat variant
-    assert any("Chords" in w and "does not divide" in w for w in plan["warnings"])
+    chords = [p for p in plan["placements"] if p["track_index"] == 3]
+    assert [p["start"] for p in chords] == [32.0, 44.0, 56.0, 68.0, 80.0, 92.0]
+    assert chords[-1]["length"] == 4.0 and "length" not in chords[0]   # the tail is cropped
+    assert any("Chords" in c and "cropped to 4 beats" in c for c in plan["cropped"])
+    assert not plan["warnings"]
     assert plan["locators"] == [{"beat": 0.0, "name": "Intro"}, {"beat": 32.0, "name": "Drop"}]
     assert plan["total_bars"] == 24
+
+
+def test_a_clip_longer_than_its_section_is_placed_and_cropped():
+    # Before: a 64-beat clip in an 8-bar section was silently left out.
+    plan = ar.plan_arrangement([{"name": "Short", "bars": 8, "roles": ["hats"]}],
+                               TRACKS, {1: "hats"}, default_slot=1)
+    assert plan["placements"] == [{"track_index": 1, "clip_index": 1, "start": 0.0, "length": 32.0}]
 
 
 def test_activity_map():
@@ -139,3 +150,48 @@ def test_build_arrangement_dry_run_and_build(conn):
     assert len(dups) == out["placements"] > 0
     assert any(p["track_index"] == 1 and p["clip_index"] == 1 for p in dups)
     assert out["locators_created"] == 6
+
+
+def test_build_arrangement_crops_the_copy_that_overflows(conn):
+    placed = []
+
+    def dup(p):
+        placed.append(p["destination_time"])
+        return {}
+
+    answers = _session(TRACKS)
+    answers.update({
+        "duplicate_session_clip_to_arrangement": dup,
+        "get_arrangement_clips": lambda p: {"clips": [{"start_time": t} for t in sorted(placed)]},
+        "set_clip_loop": {}})
+    c = conn(answers)
+    out = json.loads(call(tools.build_arrangement,
+                          sections=[{"name": "Short", "bars": 8, "roles": ["hats"]}],
+                          track_roles={"1": "hats"}, default_slot=1, locators=False))
+    crop = [p for cmd, p in c.sent if cmd == "set_clip_loop"]
+    assert crop == [{"track_index": 1, "clip_index": 0, "location": "arrangement",
+                     "looping": False, "loop_length": 32.0}]
+    assert out["cropped"] and not out["warnings"]
+
+
+def test_a_rebuild_never_deletes_unless_asked(conn):
+    # Measured in Live 12.4: a copy only overwrites where it lands, so older
+    # clips stay where a track no longer plays. Deleting them is the artist's
+    # call: by default they are only listed.
+    old = {0: [{"start_time": 0.0}, {"start_time": 64.0}, {"start_time": 200.0}]}
+    answers = _session(TRACKS)
+    answers.update({"get_arrangement_clips": lambda p: {"clips": old.get(p["track_index"], [])},
+                    "delete_arrangement_clip": {}})
+    sections = [{"name": "A", "bars": 24, "roles": ["kick"]}]
+    c = conn(answers)
+    dry = json.loads(call(tools.build_arrangement, sections=sections, dry_run=True))
+    assert dry["existing_clips"]["count"] == 2      # the clip at beat 200 is outside the 96 beats
+    assert dry["existing_clips"]["per_track"] == {"Kick": [0.0, 64.0]}
+    out = json.loads(call(tools.build_arrangement, sections=sections, locators=False))
+    assert not any(cmd == "delete_arrangement_clip" for cmd, _ in c.sent)
+    assert "Ask the artist" in out["existing_clips"]["note"] and "cleared" not in out
+    c = conn(answers)
+    out = json.loads(call(tools.build_arrangement, sections=sections, locators=False, clear=True))
+    deleted = [p for cmd, p in c.sent if cmd == "delete_arrangement_clip"]
+    assert deleted == [{"track_index": 0, "clip_index": 1}, {"track_index": 0, "clip_index": 0}]
+    assert out["cleared"] == 2 and "existing_clips" not in out

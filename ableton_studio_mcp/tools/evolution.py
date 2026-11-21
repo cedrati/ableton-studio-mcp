@@ -106,6 +106,170 @@ def write_clip_evolution(track_index: int,
     return as_json(report)
 
 
+@tool(undo_step="Automation gesture")
+def automation_gesture(track_index: int,
+    clip_index: int,
+    gesture: str,
+    target: str = None,
+    rest: float = None,
+    peak: float = None,
+    low: float = None,
+    phrase_bars: int = 4,
+    tail_beats: float = 1.0,
+    protect: str = "auto",
+) -> str:
+    """
+    Draw a producer's automation move in a Session clip, aimed at the right
+    parameter automatically:
+
+    - delay_throw: the delay send jumps up on the last beat(s) of each phrase
+    - reverb_swell: the reverb send rises and falls back over the clip
+    - filter_rise / filter_fall: the track's filter opens (build-up) or closes
+    - drop_cut: silence on the last beat(s), the breath before a drop
+    - stutter: volume gated in 16ths on the last beat(s)
+    - fade_in / fade_out: volume from / to silence
+
+    The send gestures find the return named like a delay (delay, echo) or a
+    reverb (reverb, verb, hall, room...); the filter gestures the track's
+    cutoff (Auto Filter first, then the synth's own filter). The parameter's
+    current value is the resting value the move starts from and comes back to.
+
+    Live leaves a parameter where a clip's envelope ends, and a clip without
+    an envelope doesn't reset it. When the move ends away from the resting
+    value (drop_cut, filter_fall, fade_out), the track's other clips get the
+    resting value held, or the next section would stay silent or filtered.
+    Rebuild the Arrangement (build_arrangement) afterwards: its clips are
+    copies.
+
+    Parameters:
+    - track_index / clip_index: The Session clip
+    - gesture: One of the moves above
+    - target: Override the parameter: "send:N" (return N) or "device:D:P"
+    - rest / peak / low: Override the resting, high and low values (parameter units)
+    - phrase_bars: Phrase length for delay_throw (default 4 bars)
+    - tail_beats: Length of the throw, cut or stutter at the end (default 1 beat)
+    - protect: "auto" (hold the resting value on the other clips when needed),
+      "yes" or "no"
+    """
+    from .. import gestures as g
+
+    kind = g.gesture_target(gesture)
+    ableton = live.client()
+    snap = ableton.call("get_session_snapshot", {"include_notes": False, "include_params": False})
+    tracks = snap.get("tracks", [])
+    if not 0 <= track_index < len(tracks):
+        return "There is no track %d" % track_index
+    track = tracks[track_index]
+    slots = [s for s in track.get("clip_slots", []) if s.get("has_clip")]
+    clip = next((s["clip"] for s in slots if s["index"] == clip_index), None)
+    if clip is None:
+        return "Slot %d of '%s' is empty" % (clip_index, track.get("name"))
+    length = float(clip.get("length") or 0.0)
+
+    param: Dict[str, Any] = {"device_index": -1, "parameter_index": 0, "mixer_parameter": ""}
+    lo = 0.0
+    if target and target.startswith("send:") or (not target and kind == "send"):
+        if target:
+            send = int(target.split(":")[1])
+        else:
+            words = g.DELAY_WORDS if gesture == "delay_throw" else g.REVERB_WORDS
+            send = g.find_return([r.get("name", "") for r in snap.get("return_tracks", [])], words)
+            if send is None:
+                return ("No return track named like a %s; give target='send:N'"
+                        % ("delay" if gesture == "delay_throw" else "reverb"))
+        sends = track.get("sends", [])
+        if not 0 <= send < len(sends):
+            return "'%s' has no send %d" % (track.get("name"), send)
+        param["mixer_parameter"] = "send:%d" % send
+        current = float(sends[send]["value"])
+        label = sends[send].get("name") or "send %d" % send
+        r = current if rest is None else float(rest)
+        default_peak = 0.9 if gesture == "delay_throw" else min(1.0, r + 0.3)
+        p = default_peak if peak is None else float(peak)
+        lw = 0.0 if low is None else float(low)
+    elif target and target.startswith("device:") or (not target and kind == "filter"):
+        if target:
+            _, d, i = target.split(":")
+            found = _parameter(ableton, track_index, int(d), int(i))
+        else:
+            found = _find_cutoff(ableton, track_index, track.get("devices", []))
+        if found is None:
+            return ("No filter cutoff found on '%s' (Auto Filter, or a synth's filter); "
+                    "give target='device:D:P'" % track.get("name"))
+        param["device_index"], param["parameter_index"] = found["device_index"], found["index"]
+        lo, current, label = float(found["min"]), float(found["value"]), found["name"]
+        r = current if rest is None else float(rest)
+        lw = lo + 0.3 * (r - lo) if low is None else float(low)
+        p = r if peak is None else float(peak)
+    else:
+        param["mixer_parameter"] = "volume"
+        current, label = float(track.get("volume", 0.85)), "Volume"
+        r = current if rest is None else float(rest)
+        lw = 0.0 if low is None else float(low)
+        p = r if peak is None else float(peak)
+
+    drawn = g.gesture_points(gesture, length, rest=r, peak=p, low=lw,
+                             phrase_beats=float(phrase_bars) * 4.0, tail_beats=tail_beats)
+    ableton.call("set_clip_automation", dict(param, track_index=track_index, clip_index=clip_index,
+                 location="session", points=drawn["points"], interpolation=drawn["interpolation"],
+                 resolution=0.125 if drawn["interpolation"] == "step" else 0.5, clear_first=True))
+    report = {"gesture": gesture, "clip": "%s, slot %d" % (track.get("name"), clip_index),
+              "parameter": label, "rest": r, "points": len(drawn["points"]),
+              "clip_length_beats": length}
+
+    ends_elsewhere = abs(drawn["end_value"] - r) > 1e-6
+    others = [s["index"] for s in slots if s["index"] != clip_index]
+    bare = [i for i in others if not ableton.call("get_clip_automation", dict(
+        param, track_index=track_index, clip_index=i, location="session")).get("has_envelope")]
+    hold = protect == "yes" or (protect == "auto" and ends_elsewhere)
+    if hold and bare:
+        for i in bare:
+            ableton.call("set_clip_automation", dict(param, track_index=track_index, clip_index=i,
+                         location="session", points=[{"time": 0.0, "value": r}],
+                         interpolation="step", resolution=1.0, clear_first=True))
+        report["held_at_rest"] = {"slots": bare, "value": r,
+                                  "why": "this move ends away from the resting value; these clips "
+                                         "now bring it back when they play"}
+    elif ends_elsewhere and bare:
+        report["warning"] = ("This move ends at %g; clips %s have no envelope for it and will "
+                             "start there. Use protect='yes' to hold %g on them." % (drawn["end_value"], bare, r))
+    report["next"] = "Rebuild the Arrangement (build_arrangement) to carry this into it."
+    return as_json(report)
+
+
+def _parameter(ableton, track_index: int, device_index: int, parameter_index: int) -> Dict[str, Any] | None:
+    dev = ableton.call("get_device_parameters", {"track_index": track_index,
+                                                 "device_index": device_index}).get("device", {})
+    for prm in dev.get("parameters", []):
+        if int(prm.get("index", -1)) == parameter_index:
+            return dict(prm, device_index=device_index)
+    return None
+
+
+def _find_cutoff(ableton, track_index: int, devices: List[Dict[str, Any]]) -> Dict[str, Any] | None:
+    """The track's filter cutoff: an Auto Filter first, then a synth's filter."""
+    from .. import gestures as g
+
+    def is_auto_filter(d):
+        return "AutoFilter" in str(d.get("class_name", ""))
+
+    for dev in sorted(devices, key=lambda d: 0 if is_auto_filter(d) else 1):
+        di = int(dev["index"])
+        params = ableton.call("get_device_parameters", {"track_index": track_index,
+                                                        "device_index": di}).get("device", {}).get("parameters", [])
+        by_name = {p.get("name"): p for p in params}
+        if is_auto_filter(dev):
+            kind = str(by_name.get("Filter Type", {}).get("display", ""))
+            if "High" in kind:          # a high-pass cleaning the lows, not the sound's filter
+                continue
+        for name in g.CUTOFF_NAMES:
+            if name == "Frequency" and not is_auto_filter(dev):
+                continue                # Corpus, EQs... have a "Frequency" too
+            if name in by_name:
+                return dict(by_name[name], device_index=di)
+    return None
+
+
 def _session_tracks(ableton) -> List[Dict[str, Any]]:
     count = int(ableton.call("get_session_info").get("track_count", 0))
     tracks = []
@@ -117,6 +281,46 @@ def _session_tracks(ableton) -> List[Dict[str, Any]]:
     return tracks
 
 
+def _clips_in_range(ableton, tracks: List[Dict[str, Any]], start: float,
+                    end: float) -> Dict[int, List[Dict[str, Any]]]:
+    """{track_index: [{"index", "start_time"}]} for the Arrangement clips
+    that start in [start, end)."""
+    found = {}
+    for t in tracks:
+        clips = ableton.call("get_arrangement_clips", {"track_index": t["index"]}).get("clips", [])
+        hits = [{"index": i, "start_time": float(c["start_time"])} for i, c in enumerate(clips)
+                if start - 1e-6 <= float(c["start_time"]) < end - 1e-6]
+        if hits:
+            found[t["index"]] = hits
+    return found
+
+
+def _delete_clips(ableton, existing: Dict[int, List[Dict[str, Any]]]) -> int:
+    """Delete them, last first so the earlier indexes stay valid."""
+    removed = 0
+    for ti, hits in existing.items():
+        for h in reversed(hits):
+            ableton.call("delete_arrangement_clip", {"track_index": ti, "clip_index": h["index"]})
+            removed += 1
+    return removed
+
+
+def _crop_arrangement_clip(ableton, track_index: int, start: float, length: float) -> None:
+    """Shorten the Arrangement clip that starts at `start` to `length` beats.
+
+    Measured in Live 12.4: an Arrangement clip's length follows its loop
+    brace once looping is off, so the copy is unlooped and its brace set to
+    `length` from where it starts playing.
+    """
+    clips = ableton.call("get_arrangement_clips", {"track_index": track_index}).get("clips", [])
+    index = next((i for i, c in enumerate(clips) if abs(float(c["start_time"]) - start) < 1e-6), None)
+    if index is None:
+        raise RuntimeError("no clip found at that position after the copy")
+    ableton.call("set_clip_loop", {"track_index": track_index, "clip_index": index,
+                                   "location": "arrangement", "looping": False,
+                                   "loop_length": float(length)})
+
+
 @tool(undo_step="Build arrangement")
 def build_arrangement(template: str = None,
     sections: List[Dict[str, Any]] = None,
@@ -126,6 +330,7 @@ def build_arrangement(template: str = None,
     section_slots: Dict[str, Dict[str, int]] = None,
     locators: bool = True,
     dry_run: bool = False,
+    clear: bool = False,
 ) -> str:
     """
     Build the Arrangement from Session clips, section by section, like a
@@ -151,6 +356,14 @@ def build_arrangement(template: str = None,
     - section_slots: Per-section slot overrides
     - locators: Add a locator at each section (transport must be stopped)
     - dry_run: Only return the plan
+    - clear: Delete the Arrangement clips already in the rebuilt range first
+      (default false). Copies only overwrite where they land, so without it
+      older clips stay where a track no longer plays; `existing_clips` lists
+      them. Deleting is the artist's call: show the list and ask before
+      passing clear=true.
+
+    A clip that doesn't divide its section (or is longer than it) is placed
+    once more and cropped at the section's end; `cropped` lists them.
     """
     from .. import arrangement as ar
 
@@ -175,18 +388,35 @@ def build_arrangement(template: str = None,
     summary = {"track_roles": {tracks[i]["name"]: r for i, r in roles.items() if i < len(tracks)},
                "sections": plan["sections"], "total_bars": plan["total_bars"],
                "placements": len(plan["placements"]), "warnings": plan["warnings"]}
+    if plan.get("cropped"):
+        summary["cropped"] = plan["cropped"]
     unassigned = [t["name"] for t in tracks if t["index"] not in roles and t["slots"]]
     if unassigned:
         summary["tracks_without_role"] = unassigned
+    existing = _clips_in_range(ableton, tracks, start_bar * bpb, plan["end_beat"])
+    if existing and not clear:
+        summary["existing_clips"] = {
+            "count": sum(len(v) for v in existing.values()),
+            "per_track": {tracks[ti]["name"]: [c["start_time"] for c in v] for ti, v in existing.items()},
+            "note": "Already in this range and kept: copies overwrite only where they land. "
+                    "Ask the artist before rebuilding with clear=true, which deletes them."}
     if dry_run:
         summary["dry_run"] = True
         return as_json(summary)
     if ableton.call("get_session_info").get("is_playing"):
         ableton.call("stop_playback")
+    if clear:
+        summary["cleared"] = _delete_clips(ableton, existing)
     for p in plan["placements"]:
         ableton.call("duplicate_session_clip_to_arrangement", {
             "track_index": p["track_index"], "clip_index": p["clip_index"],
             "destination_time": p["start"]})
+        if p.get("length"):
+            try:
+                _crop_arrangement_clip(ableton, p["track_index"], p["start"], p["length"])
+            except Exception as e:      # the copy stays whole: say so
+                summary["warnings"].append("track %d at beat %g: could not crop the clip to %g beats (%s)"
+                                           % (p["track_index"], p["start"], p["length"], e))
     made = 0
     if locators:
         if live.supports("create_locator"):

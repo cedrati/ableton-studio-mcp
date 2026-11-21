@@ -249,3 +249,16 @@ def test_notes_with_probability_use_the_extended_api(script_module, monkeypatch)
     inst._add_notes_to_clip(0, 0, [{"pitch": 42, "start_time": 0.5, "duration": 0.2, "velocity": 50,
                                     "probability": 0.25}])
     assert clip.added[0].kw["probability"] == 0.25 and clip.added[0].kw["pitch"] == 42
+
+
+def test_a_groove_on_a_zero_global_amount_warns(conn):
+    # Measured in Live 12.4: a new set starts at 0 % global Groove, so an
+    # assigned groove changes nothing until the amount is raised.
+    conn({"set_clip_groove": {"clip": "session clip 1/0"}, "get_groove_pool": {"global_amount": 0.0}})
+    out = json.loads(call(tools.set_clip_groove, 1, 0, 0))
+    assert "0 %" in out["warning"] and "set_groove_params" in out["warning"]
+    conn({"set_clip_groove": {}, "get_groove_pool": {"global_amount": 0.7}})
+    assert "warning" not in json.loads(call(tools.set_clip_groove, 1, 0, 0))
+    c = conn({"set_clip_groove": {}})
+    call(tools.set_clip_groove, 1, 0)                 # removing a groove: no check
+    assert [cmd for cmd, _ in c.sent] == ["set_clip_groove"]

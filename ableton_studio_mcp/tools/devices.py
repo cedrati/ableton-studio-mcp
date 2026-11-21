@@ -8,7 +8,7 @@ import os
 from typing import Any, Dict, List
 
 from .. import live
-from ..app import as_json, tool, track_target
+from ..app import as_json, tool, track_target, write_notes
 
 log = logging.getLogger("ableton_studio_mcp")
 
@@ -252,6 +252,117 @@ def simpler_sample(track_index: int, device_index: int, file_path: str = None,
         out.update(_device_call("simpler_configure", {"track_index": track_index, "device_index": device_index,
                                                       "settings": settings}))
     return as_json(out) if out else "Nothing to do: give file_path and/or settings"
+
+
+@tool(undo_step="Chop sample")
+def chop_sample(track_index: int, file_path: str, mode: str = "slices", slices: int = None,
+                style: str = "hook", bars: int = 4, density: float = 0.5, seed: int = 0,
+                key: str = None, warp_as_beats: int = None, clip_index: int = None) -> str:
+    """
+    Chop a sample and play the chops: loads it in a Simpler on the track
+    (adds one if needed), slices it, warps it to the song from the tempo in
+    its name ("..._127_..."), transposes it to the song's key from the key in
+    its name ("Fmin", "D#m"), and writes a chop pattern in an empty Session
+    slot.
+
+    mode: "slices" (16 slices, played in 16ths) or "micro" (64 grains of a few
+    tens of ms, played in 32nds, gate-short: micro-sampling).
+    style: "hook" (the same grain at the same place every bar, off-beat
+    accents, ghost hits with a chance; the most groovy), "rearrange" (the
+    loop re-sequenced, a few ratchets) or "stutter" (in order, each bar
+    ending on a ratchet).
+
+    Parameters:
+    - track_index: A MIDI track
+    - file_path: Absolute path of the audio file
+    - mode: "slices" or "micro"
+    - slices: Number of slices (default 16, or 64 in micro mode)
+    - style: "hook", "rearrange" or "stutter"
+    - bars: Pattern length in bars
+    - density: 0-1, how many hits
+    - seed: Another seed gives another pattern
+    - key: Song key to transpose to ("F", "C#"); default: Live's song scale
+      root when Scale Mode is on, else no transposition
+    - warp_as_beats: Length of the sample in beats, if its name has no tempo
+    - clip_index: Session slot (default: the first empty one)
+    """
+    from .. import chops
+
+    path = os.path.expanduser(file_path)
+    if not os.path.isfile(path):
+        return "No file at %s" % path
+    micro = (mode or "slices").lower() == "micro"
+    count = int(slices or (64 if micro else 16))
+    name = os.path.basename(path)
+    ableton = live.client()
+
+    info = ableton.call("get_track_info", {"track_index": track_index})
+    simpler = next((d["index"] for d in info.get("devices", [])
+                    if d.get("class_name") == "OriginalSimpler"), None)
+    if simpler is None:
+        live.call("load_browser_item", track_target(track_index, "track", item_uri="query:Synths#Simpler"))
+        info = ableton.call("get_track_info", {"track_index": track_index})
+        simpler = next((d["index"] for d in info.get("devices", [])
+                        if d.get("class_name") == "OriginalSimpler"), None)
+        if simpler is None:
+            return "Could not add a Simpler to track %d" % track_index
+    _device_call("simpler_replace_sample", {"track_index": track_index, "device_index": simpler,
+                                            "file_path": path})
+    # Measured in Live 12.4: the sample's length comes with the Simpler's
+    # state (the configure reply), not with the load.
+    configured = _device_call("simpler_configure", {"track_index": track_index, "device_index": simpler,
+                                                    "settings": {"playback_mode": "slicing",
+                                                                 "slicing_style": "region",
+                                                                 "slicing_region_count": count}})
+    sample = (configured.get("simpler") or {}).get("sample") or {}
+    frames, rate = sample.get("length_frames"), sample.get("sample_rate")
+    duration = float(frames) / float(rate) if frames and rate else 0.0
+    bpm = chops.tempo_from_name(name)
+    beats = warp_as_beats or chops.warp_beats(duration, bpm)
+    if beats:
+        _device_call("simpler_configure", {"track_index": track_index, "device_index": simpler,
+                                           "settings": {"warp_as": int(beats)}})
+
+    report: Dict[str, Any] = {"sample": name, "simpler": "device %d" % simpler, "slices": count,
+                              "mode": "micro" if micro else "slices",
+                              "warped_as_beats": beats, "tempo_in_name": bpm}
+    values: Dict[str, Any] = {"Trigger Mode": "Gate", "Ve Release": "15 ms" if micro else "40 ms"}
+    sample_key = chops.key_from_name(name)
+    target = key
+    if target is None:
+        try:
+            scale = ableton.call("get_song_scale")
+            if scale.get("scale_mode"):
+                target = scale.get("root_name")
+        except Exception:
+            target = None
+    if sample_key:
+        report["key_in_name"] = sample_key["root"] + ("m" if sample_key["minor"] else "")
+        if target:
+            shift = chops.transpose_to(sample_key["root"], target.strip().capitalize())
+            values["Transpose"] = "%+d st" % shift
+            report["transposed"] = "%+d semitones, to %s" % (shift, target)
+    if not beats:
+        report["note"] = ("No tempo in the file name: not warped. Give warp_as_beats so it follows "
+                          "the song's tempo")
+    live.call("set_device_parameters", track_target(track_index, "track", device_index=simpler,
+                                                    values=values))
+
+    slots = info.get("clip_slots", [])
+    if clip_index is None:
+        clip_index = next((s["index"] for s in slots if not s.get("has_clip")), None)
+        if clip_index is None:
+            return "No empty Session slot on this track; give clip_index of an empty one"
+    elif any(s["index"] == clip_index and s.get("has_clip") for s in slots):
+        return "Slot %d already has a clip; pick an empty one" % clip_index
+    notes = chops.chop_pattern(count, style=style, bars=bars, micro=micro, density=density, seed=seed)
+    ableton.call("create_clip", {"track_index": track_index, "clip_index": clip_index,
+                                 "length": 4.0 * bars})
+    write_notes(track_index, clip_index, notes, "session")
+    report.update({"clip": "slot %d" % clip_index, "style": style, "notes": len(notes),
+                   "with_chance": sum(1 for n in notes if "probability" in n),
+                   "tip": "Add swing with set_clip_groove; try another seed for another pattern"})
+    return as_json(report)
 
 
 @tool()

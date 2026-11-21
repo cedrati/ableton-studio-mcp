@@ -2,7 +2,7 @@
 # The server reaches Live through ABLETON_HOST / ABLETON_PORT, so point
 # ABLETON_HOST at the machine running Live (host.docker.internal on Docker
 # Desktop) and allow it on the Live side with ABLETON_MCP_HOST.
-FROM python:3.12-slim
+FROM python:3.15-slim
 WORKDIR /srv
 COPY pyproject.toml README.md LICENSE ./
 COPY ableton_studio_mcp ./ableton_studio_mcp

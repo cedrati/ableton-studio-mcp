@@ -216,11 +216,12 @@ def plan_arrangement(sections: Sequence[Dict], tracks: List[Dict], track_roles: 
     Each section either lists ``roles`` (tracks whose role is in it play
     their ``default_slot`` clip, or the section's ``slots`` override
     {track_index: slot}) or gives ``play`` {track_index: slot or None}.
-    A clip is tiled to fill the section; a clip longer than the section is
-    placed once if it fits exactly, otherwise reported.
+    A clip is tiled to fill the section; when it doesn't divide the section
+    (or is longer than it) the last copy carries a ``length`` and is cropped
+    to the section's end, so the section is never left silent.
     """
     by_index = {int(t["index"]): t for t in tracks}
-    placements, locators, warnings, table = [], [], [], []
+    placements, locators, warnings, table, cropped = [], [], [], [], []
     bar = start_bar
     for sec in sections:
         bars = int(sec["bars"])
@@ -251,14 +252,19 @@ def plan_arrangement(sections: Sequence[Dict], tracks: List[Dict], track_roles: 
                 placements.append({"track_index": ti, "clip_index": int(slot), "start": pos})
                 pos += length
             if pos < end - 1e-6:
-                warnings.append("%s: '%s' clip (%g beats) does not divide the section (%g beats); "
-                                "%g beats left empty" % (sec["name"], t["name"], length, end - start, end - pos))
+                # The clip doesn't divide the section (or is longer than it):
+                # one more copy, cropped at the section's end, so the section
+                # is never left silent.
+                placements.append({"track_index": ti, "clip_index": int(slot), "start": pos,
+                                   "length": end - pos})
+                cropped.append("%s: '%s' clip (%g beats) cropped to %g beats at the section's end"
+                               % (sec["name"], t["name"], length, end - pos))
             playing.append(t["name"])
         table.append({"section": sec["name"], "bar": bar + 1, "bars": bars,
                       "energy": sec.get("energy"), "tracks": playing, "tip": sec.get("tip", "")})
         bar += bars
     return {"placements": placements, "locators": locators, "warnings": warnings, "sections": table,
-            "total_bars": bar - start_bar, "end_beat": bar * beats_per_bar}
+            "cropped": cropped, "total_bars": bar - start_bar, "end_beat": bar * beats_per_bar}
 
 
 def activity_map(clips_by_track: Dict[str, List[Dict]], block_beats: float, end_beat: float) -> Dict[str, str]:
