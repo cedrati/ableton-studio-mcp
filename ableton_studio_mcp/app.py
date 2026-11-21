@@ -23,11 +23,9 @@ log = logging.getLogger("ableton_studio_mcp")
 
 @asynccontextmanager
 async def _lifespan(_server: FastMCP):
-    try:
-        live.client().call("get_session_info")
-        log.info("Live is reachable")
-    except live.LiveUnavailable as e:
-        log.warning("%s (tools will retry when called)", e)
+    # Live is reached lazily, by the first tool that needs it: the server
+    # starts and answers instantly even when Live is closed or unreachable
+    # (an MCP client listing tools, a directory checking the server).
     try:
         yield {}
     finally:
