@@ -5,13 +5,12 @@ on both channels reads -23.0 LUFS); true peak on a sine whose samples miss
 its crest; the tonal and stereo diagnostics on synthetic mixes.
 """
 
-import math
 import struct
 
 import numpy as np
 import pytest
 
-from MCP_Server.mix_analysis import (
+from ableton_studio_mcp.mix_analysis import (
     analyze_mix, k_weighting_response, loudness, peaks, stereo, tonal_balance,
     third_octave_levels, long_term_spectrum)
 

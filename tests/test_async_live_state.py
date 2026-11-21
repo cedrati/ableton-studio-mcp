@@ -363,7 +363,7 @@ def test_in_place_reload_with_untouched_parameters_gives_up_quickly(
     assert out["ok"]["in_place"] is True
     assert out["ok"]["settled"] is False
     assert out["ok"]["new_devices"] == []
-    assert len(ticks) == script_module.SAME_KIND_RELOAD_SETTLE_TICKS
+    assert len(ticks) == script_module.constants.SAME_KIND_RELOAD_SETTLE_TICKS
 
 
 def test_load_reports_unsettled_when_live_never_inserts(script_module):

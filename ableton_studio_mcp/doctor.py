@@ -6,25 +6,25 @@ a status ("ok", "warn", "fail" or "skip"), what it found, and a fix.
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import shutil
-import socket
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from .remote_script_install import (
-    EXPECTED_REMOTE_SCRIPT_VERSION,
-    REMOTE_SCRIPT_FOLDER_NAME,
-    _live_preference_dirs,
-    discover_user_library_remote_script_dirs,
+from .install import (
+    LEGACY_SURFACE_NAME,
+    SCRIPT_VERSION as EXPECTED_REMOTE_SCRIPT_VERSION,
+    SURFACE_NAME as REMOTE_SCRIPT_FOLDER_NAME,
+    legacy_installs,
+    live_preference_dirs as _live_preference_dirs,
+    remote_scripts_dirs as discover_user_library_remote_script_dirs,
+    script_version_in,
 )
 
-INSTALL_CMD = "uvx ableton-studio-mcp-install-script"
-_VERSION_RE = re.compile(r'^SCRIPT_VERSION\s*=\s*["\']([^"\']+)["\']', re.M)
+INSTALL_CMD = "uvx ableton-studio-mcp install"
 
 
 @dataclass
@@ -67,10 +67,10 @@ def installed_script_versions() -> list[tuple[Path, str | None]]:
     """(path to installed __init__.py, its SCRIPT_VERSION) for each User Library."""
     found = []
     for root in discover_user_library_remote_script_dirs():
-        init = root / REMOTE_SCRIPT_FOLDER_NAME / "__init__.py"
-        if init.is_file():
-            m = _VERSION_RE.search(init.read_text(encoding="utf-8", errors="replace"))
-            found.append((init, m.group(1) if m else None))
+        folder = root / REMOTE_SCRIPT_FOLDER_NAME
+        version = script_version_in(folder)
+        if version is not None:
+            found.append((folder, None if version == "unknown" else version))
     return found
 
 
@@ -93,7 +93,7 @@ def check_installed_script() -> Check:
 
 
 def control_surface_selected() -> bool | None:
-    """Whether the newest Live's preferences name AbletonMCP (None: unknown)."""
+    """Whether the newest Live's preferences name the control surface (None: unknown)."""
     for pref_dir in _live_preference_dirs():
         cfg = pref_dir / "Preferences.cfg"
         if cfg.is_file():
@@ -108,9 +108,9 @@ def check_control_surface() -> Check:
     if selected is None:
         return Check("Control surface", "skip", "Live preferences not found")
     if selected:
-        return Check("Control surface", "ok", "AbletonMCP is selected in Live's preferences")
-    return Check("Control surface", "warn", "AbletonMCP does not appear in Live's preferences",
-                 "In Live: Settings → Link, Tempo & MIDI → Control Surface → AbletonMCP (Input/Output: None).")
+        return Check("Control surface", "ok", f"{REMOTE_SCRIPT_FOLDER_NAME} is selected in Live's preferences")
+    return Check("Control surface", "warn", f"{REMOTE_SCRIPT_FOLDER_NAME} does not appear in Live's preferences",
+                 f"In Live: Settings → Link, Tempo & MIDI → Control Surface → {REMOTE_SCRIPT_FOLDER_NAME} (Input/Output: None).")
 
 
 def live_log_errors(max_lines: int = 3) -> list[str]:
@@ -126,32 +126,21 @@ def live_log_errors(max_lines: int = 3) -> list[str]:
     return []
 
 
-def query_live(host: str, port: int, timeout: float = 3.0) -> dict:
-    """Ask the running Remote Script for its info (raises if unreachable)."""
-    with socket.create_connection((host, port), timeout=timeout) as s:
-        s.settimeout(timeout)
-        s.sendall(json.dumps({"type": "get_script_info", "params": {}}).encode())
-        buf = b""
-        while True:
-            chunk = s.recv(65536)
-            if not chunk:
-                break
-            buf += chunk
-            try:
-                reply = json.loads(buf.decode())
-                break
-            except ValueError:
-                continue
-    if reply.get("status") != "success":
-        raise RuntimeError(reply.get("message", "unexpected reply"))
-    return reply.get("result", {})
+def query_live(host: str, port: int) -> dict:
+    """Ask the running control surface for its version (raises if unreachable)."""
+    from .live import LiveClient
+    client = LiveClient(host, port)
+    try:
+        return client.connect().raw
+    finally:
+        client.close()
 
 
 def check_live(host: str, port: int) -> Check:
     try:
         info = query_live(host, port)
     except Exception as e:
-        fix = ("Start Live with AbletonMCP selected as control surface. "
+        fix = (f"Start Live with {REMOTE_SCRIPT_FOLDER_NAME} selected as control surface. "
                "If Live is open, restart it: the script loads at startup.")
         errors = live_log_errors()
         if errors:
@@ -169,10 +158,20 @@ def check_live(host: str, port: int) -> Check:
     return Check("Live connection", "ok", found)
 
 
+def check_legacy() -> Check:
+    old = legacy_installs()
+    if not old:
+        return Check("Old control surface", "ok", f"no {LEGACY_SURFACE_NAME} folder left")
+    return Check("Old control surface", "warn",
+                 f"{LEGACY_SURFACE_NAME} still installed at {', '.join(str(p) for p in old)}",
+                 f"It listens on the same port: deselect it in Live and run "
+                 f"`{INSTALL_CMD} --remove-legacy`.")
+
+
 def run_checks(host: str | None = None, port: int | None = None) -> list[Check]:
     host = host or os.environ.get("ABLETON_HOST", "localhost")
     port = port or int(os.environ.get("ABLETON_PORT", "9877"))
-    return [check_python(), check_uv(), check_installed_script(),
+    return [check_python(), check_uv(), check_installed_script(), check_legacy(),
             check_control_surface(), check_live(host, port)]
 
 

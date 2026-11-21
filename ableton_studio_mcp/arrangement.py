@@ -18,7 +18,7 @@ place it with build_arrangement.
 
 import math
 import random
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Sequence
 
 
 class ArrangementError(ValueError):

@@ -13,7 +13,8 @@ from collections import deque
 
 import pytest
 
-import MCP_Server.server as server
+from ableton_studio_mcp import app, live, tools
+from ableton_studio_mcp.tools import listening
 from test_clip_notes import call
 from test_remote_script_bridge import _load_script_module, make_instance
 
@@ -126,7 +127,7 @@ class Song(object):
         self.is_playing = False
 
 
-def live(script_module, song):
+def live_instance(script_module, song):
     inst = make_instance(script_module)
     inst._song = song
     queue = deque()
@@ -150,7 +151,7 @@ def resolve(deferred, run):
 # -------------------------------------------------- return / main tracks
 
 def test_track_info_for_return_and_main(script_module):
-    inst, _ = live(script_module, Song())
+    inst, _ = live_instance(script_module, Song())
     ret = inst._get_track_info(0, "return")
     assert ret["name"] == "A-Reverb" and ret["devices"][0]["name"] == "Reverb"
     assert ret["clip_slots"] == [] and ret["track_type"] == "return"
@@ -160,7 +161,7 @@ def test_track_info_for_return_and_main(script_module):
 
 def test_device_parameters_on_return_and_main(script_module):
     song = Song()
-    inst, _ = live(script_module, song)
+    inst, _ = live_instance(script_module, song)
     params = inst._get_device_parameters(0, 0, "return")
     assert params["device"]["name"] == "Reverb"
     inst._set_device_parameter(0, 0, 1, 0.8, "master")
@@ -170,7 +171,7 @@ def test_device_parameters_on_return_and_main(script_module):
 
 
 def test_track_type_is_validated(script_module):
-    inst, _ = live(script_module, Song())
+    inst, _ = live_instance(script_module, Song())
     with pytest.raises(ValueError):
         inst._get_track_info(0, "group")
 
@@ -178,7 +179,7 @@ def test_track_type_is_validated(script_module):
 # ---------------------------------------------------------------- routing
 
 def test_routing_lists_options_and_monitoring(script_module):
-    inst, _ = live(script_module, Song())
+    inst, _ = live_instance(script_module, Song())
     r = inst._get_track_routing(0)
     assert r["input"]["type"] == "Ext. In"
     assert "Resampling" in r["input"]["available_types"]
@@ -190,7 +191,7 @@ def test_routing_lists_options_and_monitoring(script_module):
 
 def test_routing_exact_substring_and_errors(script_module):
     song = Song()
-    inst, _ = live(script_module, song)
+    inst, _ = live_instance(script_module, song)
     inst._set_track_routing(0, input_type="resampling", monitoring="off")
     assert song.tracks[0].input_routing_type.display_name == "Resampling"
     assert song.tracks[0].current_monitoring_state == 2
@@ -207,14 +208,14 @@ def test_routing_exact_substring_and_errors(script_module):
 def test_routing_type_is_written_before_channel(script_module):
     """Channels depend on the type: "Post FX" only exists for a track input."""
     song = Song()
-    inst, _ = live(script_module, song)
+    inst, _ = live_instance(script_module, song)
     r = inst._set_track_routing(1, input_type="1-Piano", input_channel="Post FX")
     assert song.tracks[1].input_routing_channel.display_name == "Post FX"
     assert r["changed"] == ["input_type", "input_channel"]
 
 
 def test_return_track_has_no_input(script_module):
-    inst, _ = live(script_module, Song())
+    inst, _ = live_instance(script_module, Song())
     with pytest.raises(ValueError):
         inst._set_track_routing(0, "return", input_type="Resampling")
     inst._set_track_routing(0, "return", output_type="Sends Only")
@@ -223,7 +224,7 @@ def test_return_track_has_no_input(script_module):
 # -------------------------------------------------------------- recording
 
 def test_record_needs_an_armed_track(script_module):
-    inst, _ = live(script_module, Song())
+    inst, _ = live_instance(script_module, Song())
     with pytest.raises(ValueError, match="armed"):
         inst._record_arrangement(0, 8)
     with pytest.raises(ValueError):
@@ -233,7 +234,7 @@ def test_record_needs_an_armed_track(script_module):
 def test_record_runs_and_stops_at_end(script_module):
     song = Song()
     song.tracks[1].arm = True
-    inst, run = live(script_module, song)
+    inst, run = live_instance(script_module, song)
     out = resolve(inst._record_arrangement(4.0, 12.0), lambda: None)
     run(limit=1)  # nothing pending yet; resolution happened synchronously
     assert out["ok"]["status"] == "recording"
@@ -252,7 +253,7 @@ def test_record_runs_and_stops_at_end(script_module):
 def test_record_stopped_by_hand_or_command(script_module):
     song = Song()
     song.tracks[0].arm = True
-    inst, run = live(script_module, song)
+    inst, run = live_instance(script_module, song)
     resolve(inst._record_arrangement(0.0, 64.0), lambda: None)
     song.stop_playing()  # the user pressed stop
     run(limit=3)
@@ -273,7 +274,7 @@ class AudioClip(object):
 def test_audio_clip_file(script_module):
     song = Song()
     song.tracks[0].arrangement_clips = [AudioClip()]
-    inst, _ = live(script_module, song)
+    inst, _ = live_instance(script_module, song)
     info = inst._get_audio_clip_file(0, 0, "arrangement")
     assert info["file_path"] == "/tmp/take.wav" and info["sample_rate"] == 48000.0
 
@@ -283,11 +284,10 @@ def test_new_commands_are_advertised(script_module):
     assert {"return_master_devices", "get_track_routing", "set_track_routing",
             "record_arrangement", "stop_arrangement_recording",
             "get_recording_status", "get_audio_clip_file"} <= caps
-    assert script_module.SCRIPT_VERSION.startswith("1.1")
 
 
 def test_expected_version_matches_script(script_module):
-    from MCP_Server.remote_script_install import EXPECTED_REMOTE_SCRIPT_VERSION
+    from ableton_studio_mcp.install import SCRIPT_VERSION as EXPECTED_REMOTE_SCRIPT_VERSION
     assert EXPECTED_REMOTE_SCRIPT_VERSION == script_module.SCRIPT_VERSION
 
 
@@ -300,7 +300,7 @@ class ScriptedConnection(object):
         self.answers = answers
         self.sent = []
 
-    def send_command(self, command_type, params=None):
+    def call(self, command_type, params=None):
         self.sent.append((command_type, params or {}))
         answer = self.answers.get(command_type, {})
         return answer(params or {}) if callable(answer) else answer
@@ -310,57 +310,57 @@ class ScriptedConnection(object):
 def connect(monkeypatch):
     def _make(answers):
         conn = ScriptedConnection(answers)
-        monkeypatch.setattr(server, "get_ableton_connection", lambda: conn)
+        monkeypatch.setattr(live, "client", lambda: conn)
         return conn
     return _make
 
 
 @pytest.fixture(autouse=True)
 def _hermetic(monkeypatch):
-    import MCP_Server.script_handshake as sh
-    monkeypatch.setattr(sh, "require_capability", lambda name: None)
+        monkeypatch.setattr(live, "require", lambda name: None)
 
 
 def test_load_sends_track_type_only_for_return_and_main(connect):
     conn = connect({"load_browser_item": {"loaded": True, "new_devices": ["Reverb"]}})
-    call(server.load_instrument_or_effect, None, 0, "query:x")
-    call(server.load_instrument_or_effect, None, 1, "query:x", track_type="return")
-    call(server.load_instrument_or_effect, None, 0, "query:x", track_type="master")
+    call(tools.load_instrument_or_effect, 0, "query:x")
+    call(tools.load_instrument_or_effect, 1, "query:x", track_type="return")
+    call(tools.load_instrument_or_effect, 0, "query:x", track_type="master")
     assert [p.get("track_type") for _, p in conn.sent] == [None, "return", "master"]
-    assert "track_type must be" in call(server.load_instrument_or_effect, None, 0, "q",
+    assert "track_type must be" in call(tools.load_instrument_or_effect, 0, "q",
                                         track_type="bus")
 
 
 def test_old_script_is_refused_for_return_tracks(connect, monkeypatch):
-    import MCP_Server.script_handshake as sh
-    monkeypatch.setattr(sh, "require_capability",
-                        lambda name: "missing " + name if name == "return_master_devices" else None)
+    def require(name):
+        if name == "return_master_devices":
+            raise live.MissingCapability("missing " + name)
+    monkeypatch.setattr(live, "require", require)
     conn = connect({})
-    out = call(server.set_device_parameter, None, 0, 0, 1, 0.5, track_type="return")
+    out = call(tools.set_device_parameter, 0, 0, 1, 0.5, track_type="return")
     assert out == "missing return_master_devices" and conn.sent == []
 
 
 def test_routing_tool_sends_only_given_fields(connect):
     conn = connect({"set_track_routing": {"changed": ["input_type"]}})
-    call(server.set_track_routing, None, 2, input_type="Resampling", monitoring="off")
+    call(tools.set_track_routing, 2, input_type="Resampling", monitoring="off")
     assert conn.sent == [("set_track_routing", {"track_index": 2, "input_type": "Resampling",
                                                 "monitoring": "off"})]
 
 
 def test_resampling_name_is_found_in_french():
     routing = {"input": {"available_types": ["Entrée ext.", "Rééchantillonnage", "1-Orgue"]}}
-    assert server._resampling_input_name(routing) == "Rééchantillonnage"
-    assert server._resampling_input_name({"input": {"available_types": ["Ext. In"]}}) is None
+    assert listening._resampling_input_name(routing) == "Rééchantillonnage"
+    assert listening._resampling_input_name({"input": {"available_types": ["Ext. In"]}}) is None
 
 
 def test_record_arrangement_waits_for_the_watcher(connect, monkeypatch):
-    monkeypatch.setattr(server, "RECORDING_POLL_S", 0.0)
+    monkeypatch.setattr(listening, "RECORDING_POLL_S", 0.0)
     polls = iter([{"recording": {"finished": False}}] * 2
                  + [{"recording": {"finished": True, "reason": "end_reached"}}])
     conn = connect({"get_session_info": {"tempo": 120.0},
                     "record_arrangement": {"status": "recording"},
                     "get_recording_status": lambda p: next(polls)})
-    out = json.loads(call(server.record_arrangement, None, 0.0, 8.0))
+    out = json.loads(call(tools.record_arrangement, 0.0, 8.0))
     assert out["recording"]["reason"] == "end_reached"
     assert [c for c, _ in conn.sent].count("get_recording_status") == 3
 
@@ -378,7 +378,7 @@ def _wav(path, seconds=0.5, amp=0.5):
 
 
 def test_listen_records_analyzes_and_cleans_up(connect, monkeypatch, tmp_path):
-    monkeypatch.setattr(server, "RECORDING_POLL_S", 0.0)
+    monkeypatch.setattr(listening, "RECORDING_POLL_S", 0.0)
     take = tmp_path / "Claude – écoute 0001 [2026-11-21 120000].wav"
     _wav(take)
     asd = tmp_path / (take.name + ".asd")
@@ -392,7 +392,7 @@ def test_listen_records_analyzes_and_cleans_up(connect, monkeypatch, tmp_path):
         "get_arrangement_clips": {"clips": [{"name": "take"}]},
         "get_audio_clip_file": {"file_path": str(take)},
     })
-    out = json.loads(call(server.listen_to_arrangement, None, 0.0, 4.0, report="basic"))
+    out = json.loads(call(tools.listen_to_arrangement, 0.0, 4.0, report="basic"))
     assert out["analysis"]["peak_dbfs"] == pytest.approx(-6.02, abs=0.1)
     assert out["recorded"]["track"] == "deleted" and out["recorded"]["file"] == "deleted"
     assert not take.exists() and not asd.exists()  # no audio piles up in the project
@@ -424,11 +424,11 @@ def _midi(path, notes, division=96):
 
 
 def test_import_midi_creates_a_clip_and_chunks(connect, monkeypatch, tmp_path):
-    monkeypatch.setattr(server, "ADD_NOTES_CHUNK", 2)
+    monkeypatch.setattr(app, "NOTES_PER_REQUEST", 2)
     mid = tmp_path / "m.mid"
     _midi(mid, [(60, 0, 96), (64, 96, 96), (67, 480, 48)])  # last note ends at beat 5.5
     conn = connect({"get_track_info": {"clip_slots": [{"has_clip": False}] * 8}})
-    out = call(server.import_midi_file, None, str(mid), track_index=1, clip_index=0,
+    out = call(tools.import_midi_file, str(mid), track_index=1, clip_index=0,
                transpose=-12)
     assert out.startswith("Imported 3 notes")
     assert ("create_clip", {"track_index": 1, "clip_index": 0, "length": 8.0}) in conn.sent
@@ -441,10 +441,10 @@ def test_import_midi_replace_and_describe(connect, tmp_path):
     mid = tmp_path / "m.mid"
     _midi(mid, [(60, 0, 96)])
     conn = connect({"get_track_info": {"clip_slots": [{"has_clip": True}]}})
-    call(server.import_midi_file, None, str(mid), track_index=0, replace=True)
+    call(tools.import_midi_file, str(mid), track_index=0, replace=True)
     assert [c for c, _ in conn.sent] == ["get_track_info", "clear_notes_from_clip",
                                          "add_notes_to_clip"]
-    desc = json.loads(call(server.import_midi_file, None, str(mid)))
+    desc = json.loads(call(tools.import_midi_file, str(mid)))
     assert desc["tracks"][0]["notes"] == 1
 
 
@@ -454,7 +454,7 @@ def test_track_meters_cover_tracks_returns_and_main(script_module):
     song = Song()
     for t in song.tracks + song.return_tracks + [song.master_track]:
         t.output_meter_left, t.output_meter_right = 0.5, 0.7
-    inst, _ = live(script_module, song)
+    inst, _ = live_instance(script_module, song)
     out = inst._get_track_meters()
     kinds = [(m["type"], m["index"]) for m in out["meters"]]
     assert kinds == [("track", 0), ("track", 1), ("return", 0), ("master", 0)]
@@ -463,13 +463,12 @@ def test_track_meters_cover_tracks_returns_and_main(script_module):
 
 def test_listen_mix_report_returns_image_and_meters(connect, monkeypatch, tmp_path):
     from mcp.server.fastmcp import Image
-    import MCP_Server.mix_analysis as mix
-    monkeypatch.setattr(server, "RECORDING_POLL_S", 0.0)
+    monkeypatch.setattr(listening, "RECORDING_POLL_S", 0.0)
     take = tmp_path / "take.wav"
     _wav(take, seconds=4.0)
     polls = iter([{"armed_tracks": []}, {"recording": {"finished": False}},
                   {"recording": {"finished": False}}, {"recording": {"finished": True}}])
-    conn = connect({
+    connect({
         "get_session_info": {"tempo": 120.0},
         "get_recording_status": lambda p: next(polls),
         "create_audio_track": {"index": 2, "name": "3-Audio"},
@@ -482,8 +481,8 @@ def test_listen_mix_report_returns_image_and_meters(connect, monkeypatch, tmp_pa
             {"type": "track", "index": 2, "name": "Claude – écoute", "level": 0.9},
             {"type": "master", "index": 0, "name": "Main", "level": 0.85}]},
     })
-    monkeypatch.setattr(server, "_spectrogram_path", lambda p: str(tmp_path / "spec.png"))
-    out = call(server.listen_to_arrangement, None, 0.0, 8.0, target="classical")
+    monkeypatch.setattr(listening, "_spectrogram_path", lambda p: str(tmp_path / "spec.png"))
+    out = call(tools.listen_to_arrangement, 0.0, 8.0, target="classical")
     assert isinstance(out, list) and isinstance(out[1], Image)
     data = json.loads(out[0])
     assert data["analysis"]["loudness"]["integrated_lufs"] is not None
@@ -496,8 +495,8 @@ def test_listen_mix_report_returns_image_and_meters(connect, monkeypatch, tmp_pa
 def test_analyze_mix_tool_validates_target(tmp_path):
     take = tmp_path / "t.wav"
     _wav(take, seconds=1.0)
-    assert "target must be" in call(server.analyze_mix, None, str(take), target="radio")
-    text_only = call(server.analyze_mix, None, str(take), spectrogram=False)
+    assert "target must be" in call(tools.analyze_mix, str(take), target="radio")
+    text_only = call(tools.analyze_mix, str(take), spectrogram=False)
     assert json.loads(text_only)["assessment"]["findings"]
 
 
@@ -526,7 +525,7 @@ class ScaleSong(Song):
 
 def test_song_scale_get_and_set(script_module):
     song = ScaleSong()
-    inst, _ = live(script_module, song)
+    inst, _ = live_instance(script_module, song)
     out = inst._set_song_scale(root_note="Eb", scale_name="Phrygian Dominant", scale_mode=True)
     assert (out["root_note"], out["root_name"], out["scale_name"], out["scale_mode"]) == (3, "D#", "Phrygian Dominant", True)
     with pytest.raises(ValueError, match="did not accept"):
@@ -538,6 +537,10 @@ def test_song_scale_get_and_set(script_module):
 class DisplayParam(Param):
     value_items = ["Low Cut 48", "Low Cut 12", "Low Shelf", "Bell", "Notch", "High Shelf", "High Cut 12", "High Cut 48"]
 
+    def __init__(self, name, value):
+        Param.__init__(self, name, value)
+        self.max = 7.0   # quantized: one step per item
+
     def str_for_value(self, v):
         return self.value_items[int(v)]
 
@@ -547,16 +550,20 @@ def test_parameter_display_and_items(script_module):
     dev = Device("EQ Eight")
     dev.parameters = [DisplayParam("1 Filter Type A", 3)]
     song.tracks[0].devices = [dev]
-    inst, _ = live(script_module, song)
+    inst, _ = live_instance(script_module, song)
     p = inst._get_device_parameters(0, 0)["device"]["parameters"][0]
     assert p["display"] == "Bell" and p["value_items"][5] == "High Shelf"
     r = inst._set_device_parameter(0, 0, 0, 5)
     assert (r["old_display"], r["display"]) == ("Bell", "High Shelf")
+    with pytest.raises(ValueError, match="takes 0.0 to 7.0, not 9.0"):
+        inst._set_device_parameter(0, 0, 0, 9)
+    with pytest.raises(IndexError, match="no parameter 3"):
+        inst._set_device_parameter(0, 0, 3, 1)
 
 
 
 def test_listen_can_keep_the_take(connect, monkeypatch, tmp_path):
-    monkeypatch.setattr(server, "RECORDING_POLL_S", 0.0)
+    monkeypatch.setattr(listening, "RECORDING_POLL_S", 0.0)
     take = tmp_path / "Claude – écoute 0001 [2026-11-21 120500].wav"
     _wav(take)
     connect({
@@ -567,17 +574,17 @@ def test_listen_can_keep_the_take(connect, monkeypatch, tmp_path):
         "get_arrangement_clips": {"clips": [{"name": "take"}]},
         "get_audio_clip_file": {"file_path": str(take)},
     })
-    out = json.loads(call(server.listen_to_arrangement, None, 0.0, 4.0, report="basic", keep_audio=True))
+    out = json.loads(call(tools.listen_to_arrangement, 0.0, 4.0, report="basic", keep_audio=True))
     assert out["recorded"]["track"] == "deleted (file kept)" and take.exists()
 
 
 def test_discard_take_never_touches_other_files(tmp_path):
     mine = tmp_path / "Vocals 0003 [2026-11-21 120000].wav"
     mine.write_bytes(b"RIFF")
-    assert server._discard_take(str(mine)) is False and mine.exists()
+    assert listening._discard_take(str(mine)) is False and mine.exists()
     ours = tmp_path / "Claude – écoute 0002.wav"
     ours.write_bytes(b"RIFF")
-    assert server._discard_take(str(ours)) is True and not ours.exists()
+    assert listening._discard_take(str(ours)) is True and not ours.exists()
 
 
 def test_old_spectrograms_are_pruned(monkeypatch, tmp_path):
@@ -587,31 +594,31 @@ def test_old_spectrograms_are_pruned(monkeypatch, tmp_path):
     monkeypatch.setattr(tempfile, "gettempdir", lambda: str(tmp_path))
     folder = tmp_path / "ableton-mcp"
     folder.mkdir()
-    for i in range(server.SPECTROGRAMS_KEPT + 5):
+    for i in range(listening.SPECTROGRAMS_KEPT + 5):
         f = folder / ("take%02d_spectrogram.png" % i)
         f.write_bytes(b"png")
         os.utime(f, (_t.time() - 1000 + i, _t.time() - 1000 + i))
-    server._spectrogram_path("/x/new.wav")
+    listening._spectrogram_path("/x/new.wav")
     left = sorted(p.name for p in folder.iterdir())
-    assert len(left) == server.SPECTROGRAMS_KEPT and left[0] == "take05_spectrogram.png"
+    assert len(left) == listening.SPECTROGRAMS_KEPT and left[0] == "take05_spectrogram.png"
 
 
 # ------------------------------------------------------------- delete_locator
 
 def test_delete_locator_tool_prefers_time_over_name(connect):
     conn = connect({"delete_locator": {"time": 16.0, "name": "Drop"}})
-    out = call(server.delete_locator, None, name="Drop", time=16.0)
+    out = call(tools.delete_locator, name="Drop", time=16.0)
     assert conn.sent == [("delete_locator", {"time": 16.0})]
     assert out == "Locator 'Drop' at beat 16.0 deleted"
 
 
 def test_delete_locator_tool_by_name(connect):
     conn = connect({"delete_locator": {"time": 32.0, "name": "Break"}})
-    call(server.delete_locator, None, name="Break")
+    call(tools.delete_locator, name="Break")
     assert conn.sent == [("delete_locator", {"name": "Break"})]
 
 
 def test_delete_locator_tool_needs_a_target(connect):
     conn = connect({})
-    assert "name or its time" in call(server.delete_locator, None)
+    assert "name or its time" in call(tools.delete_locator)
     assert conn.sent == []

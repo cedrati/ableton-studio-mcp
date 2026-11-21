@@ -22,10 +22,10 @@ jobs:
         run: |
           tag="${GITHUB_REF_NAME#v}"
           pkg=$(grep -m1 '^version' pyproject.toml | cut -d'"' -f2)
-          script=$(grep -m1 '^SCRIPT_VERSION' AbletonMCP_Remote_Script/__init__.py | cut -d'"' -f2)
-          echo "tag=$tag package=$pkg script=$script"
-          test "$tag" = "$pkg" && test "$tag" = "$script"
-          cmp AbletonMCP_Remote_Script/__init__.py MCP_Server/bundled_ableton_remote_script/AbletonMCP_init.py
+          code=$(grep -m1 '^__version__' ableton_studio_mcp/__init__.py | cut -d'"' -f2)
+          script=$(grep -m1 '^SCRIPT_VERSION' ableton_studio_mcp/live_script/AbletonStudioMCP/__init__.py | cut -d'"' -f2)
+          echo "tag=$tag package=$pkg code=$code script=$script"
+          test "$tag" = "$pkg" && test "$tag" = "$code" && test "$tag" = "$script"
       - name: Tests
         run: uv run --with pytest pytest -q
       - name: Build

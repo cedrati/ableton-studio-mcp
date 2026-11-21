@@ -5,8 +5,8 @@ import json
 
 import pytest
 
-import MCP_Server.server as server
-from MCP_Server import device_knowledge as dk
+from ableton_studio_mcp import live, tools
+from ableton_studio_mcp import device_knowledge as dk
 from test_clip_notes import call
 from test_remote_script_bridge import _load_script_module, make_instance
 
@@ -192,7 +192,7 @@ class _Conn:
     def __init__(self, answers):
         self.answers, self.sent = answers, []
 
-    def send_command(self, cmd, params=None):
+    def call(self, cmd, params=None):
         self.sent.append((cmd, params or {}))
         a = self.answers.get(cmd, {})
         return a(params or {}) if callable(a) else a
@@ -200,12 +200,11 @@ class _Conn:
 
 @pytest.fixture
 def conn(monkeypatch):
-    import MCP_Server.script_handshake as sh
-    monkeypatch.setattr(sh, "require_capability", lambda name: None)
+    monkeypatch.setattr(live, "require", lambda name: None)
 
     def make(answers):
         c = _Conn(answers)
-        monkeypatch.setattr(server, "get_ableton_connection", lambda: c)
+        monkeypatch.setattr(live, "client", lambda: c)
         return c
     return make
 
@@ -222,7 +221,7 @@ def test_device_inventory(conn):
           "get_track_info": lambda p: tracks[(p.get("track_type", "track"), p["track_index"])],
           "get_browser_items_at_path": lambda p: {"items": [{"name": "Arturia", "is_folder": True}]}
           if p["path"].count("/") == 1 else {"items": [{"name": "Acid V"}, {"name": "Comp FET-76"}]}})
-    out = json.loads(call(server.device_inventory, None, installed_plugins=True))
+    out = json.loads(call(tools.device_inventory, installed_plugins=True))
     bass = out["tracks"][0]["devices"]
     assert "303" in bass[0]["what"] and bass[1]["sidechain"] is True
     assert bass[2]["chains"] == [{"name": "Kick", "devices": ["Simpler"]}]
@@ -231,6 +230,6 @@ def test_device_inventory(conn):
 
 
 def test_device_knowledge_tool():
-    assert json.loads(call(server.device_knowledge, None, name="Glue Compressor"))["sidechain"] is True
-    cat = json.loads(call(server.device_knowledge, None, kind="midi_effect"))
+    assert json.loads(call(tools.device_knowledge, name="Glue Compressor"))["sidechain"] is True
+    cat = json.loads(call(tools.device_knowledge, kind="midi_effect"))
     assert any(d["name"] == "Arpeggiator" for d in cat["devices"]) and "API" in cat["midi_tools"]

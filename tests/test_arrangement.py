@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-import MCP_Server.server as server
-from MCP_Server import arrangement as ar
+from ableton_studio_mcp import live, tools
+from ableton_studio_mcp import arrangement as ar
 from test_clip_notes import call
 
 
@@ -85,7 +85,7 @@ class _Conn:
     def __init__(self, answers):
         self.answers, self.sent = answers, []
 
-    def send_command(self, cmd, params=None):
+    def call(self, cmd, params=None):
         self.sent.append((cmd, params or {}))
         a = self.answers.get(cmd, {})
         return a(params or {}) if callable(a) else a
@@ -93,12 +93,11 @@ class _Conn:
 
 @pytest.fixture
 def conn(monkeypatch):
-    import MCP_Server.script_handshake as sh
-    monkeypatch.setattr(sh, "require_capability", lambda name: None)
+    monkeypatch.setattr(live, "require", lambda name: None)
 
     def make(answers):
         c = _Conn(answers)
-        monkeypatch.setattr(server, "get_ableton_connection", lambda: c)
+        monkeypatch.setattr(live, "client", lambda: c)
         return c
     return make
 
@@ -107,7 +106,7 @@ def test_write_clip_evolution_extends_and_automates(conn):
     loop = [{"pitch": 36, "start_time": k, "duration": 0.25, "velocity": 100, "mute": False} for k in range(16)]
     c = conn({"get_clip_notes": {"length": 16.0, "notes": loop},
               "set_clip_automation": {"parameter": "Frequency"}})
-    out = json.loads(call(server.write_clip_evolution, None, 2, 0, [
+    out = json.loads(call(tools.write_clip_evolution, 2, 0, [
         {"device_index": 1, "parameter_index": 4, "start": 0.2, "end": 0.9, "shape": "exp"},
         {"mixer_parameter": "send:0", "start": 0.0, "end": 0.6, "shape": "swell", "from_bar": 32}], bars=64))
     assert out["extended_to_beats"] == 256 and out["notes_after_tiling"] == 256
@@ -130,11 +129,11 @@ def _session(tracks):
 
 def test_build_arrangement_dry_run_and_build(conn):
     c = conn(_session(TRACKS))
-    dry = json.loads(call(server.build_arrangement, None, template="techno_64", dry_run=True))
+    dry = json.loads(call(tools.build_arrangement, template="techno_64", dry_run=True))
     assert dry["dry_run"] and dry["total_bars"] == 64
     assert dry["track_roles"] == {"Kick": "kick", "Hats": "hats", "Bass": "bass", "Chords": "chords"}
     assert not any(cmd == "duplicate_session_clip_to_arrangement" for cmd, _ in c.sent)
-    out = json.loads(call(server.build_arrangement, None, template="techno_64",
+    out = json.loads(call(tools.build_arrangement, template="techno_64",
                           section_slots={"Peak": {"1": 1}}))
     dups = [p for cmd, p in c.sent if cmd == "duplicate_session_clip_to_arrangement"]
     assert len(dups) == out["placements"] > 0

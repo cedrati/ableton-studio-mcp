@@ -6,7 +6,7 @@ Progressions are roman numerals for music_theory.progression(); patterns
 are music_theory.PATTERNS names.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 STYLES: Dict[str, Dict] = {
     "baroque": {
