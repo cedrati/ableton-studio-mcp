@@ -317,14 +317,7 @@ def connect(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _hermetic(monkeypatch):
-    class _Dummy:
-        def record_event(self, *a, **k):
-            pass
-    import MCP_Server.telemetry_decorator as td
-    import MCP_Server.dataset.consent as consent
     import MCP_Server.script_handshake as sh
-    monkeypatch.setattr(td, "get_telemetry", lambda: _Dummy(), raising=False)
-    monkeypatch.setattr(consent, "maybe_consent_notice", lambda: "")
     monkeypatch.setattr(sh, "require_capability", lambda name: None)
 
 
@@ -601,3 +594,24 @@ def test_old_spectrograms_are_pruned(monkeypatch, tmp_path):
     server._spectrogram_path("/x/new.wav")
     left = sorted(p.name for p in folder.iterdir())
     assert len(left) == server.SPECTROGRAMS_KEPT and left[0] == "take05_spectrogram.png"
+
+
+# ------------------------------------------------------------- delete_locator
+
+def test_delete_locator_tool_prefers_time_over_name(connect):
+    conn = connect({"delete_locator": {"time": 16.0, "name": "Drop"}})
+    out = call(server.delete_locator, None, name="Drop", time=16.0)
+    assert conn.sent == [("delete_locator", {"time": 16.0})]
+    assert out == "Locator 'Drop' at beat 16.0 deleted"
+
+
+def test_delete_locator_tool_by_name(connect):
+    conn = connect({"delete_locator": {"time": 32.0, "name": "Break"}})
+    call(server.delete_locator, None, name="Break")
+    assert conn.sent == [("delete_locator", {"name": "Break"})]
+
+
+def test_delete_locator_tool_needs_a_target(connect):
+    conn = connect({})
+    assert "name or its time" in call(server.delete_locator, None)
+    assert conn.sent == []

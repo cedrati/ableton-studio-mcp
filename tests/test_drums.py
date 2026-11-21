@@ -118,12 +118,6 @@ class _Conn:
 @pytest.fixture
 def conn(monkeypatch):
     import MCP_Server.script_handshake as sh
-    import MCP_Server.telemetry_decorator as td
-
-    class _D:
-        def record_event(self, *a, **k):
-            pass
-    monkeypatch.setattr(td, "get_telemetry", lambda: _D(), raising=False)
     caps = {"value": None}
     monkeypatch.setattr(sh, "require_capability", lambda name: caps["value"](name) if caps["value"] else None)
 

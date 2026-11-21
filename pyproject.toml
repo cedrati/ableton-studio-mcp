@@ -1,6 +1,6 @@
 [project]
 name = "ableton-studio-mcp"
-version = "1.16.0"
+version = "1.17.0"
 description = "Ableton Live integration through the Model Context Protocol — AI music production: compose, arrange, mix, master and analyse in Ableton Live"
 readme = "README.md"
 keywords = ["ableton", "ableton-live", "mcp", "mcp-server", "model-context-protocol", "claude", "ai-music",
@@ -23,7 +23,6 @@ classifiers = [
 ]
 dependencies = [
     "mcp[cli]>=1.9.0,<2.0.0",
-    "supabase>=2.0.0",
     "numpy>=1.26",
 ]
 
@@ -39,9 +38,8 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["MCP_Server", "MCP_Server.dataset", "MCP_Server.bundled_ableton_remote_script"]
+packages = ["MCP_Server", "MCP_Server.bundled_ableton_remote_script"]
 # MANIFEST.in governs the sdist; this governs the wheel. Both are needed.
-exclude-package-data = { "MCP_Server" = ["config.py"] }
 
 [tool.setuptools.package-data]
 "MCP_Server.bundled_ableton_remote_script" = ["AbletonMCP_init.py"]
