@@ -16,3 +16,4 @@ from .midi import *         # noqa: F401,F403
 from .theory import *       # noqa: F401,F403
 from .drums import *        # noqa: F401,F403
 from .evolution import *    # noqa: F401,F403
+from .sound import *        # noqa: F401,F403

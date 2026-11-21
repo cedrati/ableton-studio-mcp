@@ -1,9 +1,11 @@
 """Devices: parameters, identity, sidechain, plug-in presets, Simpler, racks, drum racks."""
 from __future__ import absolute_import, print_function, unicode_literals
 
+import difflib
 import os
 
 from .registry import command
+from .values import resolve_value
 
 
 class DeviceCommands(object):
@@ -96,6 +98,65 @@ class DeviceCommands(object):
                 "old_value": before, "old_display": before_shown,
                 "value": float(param.value), "display": self._param_display(param),
                 "min": low, "max": high}
+
+    @staticmethod
+    def _find_parameter(params, name):
+        """A device parameter by name: exact (any case), else the only one
+        containing ``name``."""
+        wanted = str(name).strip().lower()
+        exact = [p for p in params if p.name.lower() == wanted]
+        if exact:
+            return exact[0]
+        partial = [p for p in params if wanted in p.name.lower()]
+        if len(partial) == 1:
+            return partial[0]
+        if partial:
+            raise ValueError("'%s' matches several parameters: %s" % (name, ", ".join(p.name for p in partial[:12])))
+        close = difflib.get_close_matches(str(name), [p.name for p in params], n=6, cutoff=0.5)
+        raise ValueError("No parameter '%s'%s" % (name, (" (did you mean %s?)" % ", ".join(close)) if close else ""))
+
+    @command("set_device_parameters")
+    def _set_device_parameters(self, track_index, device_index, values, track_type="track"):
+        """Set several parameters by name, each from a number in its own range
+        or a musical value ("800 Hz", "-6 dB", "Bell"). Every value is checked
+        before anything changes."""
+        if not isinstance(values, dict) or not values:
+            raise ValueError("values must map parameter names to values")
+        device = self._device_on(track_index, device_index, track_type)
+        params = list(device.parameters)
+        plan = []
+        for name, wanted in values.items():
+            param = self._find_parameter(params, name)
+            plan.append((param, wanted, resolve_value(param, wanted)))
+        changes = []
+        for param, wanted, value in plan:
+            before = self._param_display(param)
+            param.value = value
+            changes.append({"name": param.name, "requested": wanted, "was": before,
+                            "now": self._param_display(param), "value": float(param.value)})
+        return {"device": device.name, "changes": changes}
+
+    @command("apply_device_state")
+    def _apply_device_state(self, track_index, device_index, parameters, track_type="track"):
+        """Restore saved parameter values: [{index, name, value}, ...]. Each
+        entry is matched by index and checked by name (by name alone when
+        the index moved); values outside a parameter's range are clamped."""
+        device = self._device_on(track_index, device_index, track_type)
+        params = list(device.parameters)
+        by_name = dict((p.name, p) for p in params)
+        applied, skipped = 0, []
+        for entry in parameters or []:
+            index, name = entry.get("index"), entry.get("name")
+            param = params[index] if isinstance(index, int) and 0 <= index < len(params) \
+                and params[index].name == name else by_name.get(name)
+            if param is None or not self._safe_attr(param, "is_enabled", bool, True):
+                skipped.append(name)
+                continue
+            value = min(max(float(entry["value"]), float(param.min)), float(param.max))
+            if abs(float(param.value) - value) > 1e-9:
+                param.value = value
+            applied += 1
+        return {"device": device.name, "applied": applied, "skipped": skipped}
 
     # -------------------------------------------------------------- drums
     def _find_drum_rack(self, devices, depth=0):

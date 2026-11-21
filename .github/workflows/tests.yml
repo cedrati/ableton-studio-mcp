@@ -28,7 +28,7 @@ jobs:
           uv pip install --python "$RUNNER_TEMP/pkg/bin/python" dist/*.whl
           cd "$RUNNER_TEMP"
           pkg/bin/ableton-studio-mcp --version
-          pkg/bin/python -c "import asyncio, ableton_studio_mcp.tools; from ableton_studio_mcp.app import mcp; n = len(asyncio.run(mcp.list_tools())); print(n, 'tools'); assert n >= 96"
+          pkg/bin/python -c "import asyncio, ableton_studio_mcp.tools; from ableton_studio_mcp.app import mcp; n = len(asyncio.run(mcp.list_tools())); print(n, 'tools'); assert n >= 103"
           test -f pkg/lib/python*/site-packages/ableton_studio_mcp/live_script/AbletonStudioMCP/__init__.py
 
   docker:
@@ -46,4 +46,4 @@ jobs:
             '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
             '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
             | timeout 60 docker run -i --rm ableton-studio-mcp > out.jsonl
-          python3 -c "import json; r=[json.loads(l) for l in open('out.jsonl') if l.strip()]; n=len(next(x for x in r if x.get('id')==2)['result']['tools']); print(n, 'tools'); assert n >= 96"
+          python3 -c "import json; r=[json.loads(l) for l in open('out.jsonl') if l.strip()]; n=len(next(x for x in r if x.get('id')==2)['result']['tools']); print(n, 'tools'); assert n >= 103"

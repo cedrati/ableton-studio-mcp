@@ -20,6 +20,7 @@ The original project's data terms apply only to the original `ableton-mcp` packa
 | File | Why |
 |---|---|
 | `<your Live project>/Samples/Recorded/…` | Takes recorded with `record_arrangement`, like any recording made in Live. Listening takes (`Claude – écoute …`) are deleted right after analysis unless you ask to keep them. |
+| `<User Library>/Ableton Studio MCP/Sounds/<Device>/<Name>.json` | Sounds saved with `save_sound`: the device and its parameter values. Yours to keep, edit or delete. |
 | `<system temp folder>/ableton-mcp/*_spectrogram.png` | Spectrogram images of analysed takes; only the 20 most recent are kept. |
 | `<User Library>/Remote Scripts/AbletonStudioMCP/` | The Live control surface, installed by `ableton-studio-mcp install`. (Versions before 2.0 used an `AbletonMCP` folder; `ableton-studio-mcp install --remove-legacy` deletes it.) |
 
