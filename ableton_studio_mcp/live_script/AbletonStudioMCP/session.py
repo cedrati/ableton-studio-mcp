@@ -1,9 +1,7 @@
 """The song: overview, tempo, transport, playhead, view, locators, scenes, song scale."""
 from __future__ import absolute_import, print_function, unicode_literals
 
-import time
-
-from .constants import UNDO_GROUP_MAX_SECONDS, NOTE_NAMES_SHARP, TIME_TOLERANCE, PLAYHEAD_SETTLE_TICKS, CUE_SETTLE_TICKS
+from .constants import NOTE_NAMES_SHARP, TIME_TOLERANCE, PLAYHEAD_SETTLE_TICKS, CUE_SETTLE_TICKS
 from .deferred import Deferred
 from .registry import command
 
@@ -162,74 +160,6 @@ class SessionCommands(object):
         if name:
             cue.name = str(name)
         return {"success": True, "time": float(cue.time), "name": cue.name}
-
-    # ── undo ────────────────────────────────────────────────────────────────
-
-    def _undo_state(self):
-        song = self._song
-        return {"can_undo": self._safe_attr(song, "can_undo", bool, False),
-                "can_redo": self._safe_attr(song, "can_redo", bool, False),
-                "undo_group_open": bool(getattr(self, "_undo_group", None))}
-
-    @command("get_undo_state")
-    def _get_undo_state(self):
-        return self._undo_state()
-
-    def _step(self, action, steps):
-        """Undo or redo up to ``steps`` times; stops early when Live has nothing left."""
-        steps = int(steps)
-        if not 1 <= steps <= 50:
-            raise ValueError("steps goes from 1 to 50, not %d" % steps)
-        if getattr(self, "_undo_group", None):
-            raise RuntimeError("An undo group is open ('%s'): end it first" % self._undo_group)
-        song = self._song
-        able = "can_undo" if action == "undo" else "can_redo"
-        done = 0
-        while done < steps and self._safe_attr(song, able, bool, False):
-            getattr(song, action)()
-            done += 1
-        state = self._undo_state()
-        state["done"] = done
-        return state
-
-    @command("undo")
-    def _undo(self, steps=1):
-        """Live's Undo, like Cmd/Ctrl+Z: it undoes the latest change in the
-        set, whoever made it."""
-        return self._step("undo", steps)
-
-    @command("redo")
-    def _redo(self, steps=1):
-        return self._step("redo", steps)
-
-    @command("begin_undo_group")
-    def _begin_undo_group(self, name="Ableton Studio MCP"):
-        """Changes until end_undo_group form one undo step."""
-        song = self._song
-        if not hasattr(song, "begin_undo_step"):
-            raise RuntimeError("This Live version cannot group undo steps (Live 11+)")
-        if getattr(self, "_undo_group", None):
-            raise RuntimeError("An undo group is already open ('%s')" % self._undo_group)
-        song.begin_undo_step()
-        self._undo_group = str(name)
-        self._undo_group_since = time.time()
-        return self._undo_state()
-
-    def _close_stale_undo_group(self):
-        """A group whose end never came (the server died, the client hung up)
-        must not swallow every later change into one step."""
-        if getattr(self, "_undo_group", None) and \
-                time.time() - getattr(self, "_undo_group_since", 0) > UNDO_GROUP_MAX_SECONDS:
-            self.log_message("closing undo group '%s' left open" % self._undo_group)
-            self._end_undo_group()
-
-    @command("end_undo_group")
-    def _end_undo_group(self):
-        if not getattr(self, "_undo_group", None):
-            return dict(self._undo_state(), ended=False)
-        self._song.end_undo_step()
-        name, self._undo_group = self._undo_group, None
-        return dict(self._undo_state(), ended=True, name=name)
 
     @command("get_song_scale")
     def _get_song_scale(self):

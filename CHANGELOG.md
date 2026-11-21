@@ -4,7 +4,12 @@ Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](https://gith
 
 Since 2.0 one version number covers the server and the Live control surface; the server refuses a control surface of another version. After updating, run `ableton-studio-mcp install` and **restart Live** — re-selecting the control surface does not reload the code. (1.x versions below are the Remote Script version.)
 
-## 2.1.0
+## 2.1.1
+
+### Fixed
+
+- **Undo of an action that loads a device.** In Live 12.4, loading a browser item closes the open undo step and records its own, so an action such as "new track, load Drift, set the tempo" spanned three of Live's undo steps and one `undo` only took back part of it. Each action is now recorded with a fingerprint of the set taken before it; undoing it steps back until the set matches that fingerprint — never further than the action itself — and redo replays the same steps. Undo logic moved to its own module (`undo.py`).
+
 
 New control surface series: run `ableton-studio-mcp install` and restart Live.
 
