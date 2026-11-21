@@ -12,6 +12,7 @@ an older control surface" before sending anything.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -234,6 +235,30 @@ def call(command: str, params: dict | None = None) -> Any:
 
 def require(capability: str) -> None:
     client().require(capability)
+
+
+@contextlib.contextmanager
+def undo_group(name: str):
+    """Make everything done inside the block a single step of Live's Undo.
+
+    Inside an outer group (or with a control surface that can't group), the
+    block simply joins what is already there.
+    """
+    began = False
+    if supports("begin_undo_group"):
+        try:
+            call("begin_undo_group", {"name": name})
+            began = True
+        except LiveRefused:      # a group is already open: join it
+            pass
+    try:
+        yield
+    finally:
+        if began:
+            try:
+                call("end_undo_group")
+            except LiveUnavailable:
+                log.warning("Could not close undo group '%s' (Live closes it after a while)", name)
 
 
 def supports(capability: str) -> bool:

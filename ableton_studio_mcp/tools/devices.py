@@ -207,7 +207,7 @@ def plugin_presets(track_index: int, device_index: int, preset_index: int = None
     return as_json(_device_call("select_plugin_preset", params, track_type))
 
 
-@tool()
+@tool(undo_step="Set up Simpler")
 def simpler_sample(track_index: int, device_index: int, file_path: str = None,
                    playback_mode: str = None, slicing_style: str = None, slicing_sensitivity: float = None,
                    slicing_beat_division: int = None, slicing_region_count: int = None, voices: int = None,

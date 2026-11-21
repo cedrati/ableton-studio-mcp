@@ -14,7 +14,7 @@ log = logging.getLogger("ableton_studio_mcp")
 
 
 
-@tool()
+@tool(undo_step="Import MIDI file")
 def import_midi_file(file_path: str,
     track_index: int = None,
     clip_index: int = 0,

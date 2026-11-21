@@ -67,7 +67,7 @@ def get_drum_map(track_index: int) -> str:
     return as_json(kit)
 
 
-@tool()
+@tool(undo_step="Write drum pattern")
 def write_drum_pattern(track_index: int,
     clip_index: int,
     style: str = None,

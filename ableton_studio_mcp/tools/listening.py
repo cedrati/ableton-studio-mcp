@@ -282,7 +282,7 @@ def analyze_mix(file_path: str, target: str = "streaming",
     return _with_image(report, png)
 
 
-@tool()
+@tool(undo_step="Listen to the arrangement")
 def listen_to_arrangement(start_time: float,
     end_time: float,
     target: str = "streaming",
