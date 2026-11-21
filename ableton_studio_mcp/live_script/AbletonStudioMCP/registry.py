@@ -40,6 +40,13 @@ def command(name, **renamed):
     return register
 
 
+def is_read(name):
+    """Whether a command only reads the set. By convention every read is
+    named get_*; the rest change something (and Live needs a display update
+    after each change before the next command)."""
+    return name.startswith("get_") and name in COMMANDS
+
+
 def capabilities():
     return sorted(COMMANDS) + list(FEATURES)
 

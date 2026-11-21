@@ -14,6 +14,7 @@ from before protocol 2 send none).
 """
 from __future__ import absolute_import, print_function, unicode_literals
 
+import collections
 import errno
 import json
 import select
@@ -26,6 +27,11 @@ RECV_CHUNK = 65536
 # A client usually sends its next request right after a reply. Waiting this
 # long for it, within one poll, saves a whole display update (~100 ms) per
 # request in a sequence; POLL_BUDGET caps the time a poll keeps Live busy.
+#
+# Only reads are chained like that. After a change to the set, Live needs a
+# display update of its own before the next command: changing the routing of a
+# track created in the same pass crashed Live 12.4. So a request that is not a
+# read ends the pass, and whatever follows waits for the next update.
 LINGER_SECONDS = 0.004
 POLL_BUDGET_SECONDS = 0.05
 # Write at most this much per client per poll, so one huge reply can't stall Live.
@@ -75,6 +81,7 @@ class Client(object):
     def __init__(self, sock, address):
         self.sock, self.address = sock, address
         self.reader = RequestReader()
+        self.backlog = collections.deque()   # requests received, not run yet
         self.outgoing = b""
         self.closing = False     # hang up once the outgoing bytes are written
 
@@ -89,9 +96,10 @@ class SocketServer(object):
     once, now or on a later poll (for changes Live applies on a later tick).
     """
 
-    def __init__(self, host, port, handle, log):
+    def __init__(self, host, port, handle, log, is_read=lambda request: False):
         self.host, self.port = host, port
         self.handle = handle
+        self.is_read = is_read
         self.log = log
         self.listener = None
         self.clients = []
@@ -122,7 +130,8 @@ class SocketServer(object):
             return
         deadline = time.time() + POLL_BUDGET_SECONDS
         while True:
-            self._round()
+            if not self._round():
+                return     # the set changed: let Live catch up first
             waiting = [c.sock for c in self.clients if not c.closing]
             if not waiting or time.time() >= deadline:
                 return
@@ -134,12 +143,26 @@ class SocketServer(object):
                 return
 
     def _round(self):
+        """Accept, read, run what may run, write. False once a request that
+        changes the set has run (the pass must end)."""
         self._accept()
+        may_continue = True
         for client in list(self.clients):
             if not client.closing:
                 self._read(client)
+            if may_continue:
+                may_continue = self._run(client)
             self._write(client)
         self.clients = [c for c in self.clients if c.sock is not None]
+        return may_continue
+
+    def _run(self, client):
+        while client.backlog:
+            request = client.backlog.popleft()
+            self.handle(request, client.send)
+            if not self.is_read(request):
+                return False
+        return True
 
     # ── steps ───────────────────────────────────────────────────────────────
 
@@ -171,8 +194,7 @@ class SocketServer(object):
                 client.send({"status": "error", "message": "bad request: %s" % e})
                 client.closing = True
                 return
-            for request in requests:
-                self.handle(request, client.send)
+            client.backlog.extend(requests)
 
     def _write(self, client):
         budget = SEND_BUDGET
