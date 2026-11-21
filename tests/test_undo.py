@@ -231,3 +231,112 @@ def test_undo_and_redo_tools_report(recorder):
     assert call(tools.redo) == "Redid 1 step(s)."
     recorder(replies={"end_undo_group": {"ended": True, "name": "beat"}})
     assert "one undo takes it all back" in call(tools.end_undo_group)
+
+
+# ── browser loads split Live's undo steps (measured in Live 12.4) ────────────
+
+class Device(object):
+    class_name = "Drift"
+    name = "Drift"
+    parameters = ()
+
+
+class LoadingSong(UndoSong):
+    """UndoSong plus one track whose device chain can change. Like Live, a
+    browser load commits the open step and records a step of its own; later
+    changes land in a fresh automatic step."""
+
+    def __init__(self):
+        UndoSong.__init__(self)
+        self.track = types.SimpleNamespace(name="1-MIDI", devices=[])
+        self.tracks = [self.track]
+
+    def change(self, name, old, new, apply):
+        apply(new)
+        step = ("custom", old, new, apply)
+        if self._open is not None:
+            self._open.append(step)
+        else:                                      # Live's automatic step
+            self.steps.append([step])
+        self.redo_stack = []
+
+    def browser_load(self):
+        if self._open:                             # the open step is committed...
+            self.steps.append(self._open)
+        self._open = None
+        before = list(self.track.devices)
+        self.track.devices = before + [Device()]    # ...and the load is its own step
+        self.steps.append([("custom", before, list(self.track.devices),
+                            lambda v: setattr(self.track, "devices", v))])
+        self.redo_stack = []
+
+    def undo(self):
+        step = self.steps.pop()
+        for _kind, old, _new, apply in reversed(step):
+            apply(old)
+        self.redo_stack.append(step)
+
+    def redo(self):
+        step = self.redo_stack.pop()
+        for _kind, _old, new, apply in step:
+            apply(new)
+        self.steps.append(step)
+
+    def set_tempo(self, value):
+        self.change("tempo", self._tempo, value, lambda v: setattr(self, "_tempo", v))
+
+    @property
+    def tempo(self):
+        return self._tempo
+
+    @tempo.setter
+    def tempo(self, value):      # the control surface's set_tempo goes through here
+        if not hasattr(self, "_tempo"):
+            self._tempo = value
+        else:
+            self.set_tempo(value)
+
+
+@pytest.fixture
+def loading(script_module):
+    inst = make_instance(script_module)
+    inst._song = LoadingSong()
+    return inst
+
+
+def test_an_action_with_a_load_is_undone_completely(loading):
+    song = loading._song
+    song.set_tempo(100.0)                          # an earlier change by hand
+    run(loading, "begin_undo_group", name="new sound")
+    song.set_tempo(125.0)
+    loading._note_browser_load()
+    song.browser_load()
+    song.set_tempo(126.0)
+    run(loading, "end_undo_group")
+    assert len(song.steps) == 4                    # by hand | A | load | B
+    reply = run(loading, "undo")["result"]
+    assert (reply["done"], reply["live_steps"]) == (1, 3)
+    assert song.tempo == 100.0 and song.track.devices == []
+    assert len(song.steps) == 1                    # the change by hand is untouched
+    reply = run(loading, "redo")["result"]
+    assert reply["live_steps"] == 3 and song.tempo == 126.0 and len(song.track.devices) == 1
+
+
+def test_a_load_first_never_undoes_the_step_before(loading):
+    song = loading._song
+    song.set_tempo(100.0)                          # must survive
+    run(loading, "begin_undo_group", name="load first")
+    loading._note_browser_load()
+    song.browser_load()                            # nothing open yet: no empty step
+    song.set_tempo(126.0)
+    run(loading, "end_undo_group")
+    reply = run(loading, "undo")["result"]
+    assert reply["live_steps"] == 2                # stops at the fingerprint, not at 1 + 2 × 1
+    assert song.tempo == 100.0 and song.track.devices == []
+
+
+def test_plain_actions_stay_one_step_each(loading):
+    run(loading, "set_tempo", tempo=128)
+    run(loading, "set_tempo", tempo=126)
+    assert run(loading, "undo")["result"]["live_steps"] == 1
+    assert loading._song.tempo == 128.0

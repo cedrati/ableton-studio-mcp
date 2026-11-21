@@ -29,6 +29,7 @@ from .registry import command
 from .session import SessionCommands
 from .snapshot import SnapshotCommands
 from .tracks import TrackCommands
+from .undo import UndoCommands
 from .transport import SocketServer
 from .warp import WarpCommands
 
@@ -37,7 +38,7 @@ NAME = "AbletonStudioMCP"
 SLOW_COMMAND_LOG_SECONDS = 1.0
 
 
-class AbletonStudioMCP(Waiting, SessionCommands, TrackCommands, ClipCommands, NoteCommands,
+class AbletonStudioMCP(Waiting, UndoCommands, SessionCommands, TrackCommands, ClipCommands, NoteCommands,
                        WarpCommands, AutomationCommands, DeviceCommands, GrooveCommands,
                        BrowserCommands, RecordingCommands, SnapshotCommands, ControlSurface):
 
@@ -107,13 +108,13 @@ class AbletonStudioMCP(Waiting, SessionCommands, TrackCommands, ClipCommands, No
         # group, see session.py).
         own_step = self._opens_undo_step(name)
         if own_step:
-            self._song.begin_undo_step()
+            self._open_entry(name)
         closed = []
 
         def close_step():
             if own_step and not closed:
                 closed.append(True)
-                self._song.end_undo_step()
+                self._close_entry()
 
         def finish(reply):
             close_step()
