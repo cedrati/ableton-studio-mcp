@@ -6,6 +6,8 @@ The version numbers below are the **Remote Script** version (`SCRIPT_VERSION`), 
 
 ## Remote Script 1.17.0
 
+First release published on PyPI: `uvx ableton-studio-mcp`.
+
 ### Changed
 
 - **Renamed to Ableton Studio MCP** (`cedrati/ableton-studio-mcp`, standalone repository; the old URL redirects). Package `ableton-studio-mcp`; commands `ableton-studio-mcp` and `ableton-studio-mcp-install-script`, the former `ableton-mcp` / `ableton-mcp-install-script` kept as aliases.
