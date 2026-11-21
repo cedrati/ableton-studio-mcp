@@ -1,14 +1,16 @@
 """The control surface Live instantiates, and how a request is executed.
 
-Live's object model may only be touched from Live's main thread. Requests
-arrive on socket threads, so each one is handed to the main thread with
-``schedule_message`` and the socket thread waits for its result. A handler
-may return a :class:`Deferred` when Live applies a change on a later tick;
-the reply is sent once the deferred settles.
+Everything happens on Live's main thread, the only one allowed to touch the
+Live object model: Live calls :meth:`update_display` about ten times a
+second, and each call lets the socket server accept, read, run requests and
+write replies (see transport.py). No threads, no locks, no waiting.
+
+A handler may return a :class:`Deferred` when Live applies a change on a
+later tick; its reply goes out when the deferred settles.
 """
 from __future__ import absolute_import, print_function, unicode_literals
 
-import queue
+import time
 import traceback
 
 from _Framework.ControlSurface import ControlSurface
@@ -17,7 +19,7 @@ from . import registry
 from .automation import AutomationCommands
 from .browser import BrowserCommands
 from .clips import ClipCommands
-from .constants import HOST, MAIN_THREAD_TIMEOUT, PORT, PROTOCOL_VERSION, SLOW_COMMAND_TIMEOUTS
+from .constants import HOST, PORT, PROTOCOL_VERSION
 from .deferred import Deferred, Waiting
 from .devices import DeviceCommands
 from .groove import GrooveCommands
@@ -31,6 +33,8 @@ from .transport import SocketServer
 from .warp import WarpCommands
 
 NAME = "AbletonStudioMCP"
+# Commands slower than this are written to Live's log (Log.txt), to spot regressions.
+SLOW_COMMAND_LOG_SECONDS = 1.0
 
 
 class AbletonStudioMCP(Waiting, SessionCommands, TrackCommands, ClipCommands, NoteCommands,
@@ -41,20 +45,32 @@ class AbletonStudioMCP(Waiting, SessionCommands, TrackCommands, ClipCommands, No
         ControlSurface.__init__(self, c_instance)
         from . import SCRIPT_VERSION
         self._song = self.song()
-        self._server = SocketServer(HOST, PORT, self._process_command, self.log_message)
+        self._server = SocketServer(HOST, PORT, self._execute, self.log_message)
         try:
             self._server.start()
         except (OSError, IOError) as e:
+            self._server = None
             self.log_message("cannot listen on %s:%d: %s" % (HOST, PORT, e))
             self.show_message("%s: port %d unavailable (%s)" % (NAME, PORT, e))
             return
         self.log_message("%s %s listening on %s:%d" % (NAME, SCRIPT_VERSION, HOST, PORT))
         self.show_message("%s: ready on port %d" % (NAME, PORT))
 
+    def update_display(self):
+        """Called by Live on its main thread about ten times a second."""
+        ControlSurface.update_display(self)
+        server = getattr(self, "_server", None)
+        if server is not None:
+            try:
+                server.poll()
+            except Exception as e:   # never let a network problem break Live's display loop
+                self.log_message("socket poll failed: %s\n%s" % (e, traceback.format_exc()))
+
     def disconnect(self):
         server = getattr(self, "_server", None)
         if server is not None:
             server.stop()
+            self._server = None
         ControlSurface.disconnect(self)
 
     @command("get_script_info")
@@ -67,40 +83,38 @@ class AbletonStudioMCP(Waiting, SessionCommands, TrackCommands, ClipCommands, No
 
     # ── requests ────────────────────────────────────────────────────────────
 
-    def _process_command(self, request):
-        """Execute one request and return the reply object."""
+    def _execute(self, request, respond):
+        """Run one request and pass its reply to ``respond`` (now, or later
+        for a Deferred)."""
         name = request.get("type", "")
         entry = registry.COMMANDS.get(name)
         if entry is None:
-            return {"status": "error", "message": "Unknown command: %s" % name}
+            return respond({"status": "error", "message": "Unknown command: %s" % name})
         handler = getattr(self, entry[0])
         try:
             kwargs = registry.bind_arguments(handler, name, request.get("params"))
         except registry.CommandError as e:
-            return {"status": "error", "message": str(e)}
-        return self._run_on_main_thread(name, lambda: handler(**kwargs))
-
-    def _run_on_main_thread(self, name, work):
-        replies = queue.Queue()
-
-        def task():
-            try:
-                result = work()
-            except Exception as e:
-                self.log_message("%s failed: %s\n%s" % (name, e, traceback.format_exc()))
-                replies.put({"status": "error", "message": str(e)})
-                return
-            if isinstance(result, Deferred):
-                result.start(lambda value: replies.put({"status": "success", "result": value}),
-                             lambda message: replies.put({"status": "error", "message": message}))
-            else:
-                replies.put({"status": "success", "result": result})
-
+            return respond({"status": "error", "message": str(e)})
+        started = time.time()
         try:
-            self.schedule_message(0, task)
-        except AssertionError:   # already on the main thread
-            task()
-        try:
-            return replies.get(timeout=SLOW_COMMAND_TIMEOUTS.get(name, MAIN_THREAD_TIMEOUT))
-        except queue.Empty:
-            return {"status": "error", "message": "Live did not finish '%s' in time" % name}
+            result = handler(**kwargs)
+        except Exception as e:
+            self.log_message("%s failed: %s\n%s" % (name, e, traceback.format_exc()))
+            return respond({"status": "error", "message": str(e)})
+        elapsed = time.time() - started
+        if elapsed > SLOW_COMMAND_LOG_SECONDS:
+            self.log_message("%s took %.0f ms" % (name, elapsed * 1000))
+        if isinstance(result, Deferred):
+            result.start(lambda value: respond({"status": "success", "result": value}),
+                         lambda message: respond({"status": "error", "message": message}))
+        else:
+            respond({"status": "success", "result": result})
+
+    def _process_command(self, request):
+        """Run a request and return its reply, when it settles right away
+        (as it does in tests, where deferreds resolve synchronously)."""
+        replies = []
+        self._execute(request, replies.append)
+        if replies:
+            return replies[0]
+        return {"status": "error", "message": "'%s' has not finished yet" % request.get("type")}

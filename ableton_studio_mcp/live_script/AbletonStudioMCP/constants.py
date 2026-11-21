@@ -21,10 +21,6 @@ MAX_REQUEST_BYTES = 16 * 1024 * 1024
 # 2: newline-delimited JSON (1 was "read until the bytes parse").
 PROTOCOL_VERSION = 2
 
-# How long the socket thread waits for Live's main thread to run a command.
-MAIN_THREAD_TIMEOUT = 10.0
-SLOW_COMMAND_TIMEOUTS = {"create_audio_clip": 60.0}
-
 # ── music ────────────────────────────────────────────────────────────────────
 
 NOTE_NAMES_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]

@@ -1,22 +1,36 @@
-"""The TCP side of the control surface.
+"""The TCP side of the control surface — without threads.
 
-One background thread accepts connections; each client gets its own thread
-that reads newline-delimited JSON requests and writes one JSON line back per
-request. What a request means is not this module's business: it hands every
-decoded request to ``handle(request) -> reply``.
+Live's embedded Python only lets other threads run while Live itself calls
+into Python, about ten times a second. A socket thread handing work to the
+main thread therefore paid for several of those calls per request. Instead,
+:meth:`SocketServer.poll` is called from the control surface's
+``update_display`` (Live's main thread): it accepts connections, reads what
+has arrived, runs the complete requests and writes the replies, all with
+non-blocking sockets. A request waits at most one display update.
 
-For servers from before protocol 2, a request without a trailing newline is
-also accepted once its bytes form a complete JSON object.
+Framing: one JSON object per line, both ways. A request without a trailing
+newline is also accepted once its bytes form a complete JSON object (servers
+from before protocol 2 send none).
 """
 from __future__ import absolute_import, print_function, unicode_literals
 
+import errno
 import json
+import select
 import socket
-import threading
+import time
 
 from .constants import MAX_REQUEST_BYTES
 
-ACCEPT_POLL_SECONDS = 1.0
+RECV_CHUNK = 65536
+# A client usually sends its next request right after a reply. Waiting this
+# long for it, within one poll, saves a whole display update (~100 ms) per
+# request in a sequence; POLL_BUDGET caps the time a poll keeps Live busy.
+LINGER_SECONDS = 0.004
+POLL_BUDGET_SECONDS = 0.05
+# Write at most this much per client per poll, so one huge reply can't stall Live.
+SEND_BUDGET = 4 * 1024 * 1024
+_WOULD_BLOCK = (errno.EAGAIN, errno.EWOULDBLOCK, getattr(errno, "WSAEWOULDBLOCK", errno.EAGAIN))
 
 
 class RequestReader(object):
@@ -57,73 +71,129 @@ def encode(reply):
     return (json.dumps(reply) + "\n").encode("utf-8")
 
 
+class Client(object):
+    def __init__(self, sock, address):
+        self.sock, self.address = sock, address
+        self.reader = RequestReader()
+        self.outgoing = b""
+        self.closing = False     # hang up once the outgoing bytes are written
+
+    def send(self, reply):
+        self.outgoing += encode(reply)
+
+
 class SocketServer(object):
+    """Accepts clients and exchanges requests/replies when polled.
+
+    ``handle(request, respond)`` runs each request; it calls ``respond(reply)``
+    once, now or on a later poll (for changes Live applies on a later tick).
+    """
+
     def __init__(self, host, port, handle, log):
         self.host, self.port = host, port
         self.handle = handle
         self.log = log
         self.listener = None
-        self.running = False
-        self.threads = []
+        self.clients = []
 
     def start(self):
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind((self.host, self.port))
         listener.listen(5)
-        listener.settimeout(ACCEPT_POLL_SECONDS)
+        listener.setblocking(False)
         self.listener = listener
-        self.running = True
-        self._spawn(self._accept_loop)
 
     def stop(self):
-        self.running = False
+        for client in self.clients:
+            self._close(client)
+        self.clients = []
         if self.listener is not None:
             try:
                 self.listener.close()
-            except OSError:
+            except (OSError, socket.error):
                 pass
             self.listener = None
 
-    def _spawn(self, target, *args):
-        thread = threading.Thread(target=target, args=args)
-        thread.daemon = True
-        thread.start()
-        self.threads = [t for t in self.threads if t.is_alive()] + [thread]
-
-    def _accept_loop(self):
-        while self.running:
+    def poll(self):
+        """Accept, read and run requests, write replies; keep going while
+        requests keep arriving, up to POLL_BUDGET_SECONDS."""
+        if self.listener is None:
+            return
+        deadline = time.time() + POLL_BUDGET_SECONDS
+        while True:
+            self._round()
+            waiting = [c.sock for c in self.clients if not c.closing]
+            if not waiting or time.time() >= deadline:
+                return
             try:
-                client, address = self.listener.accept()
-            except socket.timeout:
-                continue
-            except OSError:
-                if self.running:
-                    self.log("accept failed; listener closed")
-                break
-            self.log("client connected from %s:%s" % address[:2])
-            self._spawn(self._serve, client)
+                ready = select.select(waiting, [], [], LINGER_SECONDS)[0]
+            except (OSError, ValueError, select.error):
+                return
+            if not ready:
+                return
 
-    def _serve(self, client):
-        reader = RequestReader()
-        try:
-            while self.running:
-                data = client.recv(65536)
-                if not data:
-                    break
-                try:
-                    requests = reader.feed(data)
-                except ValueError as e:
-                    # The stream can no longer be trusted: say why, then hang up.
-                    client.sendall(encode({"status": "error", "message": "bad request: %s" % e}))
-                    break
-                for request in requests:
-                    client.sendall(encode(self.handle(request)))
-        except (OSError, socket.error) as e:
-            self.log("client connection error: %s" % e)
-        finally:
+    def _round(self):
+        self._accept()
+        for client in list(self.clients):
+            if not client.closing:
+                self._read(client)
+            self._write(client)
+        self.clients = [c for c in self.clients if c.sock is not None]
+
+    # ── steps ───────────────────────────────────────────────────────────────
+
+    def _accept(self):
+        while True:
             try:
-                client.close()
-            except OSError:
+                sock, address = self.listener.accept()
+            except (OSError, socket.error):
+                return   # nobody waiting (or the listener closed)
+            sock.setblocking(False)
+            self.clients.append(Client(sock, address))
+            self.log("client connected from %s:%s" % tuple(address[:2]))
+
+    def _read(self, client):
+        while True:
+            try:
+                data = client.sock.recv(RECV_CHUNK)
+            except (OSError, socket.error) as e:
+                if getattr(e, "errno", None) in _WOULD_BLOCK:
+                    return
+                self.log("client connection error: %s" % e)
+                return self._close(client)
+            if not data:
+                return self._close(client)
+            try:
+                requests = client.reader.feed(data)
+            except ValueError as e:
+                # The stream can't be trusted any more: say why, then hang up.
+                client.send({"status": "error", "message": "bad request: %s" % e})
+                client.closing = True
+                return
+            for request in requests:
+                self.handle(request, client.send)
+
+    def _write(self, client):
+        budget = SEND_BUDGET
+        while client.sock is not None and client.outgoing and budget > 0:
+            try:
+                sent = client.sock.send(client.outgoing[:min(budget, RECV_CHUNK * 4)])
+            except (OSError, socket.error) as e:
+                if getattr(e, "errno", None) in _WOULD_BLOCK:
+                    return
+                self.log("client connection error: %s" % e)
+                return self._close(client)
+            client.outgoing = client.outgoing[sent:]
+            budget -= sent
+        if client.closing and not client.outgoing:
+            self._close(client)
+
+    def _close(self, client):
+        if client.sock is not None:
+            try:
+                client.sock.close()
+            except (OSError, socket.error):
                 pass
+            client.sock = None
             self.log("client disconnected")

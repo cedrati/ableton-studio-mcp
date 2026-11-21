@@ -50,6 +50,9 @@ def _load_script_module(fresh=False):
         def show_message(self, *args, **kwargs):
             pass
 
+        def update_display(self):
+            pass
+
     control_surface_mod.ControlSurface = _StubControlSurface
     framework.ControlSurface = control_surface_mod
     sys.modules.setdefault("_Framework", framework)
@@ -74,7 +77,7 @@ def script_module():
 def make_instance(script_module, application=None):
     inst = script_module.AbletonStudioMCP.__new__(script_module.AbletonStudioMCP)
     inst.application = lambda: application
-    inst.schedule_message = lambda delay, callback: callback()  # run "on the main thread" now
+    inst.schedule_message = lambda delay, callback: callback()  # deferreds settle at once
     inst.log_message = lambda *a, **k: None
     inst.show_message = lambda *a, **k: None
     return inst
@@ -150,35 +153,111 @@ def test_non_object_request_is_refused(script_module):
         _reader(script_module).feed(b"[1, 2]\n")
 
 
+def _serve_while(server, until, timeout=3.0):
+    import time as _time
+    deadline = _time.time() + timeout
+    while not until() and _time.time() < deadline:
+        server.poll()
+        _time.sleep(0.005)
+
+
 def test_socket_server_answers_one_line_per_request(script_module):
-    """End to end on a real socket: newline framing, replies in order,
-    a broken request answered with an error before hanging up."""
+    """End to end on a real socket, driven by poll() as Live's display
+    updates would: newline framing, replies in order, a broken request
+    answered with an error before hanging up."""
     import socket as _socket
+    import threading
     seen = []
 
-    def handle(request):
+    def handle(request, respond):
         seen.append(request["type"])
-        return {"status": "success", "result": {"echo": request["type"]}}
+        respond({"status": "success", "result": {"echo": request["type"]}})
 
     server = script_module.transport.SocketServer("127.0.0.1", 0, handle, lambda *_: None)
-    server.port = 0
     server.start()
     port = server.listener.getsockname()[1]
-    try:
+    out = {}
+
+    def client():
         with _socket.create_connection(("127.0.0.1", port), timeout=3) as c:
             c.sendall(b'{"type": "a"}\n{"type": "b"}\n')
             data = b""
             while data.count(b"\n") < 2:
                 data += c.recv(4096)
-            replies = [json.loads(line) for line in data.splitlines()]
-            assert [r["result"]["echo"] for r in replies] == ["a", "b"]
+            out["replies"] = [json.loads(line) for line in data.splitlines()]
             c.sendall(b"not json\n")
-            error = json.loads(c.recv(4096).splitlines()[0])
-            assert error["status"] == "error" and "bad request" in error["message"]
-            assert c.recv(4096) == b""          # then the server hangs up
+            out["error"] = json.loads(c.recv(4096).splitlines()[0])
+            out["eof"] = c.recv(4096)
+
+    t = threading.Thread(target=client)
+    t.start()
+    try:
+        _serve_while(server, lambda: not t.is_alive())
     finally:
+        t.join(1)
         server.stop()
+    assert [r["result"]["echo"] for r in out["replies"]] == ["a", "b"]
+    assert out["error"]["status"] == "error" and "bad request" in out["error"]["message"]
+    assert out["eof"] == b""
     assert seen == ["a", "b"]
+
+
+def test_large_reply_is_written_over_several_polls(script_module, monkeypatch):
+    import socket as _socket
+    import threading
+    monkeypatch.setattr(script_module.transport, "SEND_BUDGET", 64 * 1024)
+    big = "x" * (3 * 1024 * 1024)
+    server = script_module.transport.SocketServer(
+        "127.0.0.1", 0, lambda r, respond: respond({"status": "success", "result": big}), lambda *_: None)
+    server.start()
+    port = server.listener.getsockname()[1]
+    got = {}
+
+    def client():
+        with _socket.create_connection(("127.0.0.1", port), timeout=5) as c:
+            c.sendall(b'{"type": "big"}\n')
+            data = b""
+            while not data.endswith(b"\n"):
+                data += c.recv(1 << 20)
+            got["len"] = len(json.loads(data)["result"])
+
+    t = threading.Thread(target=client)
+    t.start()
+    try:
+        _serve_while(server, lambda: not t.is_alive(), timeout=10)
+    finally:
+        t.join(1)
+        server.stop()
+    assert got["len"] == len(big)
+
+
+def test_deferred_reply_goes_out_on_a_later_poll(script_module):
+    """A handler may answer later (changes Live applies on a later tick)."""
+    import socket as _socket
+    import threading
+    pending = []
+    server = script_module.transport.SocketServer(
+        "127.0.0.1", 0, lambda r, respond: pending.append(respond), lambda *_: None)
+    server.start()
+    port = server.listener.getsockname()[1]
+    got = {}
+
+    def client():
+        with _socket.create_connection(("127.0.0.1", port), timeout=3) as c:
+            c.sendall(b'{"type": "slow"}\n')
+            got["reply"] = json.loads(c.recv(4096))
+
+    t = threading.Thread(target=client)
+    t.start()
+    try:
+        _serve_while(server, lambda: pending)
+        assert "reply" not in got
+        pending[0]({"status": "success", "result": "later"})
+        _serve_while(server, lambda: not t.is_alive())
+    finally:
+        t.join(1)
+        server.stop()
+    assert got["reply"]["result"] == "later"
 
 
 # ------------------------------------------------------------ dispatching
@@ -215,14 +294,6 @@ def test_capabilities_are_generated_from_the_handlers(script_module):
     for name in script_module.registry.COMMANDS:
         method = script_module.registry.COMMANDS[name][0]
         assert callable(getattr(script_module.AbletonStudioMCP, method)), name
-
-
-def test_main_thread_timeout_is_reported(script_module, monkeypatch):
-    inst = make_instance(script_module)
-    inst.schedule_message = lambda delay, callback: None     # Live never runs it
-    monkeypatch.setattr(script_module.surface, "MAIN_THREAD_TIMEOUT", 0.05)
-    reply = inst._process_command({"type": "get_scenes", "params": {}})
-    assert reply == {"status": "error", "message": "Live did not finish 'get_scenes' in time"}
 
 
 # ------------------------------------------------------------- browser tree
@@ -272,3 +343,18 @@ def test_browser_tree_caps_a_huge_folder_and_flags_it(script_module):
 
     assert len(category["children"]) == 64
     assert category["has_more"] is True
+
+
+def test_update_display_polls_the_server_and_survives_errors(script_module):
+    inst = make_instance(script_module)
+    calls = []
+
+    class Server(object):
+        def poll(self):
+            calls.append(1)
+            raise OSError("boom")
+    inst._server = Server()
+    logged = []
+    inst.log_message = logged.append
+    inst.update_display()
+    assert calls == [1] and "socket poll failed" in logged[0]
