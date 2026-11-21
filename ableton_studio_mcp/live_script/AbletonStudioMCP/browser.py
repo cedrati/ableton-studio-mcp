@@ -197,6 +197,7 @@ class BrowserCommands(object):
         name = item.name
         same_kind = any(existing == name for (_, existing) in before)
         params_before = self._param_fingerprint(track) if same_kind else None
+        self._note_browser_load()     # the load splits the open undo step (see undo.py)
         browser.load_item(item)
 
         def chain_changed():

@@ -169,6 +169,44 @@ class SnapshotCommands(object):
         state["devices"] = [self._device_state(d, i, with_params) for i, d in enumerate(track.devices)]
         return state
 
+    # ── fingerprint (undo) ──────────────────────────────────────────────────
+
+    def _set_fingerprint(self):
+        """A compact summary of the set — tempo, tracks, devices and their
+        parameter values, clips, returns, main track, scenes, locators — to
+        tell whether an undo brought the set back to an earlier state."""
+        song, read = self._song, self._safe_attr
+
+        def devices(track):
+            return tuple((d.class_name, d.name, tuple(round(read(p, "value", float, 0.0), 5)
+                                                      for p in read(d, "parameters", list, [])))
+                         for d in read(track, "devices", list, []))
+
+        def mixer(track):
+            m = read(track, "mixer_device", None, None)
+            if m is None:
+                return None
+            return (round(m.volume.value, 5), round(m.panning.value, 5),
+                    read(track, "mute", bool, None), read(track, "solo", bool, None))
+
+        def slots(track):
+            return tuple((s.clip.name, round(s.clip.length, 5)) if s.has_clip else None
+                         for s in read(track, "clip_slots", list, []))
+
+        def arranged(track):
+            return tuple((c.name, round(c.start_time, 5), round(c.end_time, 5))
+                         for c in read(track, "arrangement_clips", list, []))
+
+        main = read(song, "master_track", None, None)
+        return hash((
+            read(song, "tempo", float, None),
+            tuple((t.name, mixer(t), devices(t), slots(t), arranged(t)) for t in read(song, "tracks", list, [])),
+            tuple((t.name, mixer(t), devices(t)) for t in read(song, "return_tracks", list, [])),
+            (mixer(main), devices(main)) if main is not None else None,
+            len(read(song, "scenes", list, [])),
+            tuple((c.name, round(c.time, 5)) for c in read(song, "cue_points", list, [])),
+        ))
+
     # ── the command ─────────────────────────────────────────────────────────
 
     @command("get_session_snapshot")
