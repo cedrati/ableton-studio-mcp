@@ -386,8 +386,10 @@ def _wav(path, seconds=0.5, amp=0.5):
 
 def test_listen_records_analyzes_and_cleans_up(connect, monkeypatch, tmp_path):
     monkeypatch.setattr(server, "RECORDING_POLL_S", 0.0)
-    take = tmp_path / "take.wav"
+    take = tmp_path / "Claude – écoute 0001 [2026-11-21 120000].wav"
     _wav(take)
+    asd = tmp_path / (take.name + ".asd")
+    asd.write_bytes(b"live analysis")
     conn = connect({
         "get_session_info": {"tempo": 120.0},
         "get_recording_status": lambda p: {"armed_tracks": [{"index": 0}],
@@ -399,7 +401,8 @@ def test_listen_records_analyzes_and_cleans_up(connect, monkeypatch, tmp_path):
     })
     out = json.loads(call(server.listen_to_arrangement, None, 0.0, 4.0, report="basic"))
     assert out["analysis"]["peak_dbfs"] == pytest.approx(-6.02, abs=0.1)
-    assert out["recorded"]["track"] == "deleted (file kept)"
+    assert out["recorded"]["track"] == "deleted" and out["recorded"]["file"] == "deleted"
+    assert not take.exists() and not asd.exists()  # no audio piles up in the project
     sent = [(c, p) for c, p in conn.sent]
     assert ("set_track_routing", {"track_index": 4, "input_type": "Rééchantillonnage",
                                   "monitoring": "off"}) in sent
@@ -556,3 +559,45 @@ def test_parameter_display_and_items(script_module):
     assert p["display"] == "Bell" and p["value_items"][5] == "High Shelf"
     r = inst._set_device_parameter(0, 0, 0, 5)
     assert (r["old_display"], r["display"]) == ("Bell", "High Shelf")
+
+
+
+def test_listen_can_keep_the_take(connect, monkeypatch, tmp_path):
+    monkeypatch.setattr(server, "RECORDING_POLL_S", 0.0)
+    take = tmp_path / "Claude – écoute 0001 [2026-11-21 120500].wav"
+    _wav(take)
+    connect({
+        "get_session_info": {"tempo": 120.0},
+        "get_recording_status": lambda p: {"armed_tracks": [], "recording": {"finished": True}},
+        "create_audio_track": {"index": 2, "name": "3-Audio"},
+        "get_track_routing": {"input": {"available_types": ["Resampling"]}},
+        "get_arrangement_clips": {"clips": [{"name": "take"}]},
+        "get_audio_clip_file": {"file_path": str(take)},
+    })
+    out = json.loads(call(server.listen_to_arrangement, None, 0.0, 4.0, report="basic", keep_audio=True))
+    assert out["recorded"]["track"] == "deleted (file kept)" and take.exists()
+
+
+def test_discard_take_never_touches_other_files(tmp_path):
+    mine = tmp_path / "Vocals 0003 [2026-11-21 120000].wav"
+    mine.write_bytes(b"RIFF")
+    assert server._discard_take(str(mine)) is False and mine.exists()
+    ours = tmp_path / "Claude – écoute 0002.wav"
+    ours.write_bytes(b"RIFF")
+    assert server._discard_take(str(ours)) is True and not ours.exists()
+
+
+def test_old_spectrograms_are_pruned(monkeypatch, tmp_path):
+    import os
+    import tempfile
+    import time as _t
+    monkeypatch.setattr(tempfile, "gettempdir", lambda: str(tmp_path))
+    folder = tmp_path / "ableton-mcp"
+    folder.mkdir()
+    for i in range(server.SPECTROGRAMS_KEPT + 5):
+        f = folder / ("take%02d_spectrogram.png" % i)
+        f.write_bytes(b"png")
+        os.utime(f, (_t.time() - 1000 + i, _t.time() - 1000 + i))
+    server._spectrogram_path("/x/new.wav")
+    left = sorted(p.name for p in folder.iterdir())
+    assert len(left) == server.SPECTROGRAMS_KEPT and left[0] == "take05_spectrogram.png"

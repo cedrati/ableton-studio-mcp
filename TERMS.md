@@ -1,6 +1,6 @@
 # Ableton Studio MCP — Privacy & data
 
-_Last updated: 20 November 2026_
+_Last updated: 21 November 2026_
 
 **In short: Ableton Studio MCP sends nothing anywhere.** Your music, your prompts and your Live set stay on your machine.
 
@@ -27,8 +27,8 @@ The original project's data terms apply only to the original `ableton-mcp` packa
 |---|---|
 | `~/Library/Application Support/AbletonMCP/customer_uuid.txt` (macOS; `%APPDATA%` on Windows, `~/.local/share` on Linux) | A random ID created by the inherited telemetry code. Never sent. You can delete it. |
 | `~/.ableton-mcp/consent.json` | Only if a consent answer was ever recorded. |
-| `<your Live project>/Samples/Recorded/Claude – écoute …` | Takes recorded by `listen_to_arrangement` / `record_arrangement`, like any recording made in Live. |
-| `<system temp folder>/ableton-mcp/*_spectrogram.png` | Spectrogram images of analysed takes. |
+| `<your Live project>/Samples/Recorded/…` | Takes recorded with `record_arrangement`, like any recording made in Live. Listening takes (`Claude – écoute …`) are deleted right after analysis unless you ask to keep them. |
+| `<system temp folder>/ableton-mcp/*_spectrogram.png` | Spectrogram images of analysed takes; only the 20 most recent are kept. |
 | `<User Library>/Remote Scripts/AbletonMCP/` | The Remote Script, installed by `ableton-studio-mcp-install-script` (the previous version is kept as `__init__.py.bak`). |
 
 ## Your music
