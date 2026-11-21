@@ -35,7 +35,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["ableton_studio_mcp"]
+packages = ["ableton_studio_mcp", "ableton_studio_mcp.tools"]
 
 [tool.setuptools.package-data]
 # The Live control surface is copied into Live by `ableton-studio-mcp install`.

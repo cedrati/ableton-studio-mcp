@@ -19,3 +19,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Tests
         run: uv run --with pytest pytest -q
+      - name: The built package installs and registers every tool
+        run: |
+          uv build
+          uv venv "$RUNNER_TEMP/pkg"
+          uv pip install --python "$RUNNER_TEMP/pkg/bin/python" dist/*.whl
+          cd "$RUNNER_TEMP"
+          pkg/bin/ableton-studio-mcp --version
+          pkg/bin/python -c "import asyncio, ableton_studio_mcp.tools; from ableton_studio_mcp.app import mcp; n = len(asyncio.run(mcp.list_tools())); print(n, 'tools'); assert n >= 92"
+          test -f pkg/lib/python*/site-packages/ableton_studio_mcp/live_script/AbletonStudioMCP/__init__.py

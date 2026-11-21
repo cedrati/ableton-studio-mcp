@@ -15,6 +15,11 @@ Ableton Studio MCP becomes a project of its own: the code that still came from t
 - **One copy of the control surface:** it lives inside the package (`ableton_studio_mcp/live_script/`) instead of a repository folder plus a bundled duplicate; a single version number is checked by the tests and the release workflow.
 - `doctor` also warns when the old *AbletonMCP* control surface is still installed.
 - Dockerfile and `smithery.yaml` rewritten for the new entry point.
+- **Server core rewritten.** New connection to Live (`live.py`): one socket reopened automatically when Live restarts, a stale socket detected before use, one request at a time, per-command timeouts, and the control surface's version checked on every connection (replaces the old handshake module and its retry hook). Typed errors — Live unavailable, Live refused, control surface too old — each reported to the assistant as one clear line by the new `@tool` decorator (`app.py`).
+- **Tools split by domain** into `ableton_studio_mcp/tools/` (session, tracks, clips, devices, browser, routing, listening, midi, theory, drums, evolution) instead of one 3,500-line `server.py`; tool descriptions rewritten. Same 92 tools with the same parameters. Tools no longer take the unused `ctx` argument.
+- Error messages changed: "<tool> failed: <Live's reason>" instead of "Error <doing something>: …".
+- CI now builds the package, installs it in a clean environment and checks that every tool and the control surface are inside (the `tools` subpackage was missing from the first 2.0 build).
+- 22 new robustness tests against a fake control surface on a real socket: Live closed or restarted, connection lost mid-request, timeouts, fragmented replies, outdated control surface, Live started after the server, parallel calls.
 
 ## Remote Script 1.17.0
 

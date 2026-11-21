@@ -11,7 +11,8 @@ import json
 
 import pytest
 
-import ableton_studio_mcp.server as server
+from ableton_studio_mcp import live, tools
+from ableton_studio_mcp.tools import listening
 from test_clip_notes import call, fake_conn, FakeConnection  # noqa: F401  (fixtures)
 from test_remote_script_bridge import _load_script_module, make_instance
 
@@ -205,14 +206,17 @@ def test_dispatch_routes_location_and_remove_notes(script_module):
 
 # ----------------------------------------------------------- server side
 
+def _raise_missing(name):
+    raise live.MissingCapability("missing " + name)
+
+
 @pytest.fixture
 def capabilities(monkeypatch):
     """Pretend the Remote Script advertises exactly these capabilities."""
-    import ableton_studio_mcp.script_handshake as sh
-
+    
     def _set(*names):
-        monkeypatch.setattr(sh, "require_capability",
-                            lambda name: None if name in names else "missing " + name)
+        monkeypatch.setattr(live, "require",
+                            lambda name: None if name in names else _raise_missing(name))
     return _set
 
 
@@ -222,8 +226,8 @@ ALL = ("get_clip_notes", "clear_notes_from_clip", "arrangement_notes", "remove_n
 def test_server_sends_location_only_for_the_arrangement(fake_conn, capabilities):
     capabilities(*ALL)
     conn = fake_conn(response={"notes": [], "note_count": 0})
-    call(server.get_clip_notes, None, 1, 2)
-    call(server.get_clip_notes, None, 1, 2, location="arrangement")
+    call(tools.get_clip_notes, 1, 2)
+    call(tools.get_clip_notes, 1, 2, location="arrangement")
     assert conn.sent == [
         ("get_clip_notes", {"track_index": 1, "clip_index": 2}),
         ("get_clip_notes", {"track_index": 1, "clip_index": 2, "location": "arrangement"}),
@@ -233,9 +237,9 @@ def test_server_sends_location_only_for_the_arrangement(fake_conn, capabilities)
 def test_server_add_and_clear_forward_location(fake_conn, capabilities):
     capabilities(*ALL)
     conn = fake_conn(response={"note_count": 1, "clip_name": "verse", "cleared_count": 1})
-    out = call(server.add_notes_to_clip, None, 0, 3, DRUMS[:1], location="arrangement")
+    out = call(tools.add_notes_to_clip, 0, 3, DRUMS[:1], location="arrangement")
     assert "arrangement clip 3" in out
-    out = call(server.clear_notes_from_clip, None, 0, 3, location="arrangement")
+    out = call(tools.clear_notes_from_clip, 0, 3, location="arrangement")
     assert "arrangement clip 3" in out
     assert [c[1].get("location") for c in conn.sent] == ["arrangement", "arrangement"]
 
@@ -245,14 +249,14 @@ def test_server_refuses_arrangement_on_an_older_script(fake_conn, capabilities):
     capabilities("get_clip_notes", "clear_notes_from_clip")
     conn = fake_conn(response={})
     assert "missing arrangement_notes" in call(
-        server.add_notes_to_clip, None, 0, 0, DRUMS, location="arrangement")
+        tools.add_notes_to_clip, 0, 0, DRUMS, location="arrangement")
     assert "missing arrangement_notes" in call(
-        server.get_clip_notes, None, 0, 0, location="arrangement")
+        tools.get_clip_notes, 0, 0, location="arrangement")
     assert "missing arrangement_notes" in call(
-        server.clear_notes_from_clip, None, 0, 0, location="arrangement")
+        tools.clear_notes_from_clip, 0, 0, location="arrangement")
     assert conn.sent == []
     # Session calls still go through on the older script.
-    call(server.add_notes_to_clip, None, 0, 0, DRUMS)
+    call(tools.add_notes_to_clip, 0, 0, DRUMS)
     assert conn.sent == [("add_notes_to_clip",
                           {"track_index": 0, "clip_index": 0, "notes": DRUMS})]
 
@@ -260,7 +264,7 @@ def test_server_refuses_arrangement_on_an_older_script(fake_conn, capabilities):
 def test_server_remove_notes_params(fake_conn, capabilities):
     capabilities(*ALL)
     conn = fake_conn(response={"removed_count": 2})
-    out = call(server.remove_notes, None, 0, 1, from_time=4.0, time_span=4.0,
+    out = call(tools.remove_notes, 0, 1, from_time=4.0, time_span=4.0,
                location="arrangement")
     assert json.loads(out)["removed_count"] == 2
     assert conn.sent == [("remove_notes", {
@@ -271,6 +275,6 @@ def test_server_remove_notes_params(fake_conn, capabilities):
 def test_server_rejects_an_unknown_location(fake_conn, capabilities):
     capabilities(*ALL)
     conn = fake_conn(response={})
-    assert "location must be" in call(server.get_clip_notes, None, 0, 0, location="timeline")
-    assert "location must be" in call(server.remove_notes, None, 0, 0, location="timeline")
+    assert "location must be" in call(tools.get_clip_notes, 0, 0, location="timeline")
+    assert "location must be" in call(tools.remove_notes, 0, 0, location="timeline")
     assert conn.sent == []
