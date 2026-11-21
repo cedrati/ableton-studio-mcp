@@ -9,6 +9,7 @@
 By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)) — built on [ableton-mcp](https://github.com/ahujasid/ableton-mcp) by Siddharth Ahuja.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/cedrati/ableton-studio-mcp/blob/main/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/ableton-studio-mcp)](https://pypi.org/project/ableton-studio-mcp/)
 ![Remote Script](https://img.shields.io/badge/Remote%20Script-1.17.0-blue)
 ![Live](https://img.shields.io/badge/Ableton%20Live-11%20%7C%2012-black)
 [![Tests](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml/badge.svg)](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml)
@@ -27,7 +28,7 @@ By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)) — built on [ab
 
 **Ableton Studio MCP, written and maintained by Olivier Cedrati, builds on it and turns it into a full production assistant.** Beyond writing notes, the assistant can mix (faders, sends, return and main-track effects, routing), **listen** to the result and judge it like a mastering engineer (LUFS, true peak, tonal balance, stereo, a spectrogram it can look at), and compose with real music-theory knowledge (scales and modes, style sheets, key and chord analysis, clip transformations, voice-led progressions).
 
-It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp). The `ableton-mcp` package on PyPI is the **original** project and does not include any of this — install Ableton Studio MCP from this repository as shown below. (The commands `ableton-mcp` and `ableton-mcp-install-script` still work as aliases of the new ones.)
+It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp). It is published on PyPI as [`ableton-studio-mcp`](https://pypi.org/project/ableton-studio-mcp/). (The `ableton-mcp` package on PyPI is the **original** project and does not include any of this.) (The commands `ableton-mcp` and `ableton-mcp-install-script` still work as aliases of the new ones.)
 
 **No data is collected:** no telemetry, no analytics, nothing sent anywhere (see [Privacy](#privacy)).
 
@@ -67,7 +68,7 @@ Python (3.10+) and the dependencies, including `numpy`, are installed automatica
 <summary><b>Claude Code</b></summary>
 
 ```bash
-claude mcp add ableton -s user -- uvx --from git+https://github.com/cedrati/ableton-studio-mcp@feat/mixer-scenes ableton-studio-mcp
+claude mcp add ableton -s user -- uvx ableton-studio-mcp
 ```
 </details>
 
@@ -79,7 +80,7 @@ claude mcp add ableton -s user -- uvx --from git+https://github.com/cedrati/able
   "mcpServers": {
     "AbletonMCP": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/cedrati/ableton-studio-mcp@feat/mixer-scenes", "ableton-studio-mcp"]
+      "args": ["ableton-studio-mcp"]
     }
   }
 }
@@ -90,7 +91,7 @@ claude mcp add ableton -s user -- uvx --from git+https://github.com/cedrati/able
 <summary><b>Cursor</b> — Settings → MCP, as a command</summary>
 
 ```
-uvx --from git+https://github.com/cedrati/ableton-studio-mcp@feat/mixer-scenes ableton-studio-mcp
+uvx ableton-studio-mcp
 ```
 </details>
 
@@ -99,7 +100,7 @@ Run the server in **one** client at a time.
 ### 2. Install the Remote Script into Live
 
 ```bash
-uvx --from git+https://github.com/cedrati/ableton-studio-mcp@feat/mixer-scenes ableton-studio-mcp-install-script
+uvx --from ableton-studio-mcp ableton-studio-mcp-install-script
 ```
 
 This copies the script into your User Library's `Remote Scripts/AbletonMCP` folder (found from Live's own settings; `--list-targets` shows where it would go, `--target <folder>` forces a location). A previous version is kept as `__init__.py.bak`.
@@ -116,16 +117,19 @@ The server and the Remote Script must come from the **same version** — always 
 Run the built-in check, which looks at Python, uv, the script installed in your User Library, the Control Surface setting and the script actually running in Live, and says what to fix:
 
 ```bash
-uvx --from git+https://github.com/cedrati/ableton-studio-mcp@feat/mixer-scenes ableton-studio-mcp doctor
+uvx ableton-studio-mcp doctor
 ```
 
 Or ask the assistant to run `get_remote_script_info`: it should report `script_version` **1.17.0** and `up_to_date: true`.
 
 ### Updating
 
-1. Re-run the install command of step 2.
+1. Fetch the new version and install its Remote Script: `uvx --refresh --from ableton-studio-mcp ableton-studio-mcp-install-script`
 2. **Restart Live** — re-selecting the control surface does not reload the code.
 3. Restart your MCP client. If it still runs old code: `uv cache clean ableton-studio-mcp` (with the client closed).
+4. `uvx ableton-studio-mcp doctor` confirms that everything matches.
+
+To try unreleased changes, use the development branch instead of PyPI: replace `ableton-studio-mcp` with `--from git+https://github.com/cedrati/ableton-studio-mcp@feat/mixer-scenes ableton-studio-mcp` in the commands above.
 
 ---
 
