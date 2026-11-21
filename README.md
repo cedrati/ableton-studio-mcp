@@ -48,7 +48,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (271) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (282) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -304,8 +304,17 @@ Start with `ableton-studio-mcp doctor` (see [Check](#4-check)): it diagnoses mos
 MCP client (Claude…)  ⇄  MCP server (ableton_studio_mcp/, Python)  ⇄  TCP 127.0.0.1:9877  ⇄  AbletonStudioMCP control surface inside Live (ableton_studio_mcp/live_script/)
 ```
 
-- The **Remote Script** runs inside Live and executes commands through Live's Python API. It listens on localhost only (set `ABLETON_MCP_HOST` deliberately to change that).
-- The **MCP server** exposes the tools, checks the script's version and capabilities, and does the heavy work outside Live: audio analysis, MIDI files, music theory.
+- The **control surface** runs inside Live and executes commands through Live's Python API. It listens on localhost only (set `ABLETON_MCP_HOST` deliberately to change that).
+- The **MCP server** exposes the tools and does the heavy work outside Live: audio analysis, MIDI files, music theory. Its code is organised as:
+
+  | Module | Role |
+  |---|---|
+  | `live.py` | The connection to Live: one socket, reopened when Live restarts, one request at a time, per-command timeouts, and the control surface's version and command list checked on every connection. |
+  | `app.py` | The MCP application and the `@tool` decorator: checks the commands a tool needs and turns any failure into one readable line. |
+  | `tools/` | The tools, one module per domain: session, tracks, clips, devices, browser, routing, listening, midi, theory, drums, evolution. |
+  | `audio_analysis.py`, `mix_analysis.py`, `music_theory.py`, `drums.py`, `arrangement.py`… | The domain logic, independent of Live and fully unit-tested. |
+  | `install.py`, `doctor.py`, `server.py` | Installer, diagnostics, command-line entry point. |
+
 - Messages are JSON objects: `{"type": ..., "params": ...}` → `{"status": ..., "result" | "message": ...}`.
 
 ### Development
@@ -313,7 +322,7 @@ MCP client (Claude…)  ⇄  MCP server (ableton_studio_mcp/, Python)  ⇄  TCP 
 ```bash
 git clone -b feat/mixer-scenes https://github.com/cedrati/ableton-studio-mcp
 cd ableton-studio-mcp
-uv run --with pytest pytest -q             # 271 tests, no Live needed
+uv run --with pytest pytest -q             # 282 tests, no Live needed
 uv run ableton-studio-mcp install          # install your working copy into Live
 uv run ableton-studio-mcp doctor           # check the whole chain
 ```

@@ -17,7 +17,8 @@ import json
 
 import pytest
 
-import ableton_studio_mcp.server as server
+from ableton_studio_mcp import live, tools
+from ableton_studio_mcp.tools import listening
 
 
 def call(tool, *args, **kwargs):
@@ -41,7 +42,7 @@ class FakeConnection:
         self.raise_exc = raise_exc
         self.sent = []  # list of (command_type, params) tuples
 
-    def send_command(self, command_type, params=None):
+    def call(self, command_type, params=None):
         self.sent.append((command_type, params or {}))
         if self.raise_exc is not None:
             raise self.raise_exc
@@ -54,7 +55,7 @@ def fake_conn(monkeypatch):
     return it so the test can inspect what was sent."""
     def _make(response=None, raise_exc=None):
         conn = FakeConnection(response=response, raise_exc=raise_exc)
-        monkeypatch.setattr(server, "get_ableton_connection", lambda: conn)
+        monkeypatch.setattr(live, "client", lambda: conn)
         return conn
     return _make
 
@@ -64,8 +65,7 @@ def _script_capabilities_available(monkeypatch):
     """Tools gate on require_capability(), which needs a live Remote Script
     handshake. Report every capability as present so the tests exercise the
     tool body rather than the missing-script early return."""
-    import ableton_studio_mcp.script_handshake as sh
-    monkeypatch.setattr(sh, "require_capability", lambda name: None)
+    monkeypatch.setattr(live, "require", lambda name: None)
 
 
 # A representative clip payload as the Remote Script would return it.
@@ -87,13 +87,13 @@ def _sample_response(notes=SAMPLE_NOTES, name="Fred Pattern", length=8.0):
 
 def test_read_sends_correct_command_and_params(fake_conn):
     conn = fake_conn(response=_sample_response())
-    call(server.get_clip_notes, None, track_index=2, clip_index=5)
+    call(tools.get_clip_notes, track_index=2, clip_index=5)
     assert conn.sent == [("get_clip_notes", {"track_index": 2, "clip_index": 5})]
 
 
 def test_read_returns_the_payload_as_json(fake_conn):
     fake_conn(response=_sample_response(name="Fred Pattern", length=8.0))
-    payload = json.loads(call(server.get_clip_notes, None, 0, 0))
+    payload = json.loads(call(tools.get_clip_notes, 0, 0))
     assert payload["clip_name"] == "Fred Pattern"
     assert payload["length"] == 8.0
     assert payload["note_count"] == 3
@@ -102,24 +102,22 @@ def test_read_returns_the_payload_as_json(fake_conn):
 
 def test_read_empty_clip_is_zero_notes_not_an_error(fake_conn):
     fake_conn(response=_sample_response(notes=[]))
-    payload = json.loads(call(server.get_clip_notes, None, 0, 0))
+    payload = json.loads(call(tools.get_clip_notes, 0, 0))
     assert payload["notes"] == []
     assert payload["note_count"] == 0
 
 
 def test_read_connection_error_is_caught_and_reported(fake_conn):
-    fake_conn(raise_exc=Exception("boom"))
-    out = call(server.get_clip_notes, None, 0, 0)
-    assert out.startswith("Error getting clip notes:")
-    assert "boom" in out
+    fake_conn(raise_exc=live.LiveUnavailable("Live is not responding"))
+    assert call(tools.get_clip_notes, 0, 0) == "Live is not responding"
 
 
 def test_read_output_feeds_straight_into_add_notes(fake_conn):
     """The reader's note dicts are shaped exactly as add_notes_to_clip wants."""
     conn = fake_conn(response=_sample_response())
-    notes = json.loads(call(server.get_clip_notes, None, 0, 0))["notes"]
+    notes = json.loads(call(tools.get_clip_notes, 0, 0))["notes"]
     conn.response = {"note_count": len(notes)}
-    call(server.add_notes_to_clip, None, 0, 0, notes)
+    call(tools.add_notes_to_clip, 0, 0, notes)
     written = [c for c in conn.sent if c[0] == "add_notes_to_clip"][0][1]["notes"]
     assert written == SAMPLE_NOTES
 
@@ -127,7 +125,7 @@ def test_read_output_feeds_straight_into_add_notes(fake_conn):
 def test_add_notes_forwards_track_clip_and_notes(fake_conn):
     conn = fake_conn(response={"note_count": 1})
     one = [{"pitch": 60, "start_time": 0.0, "duration": 1.0, "velocity": 100, "mute": False}]
-    call(server.add_notes_to_clip, None, 3, 7, one)
+    call(tools.add_notes_to_clip, 3, 7, one)
     assert conn.sent == [("add_notes_to_clip",
                           {"track_index": 3, "clip_index": 7, "notes": one})]
 
@@ -138,22 +136,20 @@ def test_add_notes_forwards_track_clip_and_notes(fake_conn):
 
 def test_clear_sends_correct_command_and_params(fake_conn):
     conn = fake_conn(response={"clip_name": "Fred", "cleared_count": 3})
-    call(server.clear_notes_from_clip, None, track_index=1, clip_index=4)
+    call(tools.clear_notes_from_clip, track_index=1, clip_index=4)
     assert conn.sent == [("clear_notes_from_clip", {"track_index": 1, "clip_index": 4})]
 
 
 def test_clear_output_reports_count_and_name(fake_conn):
     fake_conn(response={"clip_name": "Fred Pattern", "cleared_count": 5})
-    out = call(server.clear_notes_from_clip, None, 0, 0)
-    assert "Cleared 5 note" in out
+    out = call(tools.clear_notes_from_clip, 0, 0)
+    assert "Removed 5 note" in out
     assert "Fred Pattern" in out
 
 
 def test_clear_connection_error_is_reported(fake_conn):
-    fake_conn(raise_exc=Exception("boom"))
-    out = call(server.clear_notes_from_clip, None, 0, 0)
-    assert out.startswith("Error clearing notes from clip:")
-    assert "boom" in out
+    fake_conn(raise_exc=live.LiveRefused("boom"))
+    assert call(tools.clear_notes_from_clip, 0, 0) == "clear_notes_from_clip failed: boom"
 
 
 def test_true_replace_loop_read_clear_add(fake_conn):
@@ -162,7 +158,7 @@ def test_true_replace_loop_read_clear_add(fake_conn):
     conn = fake_conn(response=_sample_response())
 
     # read
-    notes = json.loads(call(server.get_clip_notes, None, 0, 0))["notes"]
+    notes = json.loads(call(tools.get_clip_notes, 0, 0))["notes"]
 
     # modify: transpose up a fifth
     for n in notes:
@@ -170,9 +166,9 @@ def test_true_replace_loop_read_clear_add(fake_conn):
 
     # clear, then write the modified notes back
     conn.response = {"clip_name": "Fred Pattern", "cleared_count": 3}
-    call(server.clear_notes_from_clip, None, 0, 0)
+    call(tools.clear_notes_from_clip, 0, 0)
     conn.response = {"note_count": 3}
-    call(server.add_notes_to_clip, None, 0, 0, notes)
+    call(tools.add_notes_to_clip, 0, 0, notes)
 
     # the command sequence is read -> clear -> add, in that order
     assert [c[0] for c in conn.sent] == [

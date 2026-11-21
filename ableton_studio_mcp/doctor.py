@@ -6,11 +6,9 @@ a status ("ok", "warn", "fail" or "skip"), what it found, and a fix.
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import shutil
-import socket
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -128,25 +126,14 @@ def live_log_errors(max_lines: int = 3) -> list[str]:
     return []
 
 
-def query_live(host: str, port: int, timeout: float = 3.0) -> dict:
-    """Ask the running Remote Script for its info (raises if unreachable)."""
-    with socket.create_connection((host, port), timeout=timeout) as s:
-        s.settimeout(timeout)
-        s.sendall(json.dumps({"type": "get_script_info", "params": {}}).encode())
-        buf = b""
-        while True:
-            chunk = s.recv(65536)
-            if not chunk:
-                break
-            buf += chunk
-            try:
-                reply = json.loads(buf.decode())
-                break
-            except ValueError:
-                continue
-    if reply.get("status") != "success":
-        raise RuntimeError(reply.get("message", "unexpected reply"))
-    return reply.get("result", {})
+def query_live(host: str, port: int) -> dict:
+    """Ask the running control surface for its version (raises if unreachable)."""
+    from .live import LiveClient
+    client = LiveClient(host, port)
+    try:
+        return client.connect().raw
+    finally:
+        client.close()
 
 
 def check_live(host: str, port: int) -> Check:

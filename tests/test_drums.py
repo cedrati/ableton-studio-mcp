@@ -5,7 +5,8 @@ import json
 
 import pytest
 
-import ableton_studio_mcp.server as server
+from ableton_studio_mcp import live, tools
+from ableton_studio_mcp.tools import listening
 from ableton_studio_mcp import drums as d
 from test_clip_notes import call
 from test_remote_script_bridge import _load_script_module, make_instance
@@ -107,7 +108,7 @@ class _Conn:
     def __init__(self, answers):
         self.answers, self.sent = answers, []
 
-    def send_command(self, cmd, params=None):
+    def call(self, cmd, params=None):
         self.sent.append((cmd, params or {}))
         a = self.answers.get(cmd, {})
         if isinstance(a, Exception):
@@ -117,14 +118,18 @@ class _Conn:
 
 @pytest.fixture
 def conn(monkeypatch):
-    import ableton_studio_mcp.script_handshake as sh
-    caps = {"value": None}
-    monkeypatch.setattr(sh, "require_capability", lambda name: caps["value"](name) if caps["value"] else None)
+    missing_caps = set()
+
+    def require(name):
+        if name in missing_caps:
+            raise live.MissingCapability("missing " + name)
+    monkeypatch.setattr(live, "require", require)
 
     def make(answers, missing=()):
-        caps["value"] = lambda name: ("missing " + name) if name in missing else None
+        missing_caps.clear()
+        missing_caps.update(missing)
         c = _Conn(answers)
-        monkeypatch.setattr(server, "get_ableton_connection", lambda: c)
+        monkeypatch.setattr(live, "client", lambda: c)
         return c
     return make
 
@@ -132,7 +137,7 @@ def conn(monkeypatch):
 def test_write_drum_pattern_maps_the_kit(conn):
     c = conn({"get_drum_rack_map": {"rack_name": "909 Core Kit", "pads": KIT_909},
               "get_track_info": {"clip_slots": [{"has_clip": False}] * 4}})
-    out = json.loads(call(server.write_drum_pattern, None, 0, 1, style="techno_rolling", bars=2,
+    out = json.loads(call(tools.write_drum_pattern, 0, 1, style="techno_rolling", bars=2,
                           layers={"cowbell": {"euclid": [3, 8, 0]}, "rim": None}))
     assert out["kit"] == "909 Core Kit" and out["swing_pct"] == 52
     assert "rim" not in out["grids"] and out["grids"]["cowbell"] == "x..x..x."
@@ -143,21 +148,21 @@ def test_write_drum_pattern_maps_the_kit(conn):
 
 def test_write_drum_pattern_refuses_to_overwrite(conn):
     conn({"get_drum_rack_map": {"pads": KIT_909}, "get_track_info": {"clip_slots": [{"has_clip": True}]}})
-    assert "replace=true" in call(server.write_drum_pattern, None, 0, 0, style="techno_four")
+    assert "replace=true" in call(tools.write_drum_pattern, 0, 0, style="techno_four")
 
 
 def test_old_script_gets_no_probability_and_gm_notes(conn):
     c = conn({"get_track_info": {"clip_slots": [{"has_clip": False}]}},
              missing=("get_drum_rack_map", "note_probability"))
-    out = json.loads(call(server.write_drum_pattern, None, 0, 0, style="minimal_techno"))
+    out = json.loads(call(tools.write_drum_pattern, 0, 0, style="minimal_techno"))
     assert out["kit"].startswith("no Drum Rack") and out["with_probability"] == 0
     written = [n for cmd, p in c.sent if cmd == "add_notes_to_clip" for n in p["notes"]]
     assert not any("probability" in n for n in written)
 
 
 def test_drum_patterns_tool():
-    assert json.loads(call(server.drum_patterns, None, euclid_hits=3, euclid_steps=8))["grid"] == "x..x..x."
-    assert any(p["style"] == "techno_hypnotic" for p in json.loads(call(server.drum_patterns, None)))
+    assert json.loads(call(tools.drum_patterns, euclid_hits=3, euclid_steps=8))["grid"] == "x..x..x."
+    assert any(p["style"] == "techno_hypnotic" for p in json.loads(call(tools.drum_patterns)))
 
 
 # ------------------------------------------------------- Live-side commands
