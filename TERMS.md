@@ -9,15 +9,9 @@ _Last updated: 21 November 2026_
 - The MCP server talks to Ableton Live through the Remote Script on **127.0.0.1:9877** (your own computer). The socket listens on localhost only; `ABLETON_MCP_HOST` changes that, deliberately, for setups where Live runs on another machine.
 - The server makes **no internet connection** of its own. (Your MCP client and `uv` download the package from GitHub when you install or update it.)
 
-## Telemetry and dataset recording inherited from the original project
+## No telemetry, no data collection
 
-The original [ableton-mcp](https://github.com/ahujasid/ableton-mcp) can send anonymous usage telemetry and, with explicit consent, record sessions for a research dataset, to its maintainer's Supabase project. That code is still present in this repository but **inactive**:
-
-- it only sends anything when `MCP_Server/config.py` holds Supabase credentials, and that file is **not part of this repository** (it is git-ignored and excluded from the package);
-- without those credentials, **the consent question is never asked**, since nothing could be collected;
-- `ABLETON_MCP_DISABLE_TELEMETRY=true` keeps everything off even if credentials were added.
-
-If you build your own distribution and add credentials, you become responsible for the data you collect and for telling your users.
+The original [ableton-mcp](https://github.com/ahujasid/ableton-mcp) can send anonymous usage telemetry and, with consent, record sessions for a research dataset. **Ableton Studio MCP has removed that code entirely** (since 1.17.0): no telemetry module, no dataset recorder, no consent question, no Supabase dependency, and the Remote Script no longer watches your edits in Live. Tools no longer take a `user_prompt` argument, so your requests are never passed to the server.
 
 The original project's data terms apply only to the original `ableton-mcp` package, not to Ableton Studio MCP.
 
@@ -25,8 +19,6 @@ The original project's data terms apply only to the original `ableton-mcp` packa
 
 | File | Why |
 |---|---|
-| `~/Library/Application Support/AbletonMCP/customer_uuid.txt` (macOS; `%APPDATA%` on Windows, `~/.local/share` on Linux) | A random ID created by the inherited telemetry code. Never sent. You can delete it. |
-| `~/.ableton-mcp/consent.json` | Only if a consent answer was ever recorded. |
 | `<your Live project>/Samples/Recorded/…` | Takes recorded with `record_arrangement`, like any recording made in Live. Listening takes (`Claude – écoute …`) are deleted right after analysis unless you ask to keep them. |
 | `<system temp folder>/ableton-mcp/*_spectrogram.png` | Spectrogram images of analysed takes; only the 20 most recent are kept. |
 | `<User Library>/Remote Scripts/AbletonMCP/` | The Remote Script, installed by `ableton-studio-mcp-install-script` (the previous version is kept as `__init__.py.bak`). |
@@ -38,3 +30,7 @@ Everything the tools create or change lives in your Live set and your files, and
 ## Contact
 
 Questions or concerns: [open an issue](https://github.com/cedrati/ableton-studio-mcp/issues) on GitHub.
+
+## Leftovers from older versions
+
+Versions before 1.17.0 could leave `~/Library/Application Support/AbletonMCP/customer_uuid.txt` (macOS; `%APPDATA%` on Windows, `~/.local/share` on Linux) and `~/.ableton-mcp/consent.json`. Nothing reads them any more; you can delete them.

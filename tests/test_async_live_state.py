@@ -229,6 +229,83 @@ def test_locator_fails_cleanly_and_restores_when_playhead_never_moves(
     assert song.cue_points == []
 
 
+def _named(song, pairs):
+    for cue, name in zip(song.cue_points, pairs):
+        cue.name = name
+
+
+def test_delete_locator_by_time_moves_playhead_toggles_and_restores(
+        script_module):
+    song = FakeSong(time=2.0, cues=[16.0, 32.0])
+    _named(song, ["Drop", "Break"])
+    inst, run_ticks = make_live(script_module, song)
+
+    out = run_deferred(inst._delete_locator(time_val=16.0), run_ticks)
+
+    assert out["ok"] == {"success": True, "deleted": True,
+                         "time": 16.0, "name": "Drop"}
+    assert [(c.time, c.name) for c in song.cue_points] == [(32.0, "Break")]
+    song.tick()
+    assert song.current_song_time == 2.0
+
+
+def test_delete_locator_by_name(script_module):
+    song = FakeSong(time=0.0, cues=[16.0, 32.0])
+    _named(song, ["Drop", "Break"])
+    inst, run_ticks = make_live(script_module, song)
+
+    out = run_deferred(inst._delete_locator(name="Break"), run_ticks)
+
+    assert out["ok"]["time"] == 32.0
+    assert [c.name for c in song.cue_points] == ["Drop"]
+
+
+def test_delete_locator_refuses_ambiguous_name(script_module):
+    song = FakeSong(time=0.0, cues=[16.0, 48.0])
+    _named(song, ["Drop", "Drop"])
+    inst, _ = make_live(script_module, song)
+
+    with pytest.raises(Exception, match="2 locators are named 'Drop'"):
+        inst._delete_locator(name="Drop")
+    assert len(song.cue_points) == 2 and song._pending == []
+
+
+@pytest.mark.parametrize("kwargs, msg", [
+    ({"time_val": 8.0}, "No locator at beat 8.0"),
+    ({"name": "Nope"}, "No locator named 'Nope'"),
+    ({}, "name or time"),
+])
+def test_delete_locator_missing_target_changes_nothing(script_module,
+                                                       kwargs, msg):
+    song = FakeSong(time=0.0, cues=[16.0])
+    inst, _ = make_live(script_module, song)
+
+    with pytest.raises(Exception, match=msg):
+        inst._delete_locator(**kwargs)
+    assert len(song.cue_points) == 1 and song._pending == []
+
+
+def test_delete_locator_refuses_while_playing(script_module):
+    song = FakeSong(time=0.0, cues=[16.0], playing=True)
+    inst, _ = make_live(script_module, song)
+
+    with pytest.raises(Exception, match="Stop playback"):
+        inst._delete_locator(time_val=16.0)
+    assert len(song.cue_points) == 1
+
+
+def test_delete_locator_fails_cleanly_when_playhead_never_moves(
+        script_module):
+    song = FakeSong(time=4.0, cues=[16.0])
+    song.stuck = True
+    inst, run_ticks = make_live(script_module, song)
+
+    out = run_deferred(inst._delete_locator(time_val=16.0), run_ticks)
+
+    assert "did not reach beat 16.0" in out["err"]
+    assert len(song.cue_points) == 1
+
+
 # ------------------------------------------------------------- device load
 
 def test_load_reports_the_device_once_live_inserts_it(script_module):

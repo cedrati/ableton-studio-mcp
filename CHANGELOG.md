@@ -4,16 +4,21 @@ Changes in Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](h
 
 The version numbers below are the **Remote Script** version (`SCRIPT_VERSION`), which the server checks through `get_remote_script_info`. After updating, reinstall the script with `ableton-studio-mcp-install-script` and **restart Live** — re-selecting the control surface does not reload the code.
 
-## Unreleased (server only, Remote Script unchanged at 1.16.0)
+## Remote Script 1.17.0
 
 ### Changed
 
 - **Renamed to Ableton Studio MCP** (`cedrati/ableton-studio-mcp`, standalone repository; the old URL redirects). Package `ableton-studio-mcp`; commands `ableton-studio-mcp` and `ableton-studio-mcp-install-script`, the former `ableton-mcp` / `ableton-mcp-install-script` kept as aliases.
-- **Privacy:** the dataset consent question is only asked when data could actually be sent (telemetry credentials configured and telemetry enabled). This repository ships no credentials, so nothing is collected and nobody is asked. `TERMS.md` rewritten for this project: what talks to what, the inactive inherited telemetry, the files the tools create.
+- `TERMS.md` rewritten for this project: what talks to what, and the files the tools create.
 - LICENSE lists Olivier Cedrati first and keeps the original copyright for the portions that come from ableton-mcp, in the standard MIT layout.
+
+### Removed
+
+- **Telemetry and data collection removed entirely.** The usage telemetry and the research-dataset recording inherited from the original project are gone: `telemetry.py`, the `dataset` package, the consent question, the Supabase dependency, the dataset tools (`set_dataset_consent`, `submit_intent`, `rate_last_action`, `prefer_candidate`, `reject_last_action`, `record_audition`) and the `user_prompt` argument every tool carried for telemetry. The Remote Script no longer installs listeners on every track and clip to log your edits in Live (`drain_passive_events` removed). Closes #34.
 
 ### Added
 
+- **`delete_locator`:** removes a locator by beat position or by name (refused if several locators share the name, listing their positions). Like `create_locator`, it waits for the playhead to reach the cue, toggles it off, waits until Live has removed it and restores the playhead; it refuses to run while playing.
 - GitHub Actions CI: tests on Python 3.10, 3.12 and 3.13, and a check that the bundled Remote Script copy matches the source.
 
 ### Fixed
