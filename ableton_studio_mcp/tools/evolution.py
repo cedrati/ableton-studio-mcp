@@ -32,7 +32,7 @@ def arrangement_templates(template: str = None) -> str:
                   "shapes": ar.SHAPES, "track_roles": [r for r, _ in ar.ROLE_WORDS]})
 
 
-@tool()
+@tool(undo_step="Write clip evolution")
 def write_clip_evolution(track_index: int,
     clip_index: int,
     lanes: List[Dict[str, Any]],
@@ -117,7 +117,7 @@ def _session_tracks(ableton) -> List[Dict[str, Any]]:
     return tracks
 
 
-@tool()
+@tool(undo_step="Build arrangement")
 def build_arrangement(template: str = None,
     sections: List[Dict[str, Any]] = None,
     track_roles: Dict[str, str] = None,

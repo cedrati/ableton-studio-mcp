@@ -11,7 +11,7 @@ By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/cedrati/ableton-studio-mcp/blob/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/ableton-studio-mcp)](https://pypi.org/project/ableton-studio-mcp/)
-![Remote Script](https://img.shields.io/badge/Remote%20Script-2.0.0-blue)
+![Remote Script](https://img.shields.io/badge/Remote%20Script-2.1.0-blue)
 ![Live](https://img.shields.io/badge/Ableton%20Live-11%20%7C%2012-black)
 [![Tests](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml/badge.svg)](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml)
 
@@ -47,7 +47,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (309) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (321) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -121,7 +121,7 @@ Run the built-in check, which looks at Python, uv, the script installed in your 
 uvx ableton-studio-mcp doctor
 ```
 
-Or ask the assistant to run `get_remote_script_info`: it should report `script_version` **2.0.x** and `up_to_date: true`.
+Or ask the assistant to run `get_remote_script_info`: it should report `script_version` **2.1.x** and `up_to_date: true`.
 
 ### Updating
 
@@ -167,6 +167,8 @@ Indexes start at 0. Times and lengths are in **beats**. Notes use MIDI numbers (
 | `set_tempo` · `start_playback` · `stop_playback` | Transport. |
 | `get_scenes` · `create_scene` · `set_scene_name` · `duplicate_scene` · `fire_scene` · `delete_scene` | Scenes. |
 | `switch_to_arrangement_view` · `set_arrangement_time` · `create_locator` · `delete_locator` | Arrangement view, playhead, locators (create, rename, delete by name or position). |
+| `undo` · `redo` | Live's Undo and Redo. Each tool call that changes the set is one step, and tools that make many changes at once (drum patterns, progressions, arrangements, MIDI imports…) are one step too. |
+| `start_undo_group` · `end_undo_group` | Make a whole request one undo step (closed automatically after two minutes if left open). |
 | `get_remote_script_info` | Version handshake and capabilities. |
 
 ### Tracks, mixer and routing
@@ -252,7 +254,7 @@ The mix report checks: integrated / short-term / momentary loudness and loudness
 - **Live's API has limits.** A script cannot save the set, export audio, create group tracks, or write Arrangement automation directly (tempo changes included). Track automation still reaches the Arrangement through Session clip envelopes, which `build_arrangement` places for you. Live's own analysers (Spectrum, EQ Eight's display, Max for Live meters) don't expose their readings — which is why listening works by recording the main output.
 - **Listening takes real time:** analysing a 3-minute song means playing it for 3 minutes.
 - **Device loading, playhead moves and locators** reply only once Live has applied them. Loading the same device that is already on a track resets it in place (the reply says so).
-- **Destructive tools** (`delete_track`, `delete_scene`, `delete_clip`, `delete_arrangement_clip`) do what they say — save your set before big experiments.
+- **Undo works step by step.** Live on its own merges everything a script changes into one undo step, so one Cmd+Z would wipe out a whole session of edits; Ableton Studio MCP gives each change its own step, and ask the assistant to `undo` to take back exactly its last action. Destructive tools (`delete_track`, `delete_scene`, `delete_clip`, `delete_arrangement_clip`) can be undone the same way, but saving your set before big experiments is still wise.
 
 ---
 
@@ -322,7 +324,7 @@ MCP client (Claude…)  ⇄  MCP server (ableton_studio_mcp/, Python)  ⇄  TCP 
 ```bash
 git clone -b feat/mixer-scenes https://github.com/cedrati/ableton-studio-mcp
 cd ableton-studio-mcp
-uv run --with pytest pytest -q             # 309 tests, no Live needed
+uv run --with pytest pytest -q             # 321 tests, no Live needed
 uv run ableton-studio-mcp install          # install your working copy into Live
 uv run ableton-studio-mcp doctor           # check the whole chain
 ```

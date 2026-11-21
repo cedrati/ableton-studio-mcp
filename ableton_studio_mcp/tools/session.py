@@ -190,3 +190,59 @@ def set_scene_name(scene_index: int, name: str) -> str:
     - name: Its new name
     """
     return as_json(live.call("set_scene_name", compact(scene_index=scene_index, name=name)))
+
+
+# ── undo ─────────────────────────────────────────────────────────────────────
+
+@tool(needs="undo")
+def undo(steps: int = 1) -> str:
+    """
+    Undo the last change(s) in Live, like Cmd/Ctrl+Z. Each tool call that
+    changed the set is one step; tools that make many changes at once (drum
+    patterns, progressions, arrangements, MIDI imports…) are one step too, as
+    is everything between start_undo_group and end_undo_group. It is Live's
+    own Undo: if the user edited the set meanwhile, their change comes first.
+
+    Parameters:
+    - steps: How many steps to undo (1–50)
+    """
+    reply = live.call("undo", {"steps": steps})
+    more = "" if reply.get("can_undo") else " Nothing left to undo."
+    return f"Undid {reply.get('done', 0)} step(s).{more}"
+
+
+@tool(needs="redo")
+def redo(steps: int = 1) -> str:
+    """
+    Redo what undo just took back (as long as nothing else changed since).
+
+    Parameters:
+    - steps: How many steps to redo (1–50)
+    """
+    reply = live.call("redo", {"steps": steps})
+    more = "" if reply.get("can_redo") else " Nothing left to redo."
+    return f"Redid {reply.get('done', 0)} step(s).{more}"
+
+
+@tool(needs="begin_undo_group")
+def start_undo_group(name: str = "Ableton Studio MCP") -> str:
+    """
+    Start grouping: every change until end_undo_group becomes a single undo
+    step, so a whole request ("8 bars of techno with a bassline") can be taken
+    back at once. Always call end_undo_group afterwards; a group left open is
+    closed automatically after two minutes.
+
+    Parameters:
+    - name: What the group is for (shown in Live's log)
+    """
+    live.call("begin_undo_group", {"name": name})
+    return f"Undo group '{name}' started: changes until end_undo_group form one step"
+
+
+@tool(needs="end_undo_group")
+def end_undo_group() -> str:
+    """Close the undo group opened with start_undo_group."""
+    reply = live.call("end_undo_group")
+    if not reply.get("ended"):
+        return "No undo group was open"
+    return f"Undo group '{reply.get('name')}' closed: one undo takes it all back"
