@@ -98,10 +98,11 @@ def test_bind_host_is_overridable_for_remote_setups(monkeypatch):
     assert _load_script_module(fresh=True).HOST == "0.0.0.0"
 
 
-def test_script_and_package_versions_match():
-    """The server refuses a Live script whose version differs from its own."""
-    from ableton_studio_mcp import __version__
-    assert _load_script_module().SCRIPT_VERSION == __version__
+def test_script_belongs_to_the_server_series():
+    """The server works with control surfaces of its own series (major.minor)."""
+    from ableton_studio_mcp import SCRIPT_SERIES, same_series
+    assert same_series(_load_script_module().SCRIPT_VERSION)
+    assert same_series(SCRIPT_SERIES + ".7") and not same_series("1.17.0") and not same_series(None)
 
 
 # ------------------------------------------------------------------ framing

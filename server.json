@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.cedrati/ableton-studio-mcp",
+  "title": "Ableton Studio MCP",
+  "description": "Compose, arrange, mix, master and analyse music in Ableton Live 11 & 12 with an AI assistant.",
+  "repository": {
+    "url": "https://github.com/cedrati/ableton-studio-mcp",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/cedrati/ableton-studio-mcp#readme",
+  "version": "2.0.1",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "ableton-studio-mcp",
+      "version": "2.0.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

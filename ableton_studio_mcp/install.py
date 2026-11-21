@@ -21,10 +21,8 @@ import xml.etree.ElementTree as ElementTree
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import __version__
 
 SURFACE_NAME = "AbletonStudioMCP"
-SCRIPT_VERSION = __version__
 # Folder name used by versions before 2.0 (and by the original ableton-mcp).
 # Both listen on the same port, so only one may be selected in Live.
 LEGACY_SURFACE_NAME = "AbletonMCP"
@@ -101,6 +99,10 @@ def script_version_in(folder: Path) -> str | None:
         return None
     match = re.search(r'^SCRIPT_VERSION\s*=\s*["\']([^"\']+)', init.read_text(errors="replace"), re.M)
     return match.group(1) if match else "unknown"
+
+
+# The version of the control surface shipped in this package.
+SCRIPT_VERSION = script_version_in(SCRIPT_SOURCE)
 
 
 # ── Installing ───────────────────────────────────────────────────────────────
