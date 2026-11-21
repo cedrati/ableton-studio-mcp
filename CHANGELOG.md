@@ -19,6 +19,7 @@ The version numbers below are the **Remote Script** version (`SCRIPT_VERSION`), 
 ### Fixed
 
 - `device_inventory` showed rack chain names as null.
+- `listen_to_arrangement` left every take (and Live's `.asd` file) in the project's `Samples/Recorded` folder, about 25-35 MB per listen of a short piece. Takes are now deleted once analysed (`keep_audio=true` keeps them; only files named after the listening track are ever removed), and only the 20 most recent spectrogram images are kept in the temp folder.
 
 ## Remote Script 1.16.0
 
