@@ -13,7 +13,7 @@ from collections import deque
 
 import pytest
 
-import MCP_Server.server as server
+import ableton_studio_mcp.server as server
 from test_clip_notes import call
 from test_remote_script_bridge import _load_script_module, make_instance
 
@@ -283,11 +283,10 @@ def test_new_commands_are_advertised(script_module):
     assert {"return_master_devices", "get_track_routing", "set_track_routing",
             "record_arrangement", "stop_arrangement_recording",
             "get_recording_status", "get_audio_clip_file"} <= caps
-    assert script_module.SCRIPT_VERSION.startswith("1.1")
 
 
 def test_expected_version_matches_script(script_module):
-    from MCP_Server.remote_script_install import EXPECTED_REMOTE_SCRIPT_VERSION
+    from ableton_studio_mcp.install import SCRIPT_VERSION as EXPECTED_REMOTE_SCRIPT_VERSION
     assert EXPECTED_REMOTE_SCRIPT_VERSION == script_module.SCRIPT_VERSION
 
 
@@ -317,7 +316,7 @@ def connect(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _hermetic(monkeypatch):
-    import MCP_Server.script_handshake as sh
+    import ableton_studio_mcp.script_handshake as sh
     monkeypatch.setattr(sh, "require_capability", lambda name: None)
 
 
@@ -332,7 +331,7 @@ def test_load_sends_track_type_only_for_return_and_main(connect):
 
 
 def test_old_script_is_refused_for_return_tracks(connect, monkeypatch):
-    import MCP_Server.script_handshake as sh
+    import ableton_studio_mcp.script_handshake as sh
     monkeypatch.setattr(sh, "require_capability",
                         lambda name: "missing " + name if name == "return_master_devices" else None)
     conn = connect({})
@@ -463,7 +462,7 @@ def test_track_meters_cover_tracks_returns_and_main(script_module):
 
 def test_listen_mix_report_returns_image_and_meters(connect, monkeypatch, tmp_path):
     from mcp.server.fastmcp import Image
-    import MCP_Server.mix_analysis as mix
+    import ableton_studio_mcp.mix_analysis as mix
     monkeypatch.setattr(server, "RECORDING_POLL_S", 0.0)
     take = tmp_path / "take.wav"
     _wav(take, seconds=4.0)

@@ -55,7 +55,6 @@ logs/
 .env.local
 .env.*.local
 
-MCP_Server/secrets.py
 
 MANIFEST.in
 

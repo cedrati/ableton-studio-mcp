@@ -1,7 +1,7 @@
 """The handshake is redone when Live was not running at startup."""
 
-import MCP_Server.script_handshake as sh
-from MCP_Server.remote_script_install import EXPECTED_REMOTE_SCRIPT_VERSION
+import ableton_studio_mcp.script_handshake as sh
+from ableton_studio_mcp.install import SCRIPT_VERSION as EXPECTED_REMOTE_SCRIPT_VERSION
 
 
 def _reset(monkeypatch):
@@ -44,7 +44,7 @@ def test_live_still_closed_gives_a_clear_message(monkeypatch):
     sh.handshake(_offline)
     monkeypatch.setattr(sh, "_refresher", lambda: sh.handshake(_offline))
     msg = sh.require_capability("set_track_routing")
-    assert "Live is not responding" in msg and "install-script" not in msg
+    assert "Live is not responding" in msg and "ableton-studio-mcp install" not in msg
 
 
 def test_refresher_errors_are_swallowed(monkeypatch):
@@ -64,9 +64,9 @@ def test_legacy_script_is_not_retried(monkeypatch):
     sh.handshake(old)
     calls = []
     monkeypatch.setattr(sh, "_refresher", lambda: calls.append(1))
-    assert "install-script" in sh.require_capability("set_track_routing") and calls == []
+    assert "ableton-studio-mcp install" in sh.require_capability("set_track_routing") and calls == []
 
 
 def test_server_registers_the_refresher():
-    import MCP_Server.server as server
+    import ableton_studio_mcp.server as server
     assert sh._refresher is server._refresh_handshake

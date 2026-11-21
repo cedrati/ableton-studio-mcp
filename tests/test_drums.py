@@ -5,8 +5,8 @@ import json
 
 import pytest
 
-import MCP_Server.server as server
-from MCP_Server import drums as d
+import ableton_studio_mcp.server as server
+from ableton_studio_mcp import drums as d
 from test_clip_notes import call
 from test_remote_script_bridge import _load_script_module, make_instance
 
@@ -117,7 +117,7 @@ class _Conn:
 
 @pytest.fixture
 def conn(monkeypatch):
-    import MCP_Server.script_handshake as sh
+    import ableton_studio_mcp.script_handshake as sh
     caps = {"value": None}
     monkeypatch.setattr(sh, "require_capability", lambda name: caps["value"](name) if caps["value"] else None)
 

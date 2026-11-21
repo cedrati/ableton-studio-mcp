@@ -337,7 +337,7 @@ def get_remote_script_info(ctx: Context) -> str:
     Use this to verify the Live-side bridge matches this MCP server package.
     """
     try:
-        from .remote_script_install import EXPECTED_REMOTE_SCRIPT_VERSION
+        from .install import SCRIPT_VERSION as EXPECTED_REMOTE_SCRIPT_VERSION
         from .script_handshake import get_cached_script_info, handshake
 
         ableton = get_ableton_connection()
@@ -3550,13 +3550,16 @@ def set_drum_choke(ctx: Context, track_index: int, notes: List[int], group: int 
 
 # Main execution
 def main():
-    """Run the MCP server, or `doctor` to check the installation."""
+    """Run the MCP server; `install` sets up Live, `doctor` checks everything."""
     import sys
 
     args = sys.argv[1:]
     if args and args[0] == "doctor":
         from .doctor import main as doctor_main
         sys.exit(doctor_main(args[1:]))
+    if args and args[0] == "install":
+        from .install import main as install_main
+        sys.exit(install_main(args[1:]))
     if args and args[0] in ("-V", "--version"):
         from .doctor import _package_version
         print(f"ableton-studio-mcp {_package_version()}")

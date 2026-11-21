@@ -4,6 +4,18 @@ Changes in Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](h
 
 The version numbers below are the **Remote Script** version (`SCRIPT_VERSION`), which the server checks through `get_remote_script_info`. After updating, reinstall the script with `ableton-studio-mcp-install-script` and **restart Live** — re-selecting the control surface does not reload the code.
 
+## 2.0.0 (in progress, branch `rewrite/v2`)
+
+Ableton Studio MCP becomes a project of its own: the code that still came from the original ableton-mcp is being rewritten.
+
+### Changed
+
+- **New names.** Python package `ableton_studio_mcp` (was `MCP_Server`); Live control surface **AbletonStudioMCP** (was *AbletonMCP*): select it again in Live's Control Surface settings. The `ableton-mcp` / `ableton-mcp-install-script` command aliases are gone.
+- **New installer:** `ableton-studio-mcp install` (`ableton-studio-mcp-install-script` still works). It installs the control surface as a folder, swapped in only once fully copied, offers `--dry-run`, and reports the old *AbletonMCP* folder (`--remove-legacy` deletes it, since both use the same port). The `.bak` backup, `--legacy`, `--force` and `--sync-bundle` options are gone.
+- **One copy of the control surface:** it lives inside the package (`ableton_studio_mcp/live_script/`) instead of a repository folder plus a bundled duplicate; a single version number is checked by the tests and the release workflow.
+- `doctor` also warns when the old *AbletonMCP* control surface is still installed.
+- Dockerfile and `smithery.yaml` rewritten for the new entry point.
+
 ## Remote Script 1.17.0
 
 First release published on PyPI: `uvx ableton-studio-mcp`.

@@ -6,8 +6,8 @@ import threading
 
 import pytest
 
-import MCP_Server.doctor as doctor
-from MCP_Server.remote_script_install import EXPECTED_REMOTE_SCRIPT_VERSION as V
+import ableton_studio_mcp.doctor as doctor
+from ableton_studio_mcp.install import SCRIPT_VERSION as V
 
 
 @pytest.fixture
@@ -16,11 +16,13 @@ def library(tmp_path, monkeypatch):
     roots.mkdir(parents=True)
     prefs = tmp_path / "Prefs" / "Live 12.4.7"
     prefs.mkdir(parents=True)
+    import ableton_studio_mcp.install as inst
     monkeypatch.setattr(doctor, "discover_user_library_remote_script_dirs", lambda: [roots])
+    monkeypatch.setattr(inst, "remote_scripts_dirs", lambda: [roots])
     monkeypatch.setattr(doctor, "_live_preference_dirs", lambda: [prefs])
 
     def install(version):
-        d = roots / "AbletonMCP"
+        d = roots / "AbletonStudioMCP"
         d.mkdir(exist_ok=True)
         (d / "__init__.py").write_text(f'x = 1\nSCRIPT_VERSION = "{version}"\n')
     return type("Lib", (), {"roots": roots, "prefs": prefs, "install": staticmethod(install)})
@@ -52,7 +54,7 @@ def free_port():
 
 def test_script_missing_then_outdated_then_ok(library):
     c = doctor.check_installed_script()
-    assert c.status == "fail" and "install-script" in c.fix
+    assert c.status == "fail" and "install" in c.fix
     library.install("1.0.0")
     c = doctor.check_installed_script()
     assert c.status == "fail" and "1.0.0" in c.found
@@ -70,7 +72,7 @@ def test_control_surface_read_from_utf16_preferences(library):
     cfg = library.prefs / "Preferences.cfg"
     cfg.write_bytes(b"\x00junk")
     assert doctor.check_control_surface().status == "warn"
-    cfg.write_bytes(b"\x00junk" + "AbletonMCP".encode("utf-16-le"))
+    cfg.write_bytes(b"\x00junk" + "AbletonStudioMCP".encode("utf-16-le"))
     assert doctor.check_control_surface().status == "ok"
 
 
@@ -84,13 +86,13 @@ def test_live_runs_old_script_although_new_one_installed(library):
     library.install(V)
     port = fake_live({"status": "success", "result": {"script_version": "1.0.0"}})
     c = doctor.check_live("127.0.0.1", port)
-    assert c.status == "fail" and "restart Live" in c.fix and "install-script" not in c.fix
+    assert c.status == "fail" and "restart Live" in c.fix and "uvx" not in c.fix
 
 
 def test_live_not_running_shows_log_errors(library):
     (library.prefs / "Log.txt").write_text(
-        "info: RemoteScriptMessage: (AbletonMCP) warp_markers read failed: x\n"
-        "error: RemoteScriptError: (AbletonMCP) Traceback: boom\n")
+        "info: RemoteScriptMessage: (AbletonStudioMCP) warp_markers read failed: x\n"
+        "error: RemoteScriptError: (AbletonStudioMCP) Traceback: boom\n")
     c = doctor.check_live("127.0.0.1", free_port())
     assert c.status == "fail" and "boom" in c.fix and "warp_markers" not in c.fix
 
@@ -108,9 +110,18 @@ def test_report_and_exit_code(monkeypatch, capsys):
 
 
 def test_server_main_dispatches_doctor(monkeypatch):
-    import MCP_Server.server as server
+    import ableton_studio_mcp.server as server
     monkeypatch.setattr("sys.argv", ["ableton-studio-mcp", "doctor"])
     monkeypatch.setattr(doctor, "main", lambda argv: 0)
     with pytest.raises(SystemExit) as e:
         server.main()
     assert e.value.code == 0
+
+
+def test_legacy_surface_is_flagged(library):
+    assert doctor.check_legacy().status == "ok"
+    old = library.roots / "AbletonMCP"
+    old.mkdir()
+    (old / "__init__.py").write_text("SCRIPT_VERSION = '1.17.0'\n")
+    c = doctor.check_legacy()
+    assert c.status == "warn" and "--remove-legacy" in c.fix

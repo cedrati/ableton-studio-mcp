@@ -23,9 +23,8 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-REPO_SCRIPT = REPO_ROOT / "AbletonMCP_Remote_Script" / "__init__.py"
-BUNDLED_SCRIPT = (REPO_ROOT / "MCP_Server" / "bundled_ableton_remote_script"
-                  / "AbletonMCP_init.py")
+BUNDLED_SCRIPT = (REPO_ROOT / "ableton_studio_mcp" / "live_script" / "AbletonStudioMCP"
+                  / "__init__.py")
 
 
 def _load_script_module(fresh=False):
@@ -66,7 +65,7 @@ def script_module():
 
 
 def make_instance(script_module, application=None):
-    inst = script_module.AbletonMCP.__new__(script_module.AbletonMCP)
+    inst = script_module.AbletonStudioMCP.__new__(script_module.AbletonStudioMCP)
     inst.application = lambda: application
     inst.log_message = lambda *a, **k: None
     inst.show_message = lambda *a, **k: None
@@ -88,9 +87,10 @@ def test_bind_host_is_overridable_for_remote_setups(monkeypatch):
     assert _load_script_module(fresh=True).HOST == "0.0.0.0"
 
 
-def test_repo_and_bundled_copies_are_identical():
-    """The installer ships the bundled copy; drift would install stale code."""
-    assert REPO_SCRIPT.read_bytes() == BUNDLED_SCRIPT.read_bytes()
+def test_script_and_package_versions_match():
+    """The server refuses a Live script whose version differs from its own."""
+    from ableton_studio_mcp import __version__
+    assert _load_script_module().SCRIPT_VERSION == __version__
 
 
 # ------------------------------------------------------------------ framing

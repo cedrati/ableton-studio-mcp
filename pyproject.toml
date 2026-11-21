@@ -1,6 +1,6 @@
 [project]
 name = "ableton-studio-mcp"
-version = "1.17.0"
+version = "2.0.0"
 description = "Ableton Live integration through the Model Context Protocol — AI music production: compose, arrange, mix, master and analyse in Ableton Live"
 readme = "README.md"
 keywords = ["ableton", "ableton-live", "mcp", "mcp-server", "model-context-protocol", "claude", "ai-music",
@@ -27,22 +27,19 @@ dependencies = [
 ]
 
 [project.scripts]
-ableton-studio-mcp = "MCP_Server.server:main"
-ableton-studio-mcp-install-script = "MCP_Server.remote_script_install:main"
-# Former names, kept so existing configurations keep working
-ableton-mcp = "MCP_Server.server:main"
-ableton-mcp-install-script = "MCP_Server.remote_script_install:main"
+ableton-studio-mcp = "ableton_studio_mcp.server:main"
+ableton-studio-mcp-install-script = "ableton_studio_mcp.install:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["MCP_Server", "MCP_Server.bundled_ableton_remote_script"]
-# MANIFEST.in governs the sdist; this governs the wheel. Both are needed.
+packages = ["ableton_studio_mcp"]
 
 [tool.setuptools.package-data]
-"MCP_Server.bundled_ableton_remote_script" = ["AbletonMCP_init.py"]
+# The Live control surface is copied into Live by `ableton-studio-mcp install`.
+ableton_studio_mcp = ["live_script/AbletonStudioMCP/*.py"]
 
 [project.urls]
 "Homepage" = "https://github.com/cedrati/ableton-studio-mcp"

@@ -2,8 +2,8 @@
 
 import pytest
 
-from MCP_Server import music_styles as ms
-from MCP_Server import music_theory as mt
+from ableton_studio_mcp import music_styles as ms
+from ableton_studio_mcp import music_theory as mt
 
 
 def N(pitch, start, dur=1.0, vel=100):
@@ -185,7 +185,7 @@ def test_styles_are_consistent():
 
 import json
 
-import MCP_Server.server as server
+import ableton_studio_mcp.server as server
 from test_clip_notes import call
 
 
@@ -201,7 +201,7 @@ class _Conn:
 
 @pytest.fixture
 def conn(monkeypatch):
-    import MCP_Server.script_handshake as sh
+    import ableton_studio_mcp.script_handshake as sh
     monkeypatch.setattr(sh, "require_capability", lambda name: None)
 
     def make(answers):
