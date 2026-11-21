@@ -19,6 +19,13 @@ Ableton Studio MCP becomes a project of its own: the code that still came from t
 - **Tools split by domain** into `ableton_studio_mcp/tools/` (session, tracks, clips, devices, browser, routing, listening, midi, theory, drums, evolution) instead of one 3,500-line `server.py`; tool descriptions rewritten. Same 92 tools with the same parameters. Tools no longer take the unused `ctx` argument.
 - Error messages changed: "<tool> failed: <Live's reason>" instead of "Error <doing something>: …".
 - CI now builds the package, installs it in a clean environment and checks that every tool and the control surface are inside (the `tools` subpackage was missing from the first 2.0 build).
+- **Control surface rewritten** as a package of modules instead of one 4,100-line file (now 2,800 lines): a command registry replaces the 460-line `if/elif` dispatcher — each handler's signature is its contract (missing or unknown parameters are refused by name instead of silently defaulting to track 0 or 120 BPM) and the advertised capability list is generated from it; a new socket server; browser, snapshot, clip, note, track, session and device code written anew.
+- **Every command now runs on Live's main thread.** Read commands used to run on the socket thread, which Live's API does not support.
+- **Protocol 2: newline-delimited JSON** both ways (no more re-parsing the whole buffer after every packet). The server still talks to 1.x control surfaces, and the control surface still accepts 1.x servers.
+- Stricter input checks: notes (pitch 0–127, positive duration, start ≥ 0, velocity clamped; a bad note is refused with its position and nothing is written), tempo 20–999, positive clip length, parameter values within the parameter's range, track insert positions, negative song positions.
+- Snapshots no longer ask MIDI clips for warp markers, which filled Live's log with "Warp markers are only available for Audio Clips". Snapshot schema renamed `ableton_studio_mcp.snapshot/1`.
+- Removed six commands nothing used (`get_browser_item`, `get_browser_categories`, `get_browser_items`, `load_instrument_or_effect` on the Live side, `inspect_rack`, `map_rack_magnitude`).
+- Lint (ruff) in CI; 11 new tests for the control surface.
 - 22 new robustness tests against a fake control surface on a real socket: Live closed or restarted, connection lost mid-request, timeouts, fragmented replies, outdated control surface, Live started after the server, parallel calls.
 
 ## Remote Script 1.17.0

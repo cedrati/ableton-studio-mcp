@@ -47,46 +47,42 @@ def import_midi_file(file_path: str,
     - replace: Clear the target clip's notes first
     - clip_length: Length in beats of a newly created Session clip
     """
-    try:
-        from ..midi_file import merge_duplicates, read_midi_file, select_notes, summarize
+    from ..midi_file import merge_duplicates, read_midi_file, select_notes, summarize
 
-        path = os.path.expanduser(file_path)
-        parsed = read_midi_file(path)
-        if track_index is None:
-            return json.dumps({"file": path, "format": parsed["format"],
-                               "ticks_per_beat": parsed["division"],
-                               "tracks": summarize(parsed)}, indent=2, ensure_ascii=False)
-        notes = select_notes(parsed, midi_track=midi_track, channel=channel,
-                             transpose=transpose)
-        if not notes:
-            return "No notes to import with these filters"
-        notes, merged = merge_duplicates(notes)
-        location = (location or "session").lower()
-        ableton = live.client()
-        created = False
-        if location == "session":
-            info = ableton.call("get_track_info", {"track_index": track_index})
-            slots = info.get("clip_slots", [])
-            if clip_index < 0 or clip_index >= len(slots):
-                return f"Clip slot {clip_index} out of range ({len(slots)} slots)"
-            if not slots[clip_index].get("has_clip"):
-                end = max(n["start_time"] + n["duration"] for n in notes)
-                length = clip_length or max(4.0, 4.0 * math.ceil(end / 4.0 - 1e-9))
-                ableton.call("create_clip", {"track_index": track_index,
-                                                     "clip_index": clip_index,
-                                                     "length": length})
-                created = True
-        if replace and not created:
-            ableton.call("clear_notes_from_clip",
-                                 clip_target(track_index, clip_index, location))
-        write_notes(track_index, clip_index, notes, location)
-        where = (f"new clip in slot {clip_index}" if created
-                 else f"{location} clip {clip_index}")
-        return (f"Imported {len(notes)} notes from {os.path.basename(path)} into "
-                f"{where} on track {track_index}"
-                + (" (replaced existing notes)" if replace and not created else "")
-                + (f"; {merged} duplicate note(s) (same pitch and start in two voices) "
-                   f"merged, as Live keeps one" if merged else ""))
-    except Exception as e:
-        log.error(f"Error importing MIDI file: {str(e)}")
-        return f"Error importing MIDI file: {str(e)}"
+    path = os.path.expanduser(file_path)
+    parsed = read_midi_file(path)
+    if track_index is None:
+        return json.dumps({"file": path, "format": parsed["format"],
+                           "ticks_per_beat": parsed["division"],
+                           "tracks": summarize(parsed)}, indent=2, ensure_ascii=False)
+    notes = select_notes(parsed, midi_track=midi_track, channel=channel,
+                         transpose=transpose)
+    if not notes:
+        return "No notes to import with these filters"
+    notes, merged = merge_duplicates(notes)
+    location = (location or "session").lower()
+    ableton = live.client()
+    created = False
+    if location == "session":
+        info = ableton.call("get_track_info", {"track_index": track_index})
+        slots = info.get("clip_slots", [])
+        if clip_index < 0 or clip_index >= len(slots):
+            return f"Clip slot {clip_index} out of range ({len(slots)} slots)"
+        if not slots[clip_index].get("has_clip"):
+            end = max(n["start_time"] + n["duration"] for n in notes)
+            length = clip_length or max(4.0, 4.0 * math.ceil(end / 4.0 - 1e-9))
+            ableton.call("create_clip", {"track_index": track_index,
+                                                 "clip_index": clip_index,
+                                                 "length": length})
+            created = True
+    if replace and not created:
+        ableton.call("clear_notes_from_clip",
+                             clip_target(track_index, clip_index, location))
+    write_notes(track_index, clip_index, notes, location)
+    where = (f"new clip in slot {clip_index}" if created
+             else f"{location} clip {clip_index}")
+    return (f"Imported {len(notes)} notes from {os.path.basename(path)} into "
+            f"{where} on track {track_index}"
+            + (" (replaced existing notes)" if replace and not created else "")
+            + (f"; {merged} duplicate note(s) (same pitch and start in two voices) "
+               f"merged, as Live keeps one" if merged else ""))

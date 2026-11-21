@@ -62,59 +62,55 @@ def device_inventory(installed_plugins: bool = False) -> str:
     Parameters:
     - installed_plugins: Also list the installed plug-ins
     """
-    try:
-        from .. import device_knowledge as dk
+    from .. import device_knowledge as dk
 
-        ableton = live.client()
-        info = ableton.call("get_session_info")
-        targets = [(i, "track") for i in range(int(info.get("track_count", 0)))]
-        targets += [(i, "return") for i in range(int(info.get("return_track_count", 0)))]
-        targets.append((0, "master"))
-        tracks = []
-        for index, tt in targets:
-            params: Dict[str, Any] = {"track_index": index}
-            if tt != "track":
-                params["track_type"] = tt
-            t = ableton.call("get_track_info", params)
-            devices = []
-            for d in t.get("devices", []):
-                card = dk.describe_device(d)
-                card["index"] = d.get("index")
-                if d.get("class_name") in ("InstrumentGroupDevice", "AudioEffectGroupDevice",
-                                           "MidiEffectGroupDevice", "DrumGroupDevice"):
-                    try:
-                        dp = dict(params, device_index=d["index"])
-                        full = ableton.call("get_device_parameters", dp).get("device", {})
-                        chains = full.get("chains") or []
-                        card["chains"] = [{"name": c.get("chain_name") or c.get("name"),
-                                           "devices": [x.get("name") for x in c.get("devices", [])]}
-                                          for c in chains][:32]
-                    except Exception:
-                        pass
-                devices.append(card)
-            tracks.append({"track": t.get("name"), "type": tt, "index": index, "devices": devices})
-        result: Dict[str, Any] = {"tracks": tracks, "midi_tools_note": dk.MIDI_TOOLS_NOTE}
-        if installed_plugins:
-            by_vendor: Dict[str, List[str]] = {}
-            for fmt in ("VST3", "VST", "AUv2"):
+    ableton = live.client()
+    info = ableton.call("get_session_info")
+    targets = [(i, "track") for i in range(int(info.get("track_count", 0)))]
+    targets += [(i, "return") for i in range(int(info.get("return_track_count", 0)))]
+    targets.append((0, "master"))
+    tracks = []
+    for index, tt in targets:
+        params: Dict[str, Any] = {"track_index": index}
+        if tt != "track":
+            params["track_type"] = tt
+        t = ableton.call("get_track_info", params)
+        devices = []
+        for d in t.get("devices", []):
+            card = dk.describe_device(d)
+            card["index"] = d.get("index")
+            if d.get("class_name") in ("InstrumentGroupDevice", "AudioEffectGroupDevice",
+                                       "MidiEffectGroupDevice", "DrumGroupDevice"):
                 try:
-                    root = ableton.call("get_browser_items_at_path", {"path": "plugins/" + fmt})
+                    dp = dict(params, device_index=d["index"])
+                    full = ableton.call("get_device_parameters", dp).get("device", {})
+                    chains = full.get("chains") or []
+                    card["chains"] = [{"name": c.get("chain_name") or c.get("name"),
+                                       "devices": [x.get("name") for x in c.get("devices", [])]}
+                                      for c in chains][:32]
                 except Exception:
-                    continue
-                for item in root.get("items", []):
-                    if item.get("is_folder"):
-                        sub = ableton.call("get_browser_items_at_path",
-                                                   {"path": "plugins/%s/%s" % (fmt, item["name"])})
-                        vendor = item["name"]
-                        for x in sub.get("items", []):
-                            by_vendor.setdefault(vendor, [])
-                            if x["name"] not in by_vendor[vendor]:
-                                by_vendor[vendor].append(x["name"])
-            result["installed_plugins"] = {v: sorted(n) for v, n in sorted(by_vendor.items())}
-        return as_json(result)
-    except Exception as e:
-        log.error(f"Error building the device inventory: {str(e)}")
-        return f"Error building the device inventory: {str(e)}"
+                    pass
+            devices.append(card)
+        tracks.append({"track": t.get("name"), "type": tt, "index": index, "devices": devices})
+    result: Dict[str, Any] = {"tracks": tracks, "midi_tools_note": dk.MIDI_TOOLS_NOTE}
+    if installed_plugins:
+        by_vendor: Dict[str, List[str]] = {}
+        for fmt in ("VST3", "VST", "AUv2"):
+            try:
+                root = ableton.call("get_browser_items_at_path", {"path": "plugins/" + fmt})
+            except Exception:
+                continue
+            for item in root.get("items", []):
+                if item.get("is_folder"):
+                    sub = ableton.call("get_browser_items_at_path",
+                                               {"path": "plugins/%s/%s" % (fmt, item["name"])})
+                    vendor = item["name"]
+                    for x in sub.get("items", []):
+                        by_vendor.setdefault(vendor, [])
+                        if x["name"] not in by_vendor[vendor]:
+                            by_vendor[vendor].append(x["name"])
+        result["installed_plugins"] = {v: sorted(n) for v, n in sorted(by_vendor.items())}
+    return as_json(result)
 
 
 @tool()
@@ -289,6 +285,3 @@ def set_drum_choke(track_index: int, notes: List[int], group: int = 1) -> str:
     - group: Choke group 1-16, or 0 for none
     """
     return as_json(_device_call("set_drum_choke", {"track_index": track_index, "notes": notes, "group": group}))
-
-
-# Main execution

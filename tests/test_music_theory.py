@@ -186,7 +186,6 @@ def test_styles_are_consistent():
 import json
 
 from ableton_studio_mcp import live, tools
-from ableton_studio_mcp.tools import listening
 from test_clip_notes import call
 
 

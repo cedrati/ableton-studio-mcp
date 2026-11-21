@@ -5,7 +5,6 @@ on both channels reads -23.0 LUFS); true peak on a sine whose samples miss
 its crest; the tonal and stereo diagnostics on synthetic mixes.
 """
 
-import math
 import struct
 
 import numpy as np

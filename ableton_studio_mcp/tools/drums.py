@@ -42,14 +42,11 @@ def drum_patterns(style: str = None, euclid_hits: int = None, euclid_steps: int 
     - style: Pattern style (optional)
     - euclid_hits / euclid_steps / euclid_rotate: Euclidean rhythm (optional)
     """
-    try:
-        from .. import drums
+    from .. import drums
 
-        if euclid_hits is not None:
-            return as_json({"grid": drums.euclid(euclid_hits, euclid_steps, euclid_rotate)})
-        return as_json(drums.describe(style) if style else drums.list_patterns())
-    except Exception as e:
-        return f"Error: {str(e)}"
+    if euclid_hits is not None:
+        return as_json({"grid": drums.euclid(euclid_hits, euclid_steps, euclid_rotate)})
+    return as_json(drums.describe(style) if style else drums.list_patterns())
 
 
 @tool()
@@ -62,15 +59,12 @@ def get_drum_map(track_index: int) -> str:
     Parameters:
     - track_index: Track holding the Drum Rack
     """
-    try:
-        live.require("get_drum_rack_map")
-        roles, kit = _kit_roles(live.client(), track_index)
-        if kit is None:
-            return "No Drum Rack found on track %d" % track_index
-        kit["roles"] = roles
-        return as_json(kit)
-    except Exception as e:
-        return f"Error reading the drum map: {str(e)}"
+    live.require("get_drum_rack_map")
+    roles, kit = _kit_roles(live.client(), track_index)
+    if kit is None:
+        return "No Drum Rack found on track %d" % track_index
+    kit["roles"] = roles
+    return as_json(kit)
 
 
 @tool()
@@ -116,59 +110,55 @@ def write_drum_pattern(track_index: int,
     - replace: Clear an existing clip in the slot first
     - seed: Random seed for variation/humanize
     """
-    try:
-        from .. import drums
-        grids: Dict[str, str] = {}
-        swing = 50.0
-        if style:
-            grids.update(drums.pattern_layers(style))
-            swing = drums.PATTERNS[style]["swing"]
-        for role, spec in (layers or {}).items():
-            if isinstance(spec, dict) and "euclid" in spec:
-                e = list(spec["euclid"]) + [0] * (3 - len(spec["euclid"]))
-                grids[role] = drums.euclid(int(e[0]), int(e[1]), int(e[2]))
-            elif spec in (None, "", False):
-                grids.pop(role, None)
-            else:
-                grids[role] = str(spec)
-        if not grids:
-            return "Give a style or layers"
-        if swing_pct is not None:
-            swing = swing_pct
-        ableton = live.client()
-        roles, kit = _kit_roles(ableton, track_index)
-        result = drums.render(grids, roles, bars=bars, steps_per_bar=steps_per_bar, swing_pct=swing,
-                              fill=fill, fill_every=fill_every, humanize=humanize, variation=variation,
-                              seed=seed, use_gm=kit is None)
-        notes = result["notes"]
-        if any("probability" in n for n in notes) and not live.supports("note_probability"):
-            for n in notes:  # an older script would drop the field anyway
-                n.pop("probability", None)
-        info = ableton.call("get_track_info", {"track_index": track_index})
-        slots = info.get("clip_slots", [])
-        if clip_index < 0 or clip_index >= len(slots):
-            return f"Clip slot {clip_index} out of range ({len(slots)} slots)"
-        length = result["length_beats"]
-        if slots[clip_index].get("has_clip"):
-            if not replace:
-                return "Slot %d already has a clip; pass replace=true or pick an empty slot" % clip_index
-            ableton.call("clear_notes_from_clip", clip_target(track_index, clip_index, "session"))
-            ableton.call("set_clip_loop", {"track_index": track_index, "clip_index": clip_index,
-                                                   "loop_start": 0.0, "loop_end": length})
+    from .. import drums
+    grids: Dict[str, str] = {}
+    swing = 50.0
+    if style:
+        grids.update(drums.pattern_layers(style))
+        swing = drums.PATTERNS[style]["swing"]
+    for role, spec in (layers or {}).items():
+        if isinstance(spec, dict) and "euclid" in spec:
+            e = list(spec["euclid"]) + [0] * (3 - len(spec["euclid"]))
+            grids[role] = drums.euclid(int(e[0]), int(e[1]), int(e[2]))
+        elif spec in (None, "", False):
+            grids.pop(role, None)
         else:
-            ableton.call("create_clip", {"track_index": track_index, "clip_index": clip_index,
-                                                 "length": length})
-        write_notes(track_index, clip_index, notes, "session")
-        return as_json({
-            "kit": kit.get("rack_name") if kit else "no Drum Rack: General MIDI notes",
-            "style": style, "bars": bars, "swing_pct": swing,
-            "mapping": result["mapping"], "missing_roles": result["missing_roles"],
-            "grids": grids, "notes_written": len(notes),
-            "with_probability": sum(1 for n in notes if "probability" in n),
-        })
-    except Exception as e:
-        log.error(f"Error writing drum pattern: {str(e)}")
-        return f"Error writing drum pattern: {str(e)}"
+            grids[role] = str(spec)
+    if not grids:
+        return "Give a style or layers"
+    if swing_pct is not None:
+        swing = swing_pct
+    ableton = live.client()
+    roles, kit = _kit_roles(ableton, track_index)
+    result = drums.render(grids, roles, bars=bars, steps_per_bar=steps_per_bar, swing_pct=swing,
+                          fill=fill, fill_every=fill_every, humanize=humanize, variation=variation,
+                          seed=seed, use_gm=kit is None)
+    notes = result["notes"]
+    if any("probability" in n for n in notes) and not live.supports("note_probability"):
+        for n in notes:  # an older script would drop the field anyway
+            n.pop("probability", None)
+    info = ableton.call("get_track_info", {"track_index": track_index})
+    slots = info.get("clip_slots", [])
+    if clip_index < 0 or clip_index >= len(slots):
+        return f"Clip slot {clip_index} out of range ({len(slots)} slots)"
+    length = result["length_beats"]
+    if slots[clip_index].get("has_clip"):
+        if not replace:
+            return "Slot %d already has a clip; pass replace=true or pick an empty slot" % clip_index
+        ableton.call("clear_notes_from_clip", clip_target(track_index, clip_index, "session"))
+        ableton.call("set_clip_loop", {"track_index": track_index, "clip_index": clip_index,
+                                               "loop_start": 0.0, "loop_end": length})
+    else:
+        ableton.call("create_clip", {"track_index": track_index, "clip_index": clip_index,
+                                             "length": length})
+    write_notes(track_index, clip_index, notes, "session")
+    return as_json({
+        "kit": kit.get("rack_name") if kit else "no Drum Rack: General MIDI notes",
+        "style": style, "bars": bars, "swing_pct": swing,
+        "mapping": result["mapping"], "missing_roles": result["missing_roles"],
+        "grids": grids, "notes_written": len(notes),
+        "with_probability": sum(1 for n in notes if "probability" in n),
+    })
 
 
 @tool()
@@ -181,11 +171,8 @@ def get_groove_pool() -> str:
     Library; apply one with set_clip_groove. A groove only acts when the
     global amount is above 0 (set_groove_params global_amount).
     """
-    try:
-        live.require("get_groove_pool")
-        return as_json(live.client().call("get_groove_pool"))
-    except Exception as e:
-        return f"Error reading the Groove Pool: {str(e)}"
+    live.require("get_groove_pool")
+    return as_json(live.client().call("get_groove_pool"))
 
 
 @tool()
@@ -200,13 +187,10 @@ def set_clip_groove(track_index: int, clip_index: int, groove_index: int = None,
     - groove_index: Index from get_groove_pool (omit to remove the groove)
     - location: "session" (default) or "arrangement"
     """
-    try:
-        live.require("set_clip_groove")
-        return as_json(live.client().call("set_clip_groove", {
-            "track_index": track_index, "clip_index": clip_index, "groove_index": groove_index,
-            "location": (location or "session").lower()}))
-    except Exception as e:
-        return f"Error setting the clip groove: {str(e)}"
+    live.require("set_clip_groove")
+    return as_json(live.client().call("set_clip_groove", {
+        "track_index": track_index, "clip_index": clip_index, "groove_index": groove_index,
+        "location": (location or "session").lower()}))
 
 
 @tool()
@@ -222,12 +206,9 @@ def set_groove_params(groove_index: int = None, timing_amount: float = None,
     - timing_amount / random_amount / velocity_amount / quantization_amount: New amounts
     - global_amount: Global Groove amount
     """
-    try:
-        live.require("set_groove_params")
-        values = {k: v for k, v in (("timing_amount", timing_amount), ("random_amount", random_amount),
-                                    ("velocity_amount", velocity_amount),
-                                    ("quantization_amount", quantization_amount)) if v is not None}
-        return as_json(live.client().call("set_groove_params", {
-            "groove_index": groove_index, "values": values, "global_amount": global_amount}))
-    except Exception as e:
-        return f"Error setting groove parameters: {str(e)}"
+    live.require("set_groove_params")
+    values = {k: v for k, v in (("timing_amount", timing_amount), ("random_amount", random_amount),
+                                ("velocity_amount", velocity_amount),
+                                ("quantization_amount", quantization_amount)) if v is not None}
+    return as_json(live.client().call("set_groove_params", {
+        "groove_index": groove_index, "values": values, "global_amount": global_amount}))

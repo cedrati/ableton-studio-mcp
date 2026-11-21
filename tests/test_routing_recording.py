@@ -463,13 +463,12 @@ def test_track_meters_cover_tracks_returns_and_main(script_module):
 
 def test_listen_mix_report_returns_image_and_meters(connect, monkeypatch, tmp_path):
     from mcp.server.fastmcp import Image
-    import ableton_studio_mcp.mix_analysis as mix
     monkeypatch.setattr(listening, "RECORDING_POLL_S", 0.0)
     take = tmp_path / "take.wav"
     _wav(take, seconds=4.0)
     polls = iter([{"armed_tracks": []}, {"recording": {"finished": False}},
                   {"recording": {"finished": False}}, {"recording": {"finished": True}}])
-    conn = connect({
+    connect({
         "get_session_info": {"tempo": 120.0},
         "get_recording_status": lambda p: next(polls),
         "create_audio_track": {"index": 2, "name": "3-Audio"},
@@ -538,6 +537,10 @@ def test_song_scale_get_and_set(script_module):
 class DisplayParam(Param):
     value_items = ["Low Cut 48", "Low Cut 12", "Low Shelf", "Bell", "Notch", "High Shelf", "High Cut 12", "High Cut 48"]
 
+    def __init__(self, name, value):
+        Param.__init__(self, name, value)
+        self.max = 7.0   # quantized: one step per item
+
     def str_for_value(self, v):
         return self.value_items[int(v)]
 
@@ -552,6 +555,10 @@ def test_parameter_display_and_items(script_module):
     assert p["display"] == "Bell" and p["value_items"][5] == "High Shelf"
     r = inst._set_device_parameter(0, 0, 0, 5)
     assert (r["old_display"], r["display"]) == ("Bell", "High Shelf")
+    with pytest.raises(ValueError, match="takes 0.0 to 7.0, not 9.0"):
+        inst._set_device_parameter(0, 0, 0, 9)
+    with pytest.raises(IndexError, match="no parameter 3"):
+        inst._set_device_parameter(0, 0, 3, 1)
 
 
 

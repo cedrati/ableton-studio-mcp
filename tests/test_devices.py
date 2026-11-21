@@ -6,7 +6,6 @@ import json
 import pytest
 
 from ableton_studio_mcp import live, tools
-from ableton_studio_mcp.tools import listening
 from ableton_studio_mcp import device_knowledge as dk
 from test_clip_notes import call
 from test_remote_script_bridge import _load_script_module, make_instance

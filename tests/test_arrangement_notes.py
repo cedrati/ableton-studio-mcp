@@ -12,7 +12,6 @@ import json
 import pytest
 
 from ableton_studio_mcp import live, tools
-from ableton_studio_mcp.tools import listening
 from test_clip_notes import call, fake_conn, FakeConnection  # noqa: F401  (fixtures)
 from test_remote_script_bridge import _load_script_module, make_instance
 
@@ -182,7 +181,7 @@ def test_audio_clip_and_bad_index_are_refused(script_module):
     verse.is_midi_clip = False
     with pytest.raises(ValueError, match="not a MIDI clip"):
         inst._get_clip_notes(0, 0, location="arrangement")
-    with pytest.raises(IndexError, match="Arrangement clip index"):
+    with pytest.raises(IndexError, match="in the Arrangement; there is no clip"):
         inst._add_notes_to_clip(0, 5, DRUMS, location="arrangement")
 
 

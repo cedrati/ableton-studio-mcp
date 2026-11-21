@@ -22,15 +22,11 @@ def get_track_routing(track_index: int, track_type: str = "track") -> str:
     - track_index: Index of the track (return index for "return", ignored for "master")
     - track_type: "track" (default), "return" or "master" (these two only have an output)
     """
-    try:
-        live.require("get_track_routing")
-        params: Dict[str, Any] = {"track_index": track_index}
-        params = track_target(params.pop("track_index"), track_type, **params)
-        result = live.client().call("get_track_routing", params)
-        return json.dumps(result, indent=2, ensure_ascii=False)
-    except Exception as e:
-        log.error(f"Error getting track routing: {str(e)}")
-        return f"Error getting track routing: {str(e)}"
+    live.require("get_track_routing")
+    params: Dict[str, Any] = {"track_index": track_index}
+    params = track_target(params.pop("track_index"), track_type, **params)
+    result = live.client().call("get_track_routing", params)
+    return json.dumps(result, indent=2, ensure_ascii=False)
 
 
 @tool()
@@ -61,17 +57,13 @@ def set_track_routing(track_index: int,
     - monitoring: "in", "auto" or "off"
     - track_type: "track" (default), "return" or "master" (output only)
     """
-    try:
-        live.require("set_track_routing")
-        params: Dict[str, Any] = {"track_index": track_index}
-        for key, value in (("input_type", input_type), ("input_channel", input_channel),
-                           ("output_type", output_type), ("output_channel", output_channel),
-                           ("monitoring", monitoring)):
-            if value is not None:
-                params[key] = value
-        params = track_target(params.pop("track_index"), track_type, **params)
-        result = live.client().call("set_track_routing", params)
-        return json.dumps(result, indent=2, ensure_ascii=False)
-    except Exception as e:
-        log.error(f"Error setting track routing: {str(e)}")
-        return f"Error setting track routing: {str(e)}"
+    live.require("set_track_routing")
+    params: Dict[str, Any] = {"track_index": track_index}
+    for key, value in (("input_type", input_type), ("input_channel", input_channel),
+                       ("output_type", output_type), ("output_channel", output_channel),
+                       ("monitoring", monitoring)):
+        if value is not None:
+            params[key] = value
+    params = track_target(params.pop("track_index"), track_type, **params)
+    result = live.client().call("set_track_routing", params)
+    return json.dumps(result, indent=2, ensure_ascii=False)
