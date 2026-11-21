@@ -24,6 +24,10 @@ from .constants import UNDO_GROUP_MAX_SECONDS
 from .registry import command
 
 HISTORY_LIMIT = 200
+# How many of Live's undo steps one action may span before undo gives up
+# (and puts everything back). Loads and recordings split actions into
+# several steps.
+FINGERPRINT_MAX_STEPS = 32
 
 
 class UndoCommands(object):
@@ -82,17 +86,28 @@ class UndoCommands(object):
         return True
 
     def _undo_entry_steps(self, entry):
-        """Undo one recorded action; return how many of Live's steps it took."""
+        """Undo one recorded action; return how many of Live's steps it took.
+
+        An action with a fingerprint (every group, and any action that loaded
+        a device) is undone step by step until the set matches the
+        fingerprint taken before it. If that doesn't happen within
+        FINGERPRINT_MAX_STEPS, every step taken is redone, so the set is
+        exactly as it was, and the failure is reported: an undo never goes
+        further back than the action it was asked to undo.
+        """
         if entry["before"] is None:
             return 1 if self._live_step("undo") else 0
         done = 0
-        for _ in range(1 + 2 * entry["loads"]):
+        for _ in range(max(1 + 2 * entry["loads"], FINGERPRINT_MAX_STEPS)):
             if not self._live_step("undo"):
                 break
             done += 1
             if self._set_fingerprint() == entry["before"]:
-                break
-        return done
+                return done
+        for _ in range(done):
+            self._live_step("redo")
+        raise RuntimeError("Could not undo '%s' cleanly: %d of Live's undo steps did not lead back to "
+                           "the set as it was before it, so nothing was undone" % (entry["name"], done))
 
     def _check_steps(self, steps):
         steps = int(steps)
@@ -110,7 +125,11 @@ class UndoCommands(object):
         done = live_steps = 0
         for _ in range(self._check_steps(steps)):
             entry = history.pop() if history else {"name": None, "loads": 0, "before": None}
-            taken = self._undo_entry_steps(entry)
+            try:
+                taken = self._undo_entry_steps(entry)
+            except RuntimeError:
+                history.append(entry)       # still there: it was not undone
+                raise
             if not taken:
                 if entry["name"] is not None:
                     history.append(entry)

@@ -340,3 +340,18 @@ def test_plain_actions_stay_one_step_each(loading):
     run(loading, "set_tempo", tempo=126)
     assert run(loading, "undo")["result"]["live_steps"] == 1
     assert loading._song.tempo == 128.0
+
+
+
+def test_an_undo_that_cannot_reach_the_old_state_changes_nothing(loading, script_module, monkeypatch):
+    song = loading._song
+    song.set_tempo(100.0)
+    run(loading, "begin_undo_group", name="impossible")
+    song.set_tempo(125.0)
+    run(loading, "end_undo_group")
+    entry = loading._undo_history[-1]
+    entry["before"] = "a state that no undo leads to"
+    reply = run(loading, "undo")
+    assert reply["status"] == "error" and "nothing was undone" in reply["message"]
+    assert song.tempo == 125.0                              # everything put back
+    assert loading._undo_history[-1] is entry               # still undoable later
