@@ -19,6 +19,7 @@ The version numbers below are the **Remote Script** version (`SCRIPT_VERSION`), 
 ### Fixed
 
 - `device_inventory` showed rack chain names as null.
+- If Live was not running when the server started, tools that check the Remote Script kept refusing with "missing capability (loaded=None)" even after Live was opened. The server now checks the script version again on every new connection to Live and whenever the last check failed; if Live really is closed, the message says so instead of asking to reinstall the script.
 - `listen_to_arrangement` left every take (and Live's `.asd` file) in the project's `Samples/Recorded` folder, about 25-35 MB per listen of a short piece. Takes are now deleted once analysed (`keep_audio=true` keeps them; only files named after the listening track are ever removed), and only the 20 most recent spectrogram images are kept in the temp folder.
 
 ## Remote Script 1.16.0

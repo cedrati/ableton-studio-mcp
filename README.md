@@ -45,7 +45,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (268) and checked end to end in Ableton Live 12. See the [Changelog](CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (274) and checked end to end in Ableton Live 12. See the [Changelog](CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -295,7 +295,7 @@ MCP client (Claude…)  ⇄  MCP server (MCP_Server/, Python)  ⇄  TCP 127.0.0.
 ```bash
 git clone -b feat/mixer-scenes https://github.com/cedrati/ableton-studio-mcp
 cd ableton-studio-mcp
-uv run --with pytest pytest -q             # 268 tests, no Live needed
+uv run --with pytest pytest -q             # 274 tests, no Live needed
 uv run ableton-studio-mcp-install-script   # install your working copy into Live
 ```
 
