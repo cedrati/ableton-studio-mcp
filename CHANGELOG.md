@@ -4,7 +4,7 @@ Changes in Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](h
 
 The version numbers below are the **Remote Script** version (`SCRIPT_VERSION`), which the server checks through `get_remote_script_info`. After updating, reinstall the script with `ableton-studio-mcp-install-script` and **restart Live** — re-selecting the control surface does not reload the code.
 
-## Unreleased (server only, Remote Script unchanged at 1.16.0)
+## Remote Script 1.17.0
 
 ### Changed
 
@@ -14,6 +14,7 @@ The version numbers below are the **Remote Script** version (`SCRIPT_VERSION`), 
 
 ### Added
 
+- **`delete_locator`:** removes a locator by beat position or by name (refused if several locators share the name, listing their positions). Like `create_locator`, it waits for the playhead to reach the cue, toggles it off, waits until Live has removed it and restores the playhead; it refuses to run while playing.
 - GitHub Actions CI: tests on Python 3.10, 3.12 and 3.13, and a check that the bundled Remote Script copy matches the source.
 
 ### Fixed

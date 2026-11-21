@@ -9,7 +9,7 @@
 By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)) — built on [ableton-mcp](https://github.com/ahujasid/ableton-mcp) by Siddharth Ahuja.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Remote Script](https://img.shields.io/badge/Remote%20Script-1.16.0-blue)
+![Remote Script](https://img.shields.io/badge/Remote%20Script-1.17.0-blue)
 ![Live](https://img.shields.io/badge/Ableton%20Live-11%20%7C%2012-black)
 [![Tests](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml/badge.svg)](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml)
 
@@ -45,7 +45,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (274) and checked end to end in Ableton Live 12. See the [Changelog](CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (285) and checked end to end in Ableton Live 12. See the [Changelog](CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -111,7 +111,7 @@ The server and the Remote Script must come from the **same version** — always 
 
 ### 4. Check
 
-Ask the assistant to run `get_remote_script_info`. It should report `script_version` **1.16.0** and `up_to_date: true`.
+Ask the assistant to run `get_remote_script_info`. It should report `script_version` **1.17.0** and `up_to_date: true`.
 
 ### Updating
 
@@ -153,7 +153,7 @@ Indexes start at 0. Times and lengths are in **beats**. Notes use MIDI numbers (
 | `get_session_info` / `get_session_snapshot` | Tempo, time signature, tracks, transport; full state dump. |
 | `set_tempo` · `start_playback` · `stop_playback` | Transport. |
 | `get_scenes` · `create_scene` · `set_scene_name` · `duplicate_scene` · `fire_scene` · `delete_scene` | Scenes. |
-| `switch_to_arrangement_view` · `set_arrangement_time` · `create_locator` | Arrangement view, playhead, locators. |
+| `switch_to_arrangement_view` · `set_arrangement_time` · `create_locator` · `delete_locator` | Arrangement view, playhead, locators (create, rename, delete by name or position). |
 | `get_remote_script_info` | Version handshake and capabilities. |
 
 ### Tracks, mixer and routing
@@ -295,7 +295,7 @@ MCP client (Claude…)  ⇄  MCP server (MCP_Server/, Python)  ⇄  TCP 127.0.0.
 ```bash
 git clone -b feat/mixer-scenes https://github.com/cedrati/ableton-studio-mcp
 cd ableton-studio-mcp
-uv run --with pytest pytest -q             # 274 tests, no Live needed
+uv run --with pytest pytest -q             # 285 tests, no Live needed
 uv run ableton-studio-mcp-install-script   # install your working copy into Live
 ```
 

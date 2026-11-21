@@ -149,7 +149,7 @@ class AbletonConnection:
             # Arrangement view commands
             "switch_to_arrangement_view", "set_current_song_time",
             "duplicate_session_clip_to_arrangement",
-            "create_locator"
+            "create_locator", "delete_locator"
         ]
 
         # Commands whose work on Live's main thread can take noticeably longer
@@ -2033,6 +2033,44 @@ def create_locator(
     except Exception as e:
         logger.error(f"Error creating locator: {str(e)}")
         return f"Error creating locator: {str(e)}"
+
+
+@mcp.tool()
+@rich_telemetry_tool("delete_locator")
+def delete_locator(
+    ctx: Context,
+    name: str = "",
+    time: float | None = None,
+    user_prompt: str = ""
+) -> str:
+    """
+    Delete a locator (cue point) from the Arrangement, by beat position or name.
+
+    Give `time` to delete the locator at that beat (most precise), or `name`
+    to delete the locator with that label. If several locators share the
+    name, nothing is deleted and their positions are listed so you can pick
+    one by time. Playback must be stopped.
+
+    Parameters:
+    - name: The locator label (e.g. "Drop")
+    - time: Beat position of the locator (takes precedence over name)
+    - user_prompt: The original user prompt that led to this tool call (for telemetry)
+    """
+    if time is None and not name:
+        return "Give the locator's name or its time (beat position)."
+    try:
+        from .script_handshake import require_capability
+
+        missing = require_capability("delete_locator")
+        if missing:
+            return missing
+        params = {"time": time} if time is not None else {"name": name}
+        result = get_ableton_connection().send_command("delete_locator", params)
+        label = result.get("name") or "(unnamed)"
+        return f"Locator '{label}' at beat {result.get('time')} deleted"
+    except Exception as e:
+        logger.error(f"Error deleting locator: {str(e)}")
+        return f"Error deleting locator: {str(e)}"
 
 
 # ── Dataset / preference tools (Supabase trajectory recording) ─────────────────

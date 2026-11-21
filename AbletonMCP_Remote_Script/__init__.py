@@ -44,7 +44,7 @@ MAX_REQUEST_BYTES = 16 * 1024 * 1024
 
 # Bumped whenever the TCP command surface changes; the MCP server compares
 # this to EXPECTED_REMOTE_SCRIPT_VERSION.
-SCRIPT_VERSION = "1.16.0"
+SCRIPT_VERSION = "1.17.0"
 PROTOCOL_VERSION = 1
 
 SCRIPT_CAPABILITIES = [
@@ -65,6 +65,7 @@ SCRIPT_CAPABILITIES = [
     "get_arrangement_clips",
     "duplicate_session_clip_to_arrangement",
     "create_locator",
+    "delete_locator",
     "delete_clip",
     "clear_notes_from_clip",
     "set_track_volume",
@@ -440,7 +441,7 @@ class AbletonMCP(ControlSurface):
                                  "switch_to_arrangement_view", "set_current_song_time",
                                  "duplicate_session_clip_to_arrangement",
                                  "map_rack_magnitude", "inspect_rack",
-                                 "create_locator",
+                                 "create_locator", "delete_locator",
                                  # Mixer / tracks / scenes
                                  "set_track_volume", "set_track_panning",
                                  "set_track_send", "set_track_mute",
@@ -565,6 +566,9 @@ class AbletonMCP(ControlSurface):
                             name = params.get("name", "")
                             time_val = params.get("time", 0.0)
                             result = self._create_locator(name, time_val)
+                        elif command_type == "delete_locator":
+                            result = self._delete_locator(
+                                params.get("name"), params.get("time"))
                         # ── Mixer / tracks / scenes ────────────────────────────────
                         elif command_type == "set_track_volume":
                             result = self._set_track_volume(
@@ -2272,6 +2276,91 @@ class AbletonMCP(ControlSurface):
                     on_ready=finish,
                     on_timeout=lambda: fail(
                         "Live did not create a cue at beat {0}".format(target_time)),
+                    reject=fail,
+                    max_ticks=CUE_SETTLE_TICKS,
+                )
+
+            self._poll_until(
+                lambda: self._playhead_at(target_time),
+                on_ready=toggle_cue,
+                on_timeout=lambda: fail(
+                    "Playhead did not reach beat {0} (now at {1})".format(
+                        target_time, song.current_song_time)),
+                reject=fail,
+                max_ticks=PLAYHEAD_SETTLE_TICKS,
+            )
+
+        return _Deferred(start)
+
+    def _delete_locator(self, name=None, time_val=None):
+        """Delete one locator, chosen by beat position or by name.
+
+        Live has no direct delete: Song.set_or_delete_cue() toggles the cue
+        at the playhead. So we move the playhead onto the cue, wait until Live
+        reports it there, toggle, wait for the cue to disappear, then restore
+        the playhead. A name shared by several locators is refused (the
+        caller must give the position) rather than guessing which one.
+        """
+        try:
+            song = self._song
+            if time_val is not None:
+                cue = self._find_cue(float(time_val))
+                if cue is None:
+                    raise Exception("No locator at beat {0}".format(time_val))
+            elif name:
+                matches = [c for c in song.cue_points if c.name == str(name)]
+                if not matches:
+                    raise Exception("No locator named '{0}'".format(name))
+                if len(matches) > 1:
+                    raise Exception(
+                        "{0} locators are named '{1}' (beats {2}); give the "
+                        "time of the one to delete".format(
+                            len(matches), name,
+                            ", ".join(str(c.time) for c in matches)))
+                cue = matches[0]
+            else:
+                raise Exception("Give the locator's name or time")
+
+            if getattr(song, "is_playing", False):
+                raise Exception(
+                    "Stop playback before deleting a locator: Live toggles "
+                    "cues at the moving playhead")
+
+            target_time = cue.time
+            deleted = {"success": True, "deleted": True,
+                       "time": target_time, "name": cue.name}
+            original_time = song.current_song_time
+            song.current_song_time = target_time
+        except Exception as e:
+            self.log_message("Error deleting locator: " + str(e))
+            raise
+
+        def start(resolve, reject):
+            def restore_playhead():
+                try:
+                    song.current_song_time = original_time
+                except Exception:
+                    pass
+
+            def fail(message):
+                restore_playhead()
+                reject(message)
+
+            def finish():
+                restore_playhead()
+                resolve(deleted)
+
+            def toggle_cue():
+                if self._find_cue(target_time) is None:
+                    finish()
+                    return
+                song.set_or_delete_cue()
+                self._poll_until(
+                    lambda: self._find_cue(target_time) is None,
+                    on_ready=finish,
+                    on_timeout=lambda: fail(
+                        "Live did not delete the locator at beat {0}".format(
+                            target_time)),
                     reject=fail,
                     max_ticks=CUE_SETTLE_TICKS,
                 )
