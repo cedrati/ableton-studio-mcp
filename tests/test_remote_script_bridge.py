@@ -27,6 +27,9 @@ BUNDLED_SCRIPT = (REPO_ROOT / "ableton_studio_mcp" / "live_script" / "AbletonStu
                   / "__init__.py")
 
 
+_LOADS = 0
+
+
 def _load_script_module(fresh=False):
     """Import the Live-side script with _Framework stubbed out.
 
@@ -52,9 +55,13 @@ def _load_script_module(fresh=False):
     sys.modules.setdefault("_Framework", framework)
     sys.modules.setdefault("_Framework.ControlSurface", control_surface_mod)
 
+    global _LOADS
+    _LOADS += 1
+    name = "AbletonStudioMCP_under_test_%d" % _LOADS   # a fresh package each time
     spec = importlib.util.spec_from_file_location(
-        "ableton_mcp_remote_script_under_test", BUNDLED_SCRIPT)
+        name, BUNDLED_SCRIPT, submodule_search_locations=[str(BUNDLED_SCRIPT.parent)])
     module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -67,6 +74,7 @@ def script_module():
 def make_instance(script_module, application=None):
     inst = script_module.AbletonStudioMCP.__new__(script_module.AbletonStudioMCP)
     inst.application = lambda: application
+    inst.schedule_message = lambda delay, callback: callback()  # run "on the main thread" now
     inst.log_message = lambda *a, **k: None
     inst.show_message = lambda *a, **k: None
     return inst
@@ -95,96 +103,126 @@ def test_script_and_package_versions_match():
 
 # ------------------------------------------------------------------ framing
 
-class FakeClient(object):
-    """Hands out prepared chunks, then EOF. Records what was written back."""
-
-    def __init__(self, chunks):
-        self._chunks = list(chunks)
-        self.sent = []
-        self.closed = False
-
-    def settimeout(self, _timeout):
-        pass
-
-    def recv(self, _size):
-        return self._chunks.pop(0) if self._chunks else b""
-
-    def sendall(self, data):
-        self.sent.append(data)
-
-    def close(self):
-        self.closed = True
+def _reader(script_module, limit=None):
+    transport = script_module.transport
+    return transport.RequestReader() if limit is None else transport.RequestReader(limit)
 
 
-def _serve(script_module, chunks):
-    """Run one client session and decode whatever it wrote back."""
+def test_request_split_mid_utf8_character_still_parses(script_module):
+    """Bytes are only decoded once a whole request is in: an accented name
+    cut between the two bytes of 'é' must not break the stream."""
+    payload = json.dumps({"type": "set_clip_name", "params": {"name": "café été"}},
+                         ensure_ascii=False).encode("utf-8") + b"\n"
+    split = payload.index(b"\xc3") + 1
+    reader = _reader(script_module)
+    assert reader.feed(payload[:split]) == []
+    assert reader.feed(payload[split:])[0]["params"]["name"] == "café été"
+
+
+def test_request_in_many_chunks_parses_once(script_module):
+    payload = json.dumps({"type": "get_session_info", "params": {}}).encode("utf-8") + b"\n"
+    reader = _reader(script_module)
+    found = []
+    for i in range(0, len(payload), 3):
+        found += reader.feed(payload[i:i + 3])
+    assert [r["type"] for r in found] == ["get_session_info"]
+
+
+def test_several_requests_in_one_packet(script_module):
+    packet = b'{"type": "start_playback"}\n{"type": "stop_playback"}\n'
+    assert [r["type"] for r in _reader(script_module).feed(packet)] == ["start_playback", "stop_playback"]
+
+
+def test_protocol_1_request_without_newline_is_accepted(script_module):
+    reader = _reader(script_module)
+    assert reader.feed(b'{"type": "get_scr') == []
+    assert reader.feed(b'ipt_info", "params": {}}')[0]["type"] == "get_script_info"
+
+
+def test_oversized_request_is_refused_instead_of_buffered_forever(script_module):
+    reader = _reader(script_module, limit=1024)
+    with pytest.raises(ValueError, match="larger than 1024"):
+        reader.feed(b'{"type": "' + b"x" * 4096)
+
+
+def test_non_object_request_is_refused(script_module):
+    with pytest.raises(ValueError, match="JSON object"):
+        _reader(script_module).feed(b"[1, 2]\n")
+
+
+def test_socket_server_answers_one_line_per_request(script_module):
+    """End to end on a real socket: newline framing, replies in order,
+    a broken request answered with an error before hanging up."""
+    import socket as _socket
+    seen = []
+
+    def handle(request):
+        seen.append(request["type"])
+        return {"status": "success", "result": {"echo": request["type"]}}
+
+    server = script_module.transport.SocketServer("127.0.0.1", 0, handle, lambda *_: None)
+    server.port = 0
+    server.start()
+    port = server.listener.getsockname()[1]
+    try:
+        with _socket.create_connection(("127.0.0.1", port), timeout=3) as c:
+            c.sendall(b'{"type": "a"}\n{"type": "b"}\n')
+            data = b""
+            while data.count(b"\n") < 2:
+                data += c.recv(4096)
+            replies = [json.loads(line) for line in data.splitlines()]
+            assert [r["result"]["echo"] for r in replies] == ["a", "b"]
+            c.sendall(b"not json\n")
+            error = json.loads(c.recv(4096).splitlines()[0])
+            assert error["status"] == "error" and "bad request" in error["message"]
+            assert c.recv(4096) == b""          # then the server hangs up
+    finally:
+        server.stop()
+    assert seen == ["a", "b"]
+
+
+# ------------------------------------------------------------ dispatching
+
+def test_unknown_command_and_parameter_checks(script_module):
     inst = make_instance(script_module)
-    inst.running = True
-    received = []
-
-    def _process(command):
-        received.append(command)
-        return {"status": "success", "result": {"echo": command.get("type")}}
-
-    inst._process_command = _process
-    client = FakeClient(chunks)
-    inst._handle_client(client)
-    replies = [json.loads(frame.decode("utf-8")) for frame in client.sent]
-    return received, replies
+    assert inst._process_command({"type": "nope"})["message"] == "Unknown command: nope"
+    reply = inst._process_command({"type": "set_tempo", "params": {}})
+    assert reply == {"status": "error", "message": "set_tempo needs 'tempo'"}
+    reply = inst._process_command({"type": "set_tempo", "params": {"tempo": 120, "bpm": 3}})
+    assert reply == {"status": "error", "message": "set_tempo does not take 'bpm'"}
+    reply = inst._process_command({"type": "create_locator", "params": {"name": "x"}})
+    assert reply["message"] == "create_locator needs 'time'"
 
 
-def test_command_split_mid_utf8_character_still_parses(script_module):
-    """Regression: decoding each chunk alone raised on the split, dropped the
-    chunk, and wrote an error frame into a stream still awaiting the real
-    response — leaving request and response permanently out of step.
-
-    ensure_ascii=False is what puts raw multi-byte on the wire.
-    """
-    payload = json.dumps(
-        {"type": "set_clip_name", "params": {"name": "café été"}},
-        ensure_ascii=False,
-    ).encode("utf-8")
-    split = payload.index(b"\xc3") + 1  # between the two bytes of 'é'
-    assert payload[:split].endswith(b"\xc3")
-
-    received, replies = _serve(script_module, [payload[:split], payload[split:]])
-
-    assert len(received) == 1
-    assert received[0]["params"]["name"] == "café été"
-    assert replies == [{"status": "success", "result": {"echo": "set_clip_name"}}]
+def test_handler_exception_becomes_an_error_reply(script_module):
+    inst = make_instance(script_module)
+    class Song(object):
+        @property
+        def tempo(self):
+            raise RuntimeError("no song")
+        @tempo.setter
+        def tempo(self, v):
+            raise RuntimeError("tempo is locked")
+    inst._song = Song()
+    reply = inst._process_command({"type": "set_tempo", "params": {"tempo": 128}})
+    assert reply == {"status": "error", "message": "tempo is locked"}
 
 
-def test_command_split_across_many_chunks_parses_once(script_module):
-    payload = json.dumps({"type": "get_session_info", "params": {}}).encode("utf-8")
-    chunks = [payload[i:i + 3] for i in range(0, len(payload), 3)]
-
-    received, replies = _serve(script_module, chunks)
-
-    assert len(received) == 1
-    assert len(replies) == 1
-
-
-def test_back_to_back_commands_each_get_one_reply(script_module):
-    first = json.dumps({"type": "start_playback", "params": {}}).encode("utf-8")
-    second = json.dumps({"type": "stop_playback", "params": {}}).encode("utf-8")
-
-    received, replies = _serve(script_module, [first, second])
-
-    assert [c["type"] for c in received] == ["start_playback", "stop_playback"]
-    assert len(replies) == 2
+def test_capabilities_are_generated_from_the_handlers(script_module):
+    caps = script_module.SCRIPT_CAPABILITIES
+    assert "set_tempo" in caps and "arrangement_notes" in caps
+    assert len(caps) == len(set(caps))
+    for name in script_module.registry.COMMANDS:
+        method = script_module.registry.COMMANDS[name][0]
+        assert callable(getattr(script_module.AbletonStudioMCP, method)), name
 
 
-def test_oversized_request_is_refused_instead_of_buffered_forever(
-        script_module, monkeypatch):
-    """A client that never completes a command must not grow the buffer."""
-    monkeypatch.setattr(script_module, "MAX_REQUEST_BYTES", 1024)
-    junk = b'{"type": "' + b"x" * 4096
-
-    received, replies = _serve(script_module, [junk, junk])
-
-    assert received == []
-    assert len(replies) == 1
-    assert replies[0]["status"] == "error"
+def test_main_thread_timeout_is_reported(script_module, monkeypatch):
+    inst = make_instance(script_module)
+    inst.schedule_message = lambda delay, callback: None     # Live never runs it
+    monkeypatch.setattr(script_module.surface, "MAIN_THREAD_TIMEOUT", 0.05)
+    reply = inst._process_command({"type": "get_scenes", "params": {}})
+    assert reply == {"status": "error", "message": "Live did not finish 'get_scenes' in time"}
 
 
 # ------------------------------------------------------------- browser tree

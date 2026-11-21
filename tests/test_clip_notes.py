@@ -18,7 +18,6 @@ import json
 import pytest
 
 from ableton_studio_mcp import live, tools
-from ableton_studio_mcp.tools import listening
 
 
 def call(tool, *args, **kwargs):

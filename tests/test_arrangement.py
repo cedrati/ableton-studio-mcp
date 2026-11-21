@@ -5,7 +5,6 @@ import json
 import pytest
 
 from ableton_studio_mcp import live, tools
-from ableton_studio_mcp.tools import listening
 from ableton_studio_mcp import arrangement as ar
 from test_clip_notes import call
 

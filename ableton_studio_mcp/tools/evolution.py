@@ -22,17 +22,14 @@ def arrangement_templates(template: str = None) -> str:
     Parameters:
     - template: Template name (optional)
     """
-    try:
-        from .. import arrangement as ar
+    from .. import arrangement as ar
 
-        if template:
-            return as_json({"template": template, "label": ar.TEMPLATES[template]["label"]
-                          if template in ar.TEMPLATES else None,
-                          "sections": ar.template_sections(template)})
-        return as_json({"templates": {k: v["label"] for k, v in ar.TEMPLATES.items()},
-                      "shapes": ar.SHAPES, "track_roles": [r for r, _ in ar.ROLE_WORDS]})
-    except Exception as e:
-        return f"Error: {str(e)}"
+    if template:
+        return as_json({"template": template, "label": ar.TEMPLATES[template]["label"]
+                      if template in ar.TEMPLATES else None,
+                      "sections": ar.template_sections(template)})
+    return as_json({"templates": {k: v["label"] for k, v in ar.TEMPLATES.items()},
+                  "shapes": ar.SHAPES, "track_roles": [r for r, _ in ar.ROLE_WORDS]})
 
 
 @tool()
@@ -65,52 +62,48 @@ def write_clip_evolution(track_index: int,
     - bars: Extend the clip to this many bars first (MIDI clips; 4/4)
     - resolution: Envelope step in beats (1 = a point per beat)
     """
-    try:
-        from .. import arrangement as ar
-        live.require("set_clip_automation")
-        ableton = live.client()
-        data = ableton.call("get_clip_notes", {"track_index": track_index, "clip_index": clip_index})
-        length = float(data.get("length") or 0.0)
-        report = {"clip_length_before": length}
-        if bars:
-            target = bars * 4.0
-            if target > length + 1e-6:
-                notes = data.get("notes", [])
-                tiled = ar.tile_notes(notes, length, target)
-                ableton.call("clear_notes_from_clip", clip_target(track_index, clip_index, "session"))
-                ableton.call("set_clip_loop", {"track_index": track_index, "clip_index": clip_index,
-                                                       "loop_start": 0.0, "loop_end": target,
-                                                       "end_marker": target})
-                write_notes(track_index, clip_index, tiled, "session")
-                length = target
-                report["extended_to_beats"] = target
-                report["notes_after_tiling"] = len(tiled)
-        report["lanes"] = []
-        for lane in lanes:
-            a = float(lane.get("from_bar", 0)) * 4.0
-            z = float(lane["to_bar"]) * 4.0 if lane.get("to_bar") is not None else length
-            z = min(z, length)
-            pts = ar.curve_points(z - a, float(lane["start"]), float(lane["end"]),
-                                  shape=lane.get("shape", "linear"), resolution=resolution,
-                                  cycles=float(lane.get("cycles", 1.0)), steps=int(lane.get("steps", 4)),
-                                  power=float(lane.get("power", 2.5)), offset=a, seed=int(lane.get("seed", 0)))
-            if a > 0:
-                pts.insert(0, {"time": 0.0, "value": pts[0]["value"]})
-            res = ableton.call("set_clip_automation", {
-                "track_index": track_index, "clip_index": clip_index, "location": "session",
-                "device_index": int(lane.get("device_index", -1)),
-                "parameter_index": int(lane.get("parameter_index", 0)),
-                "mixer_parameter": lane.get("mixer_parameter", ""), "points": pts,
-                "interpolation": "step" if lane.get("shape") in ("steps", "hold") else "linear",
-                "resolution": resolution, "clear_first": True})
-            report["lanes"].append({"parameter": res.get("parameter"), "shape": lane.get("shape", "linear"),
-                                    "from_beat": a, "to_beat": z, "points": len(pts),
-                                    "start": lane["start"], "end": lane["end"]})
-        report["clip_length_beats"] = length
-        return as_json(report)
-    except Exception as e:
-        log.error(f"Error writing clip evolution: {str(e)}")
-        return f"Error writing clip evolution: {str(e)}"
+    from .. import arrangement as ar
+    live.require("set_clip_automation")
+    ableton = live.client()
+    data = ableton.call("get_clip_notes", {"track_index": track_index, "clip_index": clip_index})
+    length = float(data.get("length") or 0.0)
+    report = {"clip_length_before": length}
+    if bars:
+        target = bars * 4.0
+        if target > length + 1e-6:
+            notes = data.get("notes", [])
+            tiled = ar.tile_notes(notes, length, target)
+            ableton.call("clear_notes_from_clip", clip_target(track_index, clip_index, "session"))
+            ableton.call("set_clip_loop", {"track_index": track_index, "clip_index": clip_index,
+                                                   "loop_start": 0.0, "loop_end": target,
+                                                   "end_marker": target})
+            write_notes(track_index, clip_index, tiled, "session")
+            length = target
+            report["extended_to_beats"] = target
+            report["notes_after_tiling"] = len(tiled)
+    report["lanes"] = []
+    for lane in lanes:
+        a = float(lane.get("from_bar", 0)) * 4.0
+        z = float(lane["to_bar"]) * 4.0 if lane.get("to_bar") is not None else length
+        z = min(z, length)
+        pts = ar.curve_points(z - a, float(lane["start"]), float(lane["end"]),
+                              shape=lane.get("shape", "linear"), resolution=resolution,
+                              cycles=float(lane.get("cycles", 1.0)), steps=int(lane.get("steps", 4)),
+                              power=float(lane.get("power", 2.5)), offset=a, seed=int(lane.get("seed", 0)))
+        if a > 0:
+            pts.insert(0, {"time": 0.0, "value": pts[0]["value"]})
+        res = ableton.call("set_clip_automation", {
+            "track_index": track_index, "clip_index": clip_index, "location": "session",
+            "device_index": int(lane.get("device_index", -1)),
+            "parameter_index": int(lane.get("parameter_index", 0)),
+            "mixer_parameter": lane.get("mixer_parameter", ""), "points": pts,
+            "interpolation": "step" if lane.get("shape") in ("steps", "hold") else "linear",
+            "resolution": resolution, "clear_first": True})
+        report["lanes"].append({"parameter": res.get("parameter"), "shape": lane.get("shape", "linear"),
+                                "from_beat": a, "to_beat": z, "points": len(pts),
+                                "start": lane["start"], "end": lane["end"]})
+    report["clip_length_beats"] = length
+    return as_json(report)
 
 
 def _session_tracks(ableton) -> List[Dict[str, Any]]:
@@ -159,56 +152,52 @@ def build_arrangement(template: str = None,
     - locators: Add a locator at each section (transport must be stopped)
     - dry_run: Only return the plan
     """
-    try:
-        from .. import arrangement as ar
+    from .. import arrangement as ar
 
-        if sections is None:
-            if not template:
-                return "Give a template or sections"
-            sections = ar.template_sections(template)
-        if section_slots:
-            for sec in sections:
-                over = section_slots.get(sec["name"])
-                if over:
-                    sec["slots"] = {int(k): int(v) for k, v in over.items()}
-        ableton = live.client()
-        tracks = _session_tracks(ableton)
-        roles = ar.infer_track_roles(tracks)
-        for k, v in (track_roles or {}).items():
-            roles[int(k)] = v
-        info = ableton.call("get_session_info")
-        bpb = float(info.get("signature_numerator", 4)) * 4.0 / float(info.get("signature_denominator", 4))
-        plan = ar.plan_arrangement(sections, tracks, roles, beats_per_bar=bpb, start_bar=start_bar,
-                                   default_slot=default_slot)
-        summary = {"track_roles": {tracks[i]["name"]: r for i, r in roles.items() if i < len(tracks)},
-                   "sections": plan["sections"], "total_bars": plan["total_bars"],
-                   "placements": len(plan["placements"]), "warnings": plan["warnings"]}
-        unassigned = [t["name"] for t in tracks if t["index"] not in roles and t["slots"]]
-        if unassigned:
-            summary["tracks_without_role"] = unassigned
-        if dry_run:
-            summary["dry_run"] = True
-            return as_json(summary)
-        if ableton.call("get_session_info").get("is_playing"):
-            ableton.call("stop_playback")
-        for p in plan["placements"]:
-            ableton.call("duplicate_session_clip_to_arrangement", {
-                "track_index": p["track_index"], "clip_index": p["clip_index"],
-                "destination_time": p["start"]})
-        made = 0
-        if locators:
-            if live.supports("create_locator"):
-                for loc in plan["locators"]:
-                    try:
-                        ableton.call("create_locator", {"name": loc["name"], "time": loc["beat"]})
-                        made += 1
-                    except Exception as e:
-                        summary.setdefault("warnings", []).append("locator %s: %s" % (loc["name"], e))
-        summary["locators_created"] = made
+    if sections is None:
+        if not template:
+            return "Give a template or sections"
+        sections = ar.template_sections(template)
+    if section_slots:
+        for sec in sections:
+            over = section_slots.get(sec["name"])
+            if over:
+                sec["slots"] = {int(k): int(v) for k, v in over.items()}
+    ableton = live.client()
+    tracks = _session_tracks(ableton)
+    roles = ar.infer_track_roles(tracks)
+    for k, v in (track_roles or {}).items():
+        roles[int(k)] = v
+    info = ableton.call("get_session_info")
+    bpb = float(info.get("signature_numerator", 4)) * 4.0 / float(info.get("signature_denominator", 4))
+    plan = ar.plan_arrangement(sections, tracks, roles, beats_per_bar=bpb, start_bar=start_bar,
+                               default_slot=default_slot)
+    summary = {"track_roles": {tracks[i]["name"]: r for i, r in roles.items() if i < len(tracks)},
+               "sections": plan["sections"], "total_bars": plan["total_bars"],
+               "placements": len(plan["placements"]), "warnings": plan["warnings"]}
+    unassigned = [t["name"] for t in tracks if t["index"] not in roles and t["slots"]]
+    if unassigned:
+        summary["tracks_without_role"] = unassigned
+    if dry_run:
+        summary["dry_run"] = True
         return as_json(summary)
-    except Exception as e:
-        log.error(f"Error building arrangement: {str(e)}")
-        return f"Error building arrangement: {str(e)}"
+    if ableton.call("get_session_info").get("is_playing"):
+        ableton.call("stop_playback")
+    for p in plan["placements"]:
+        ableton.call("duplicate_session_clip_to_arrangement", {
+            "track_index": p["track_index"], "clip_index": p["clip_index"],
+            "destination_time": p["start"]})
+    made = 0
+    if locators:
+        if live.supports("create_locator"):
+            for loc in plan["locators"]:
+                try:
+                    ableton.call("create_locator", {"name": loc["name"], "time": loc["beat"]})
+                    made += 1
+                except Exception as e:
+                    summary.setdefault("warnings", []).append("locator %s: %s" % (loc["name"], e))
+    summary["locators_created"] = made
+    return as_json(summary)
 
 
 @tool()
@@ -222,24 +211,20 @@ def arrangement_overview(block_bars: int = 8) -> str:
     Parameters:
     - block_bars: Bars per character (default 8)
     """
-    try:
-        from .. import arrangement as ar
+    from .. import arrangement as ar
 
-        ableton = live.client()
-        info = ableton.call("get_session_info")
-        bpb = float(info.get("signature_numerator", 4)) * 4.0 / float(info.get("signature_denominator", 4))
-        clips_by_track, end = {}, 0.0
-        for i in range(int(info.get("track_count", 0))):
-            data = ableton.call("get_arrangement_clips", {"track_index": i})
-            clips = data.get("clips", [])
-            clips_by_track["%d %s" % (i, data.get("track_name", ""))] = clips
-            for c in clips:
-                end = max(end, float(c["end_time"]))
-        rows = ar.activity_map(clips_by_track, block_bars * bpb, end)
-        blocks = len(next(iter(rows.values()), ""))
-        return as_json({"block_bars": block_bars, "length_bars": round(end / bpb, 2),
-                      "block_start_bars": [1 + b * block_bars for b in range(blocks)],
-                      "tracks": rows})
-    except Exception as e:
-        log.error(f"Error reading the arrangement: {str(e)}")
-        return f"Error reading the arrangement: {str(e)}"
+    ableton = live.client()
+    info = ableton.call("get_session_info")
+    bpb = float(info.get("signature_numerator", 4)) * 4.0 / float(info.get("signature_denominator", 4))
+    clips_by_track, end = {}, 0.0
+    for i in range(int(info.get("track_count", 0))):
+        data = ableton.call("get_arrangement_clips", {"track_index": i})
+        clips = data.get("clips", [])
+        clips_by_track["%d %s" % (i, data.get("track_name", ""))] = clips
+        for c in clips:
+            end = max(end, float(c["end_time"]))
+    rows = ar.activity_map(clips_by_track, block_bars * bpb, end)
+    blocks = len(next(iter(rows.values()), ""))
+    return as_json({"block_bars": block_bars, "length_bars": round(end / bpb, 2),
+                  "block_start_bars": [1 + b * block_bars for b in range(blocks)],
+                  "tracks": rows})

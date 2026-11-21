@@ -242,13 +242,13 @@ def test_arrangement_clips_are_addressed_by_location(script_module):
     inst, _, _ = make(script_module, arrangement_clip=arr)
     inst._set_clip_warp(0, 0, location="arrangement", warp_mode="tones")
     assert arr.warp_mode == 1
-    with pytest.raises(IndexError, match="Arrangement clip index"):
+    with pytest.raises(IndexError, match="in the Arrangement; there is no clip"):
         inst._get_clip_warp(0, 3, location="arrangement")
 
 
 def test_empty_slot_and_bad_location_are_refused(script_module):
     inst, _, _ = make(script_module)
-    with pytest.raises(ValueError, match="No clip in slot 1"):
+    with pytest.raises(ValueError, match="Slot 1 of track 0 is empty"):
         inst._get_clip_warp(0, 1)
     with pytest.raises(ValueError, match="location"):
         inst._get_clip_warp(0, 0, location="timeline")
@@ -392,7 +392,7 @@ class FakeLiveWarpMarker(object):
 def live_api(script_module, monkeypatch):
     import types
     live = types.SimpleNamespace(Clip=types.SimpleNamespace(WarpMarker=FakeLiveWarpMarker))
-    monkeypatch.setattr(script_module, "Live", live)
+    monkeypatch.setattr(script_module.warp, "Live", live)
     return live
 
 

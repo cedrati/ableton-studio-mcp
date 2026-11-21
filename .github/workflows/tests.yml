@@ -17,6 +17,8 @@ jobs:
       - uses: astral-sh/setup-uv@v10.4.0
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Lint (undefined names, unused imports, syntax)
+        run: uvx ruff check ableton_studio_mcp tests
       - name: Tests
         run: uv run --with pytest pytest -q
       - name: The built package installs and registers every tool

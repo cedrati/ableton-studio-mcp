@@ -6,7 +6,6 @@ import json
 import pytest
 
 from ableton_studio_mcp import live, tools
-from ableton_studio_mcp.tools import listening
 from ableton_studio_mcp import drums as d
 from test_clip_notes import call
 from test_remote_script_bridge import _load_script_module, make_instance
@@ -244,7 +243,7 @@ def test_notes_with_probability_use_the_extended_api(script_module, monkeypatch)
     class Spec:
         def __init__(self, **kw):
             self.kw = kw
-    monkeypatch.setattr(script_module, "MidiNoteSpecification", Spec)
+    monkeypatch.setattr(script_module.notes, "MidiNoteSpecification", Spec)
     inst._midi_clip = lambda t, c, loc: (clip, "session clip 0/0")
     inst._clip_location_info = lambda c, loc: {}
     inst._add_notes_to_clip(0, 0, [{"pitch": 42, "start_time": 0.5, "duration": 0.2, "velocity": 50,

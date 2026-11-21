@@ -62,20 +62,16 @@ def record_arrangement(start_time: float,
       (then poll get_recording_status)
     - max_wait_seconds: Safety limit when waiting; recording is stopped past it
     """
-    try:
-        live.require("record_arrangement")
-        ableton = live.client()
-        tempo = float(ableton.call("get_session_info").get("tempo") or 120.0)
-        result = ableton.call(
-            "record_arrangement", {"start_time": start_time, "end_time": end_time})
-        if not wait:
-            return json.dumps(result, indent=2, ensure_ascii=False)
-        expected = (end_time - start_time) * 60.0 / tempo
-        status = _wait_for_recording(ableton, expected, max_wait_seconds)
-        return json.dumps(status, indent=2, ensure_ascii=False)
-    except Exception as e:
-        log.error(f"Error recording arrangement: {str(e)}")
-        return f"Error recording arrangement: {str(e)}"
+    live.require("record_arrangement")
+    ableton = live.client()
+    tempo = float(ableton.call("get_session_info").get("tempo") or 120.0)
+    result = ableton.call(
+        "record_arrangement", {"start_time": start_time, "end_time": end_time})
+    if not wait:
+        return json.dumps(result, indent=2, ensure_ascii=False)
+    expected = (end_time - start_time) * 60.0 / tempo
+    status = _wait_for_recording(ableton, expected, max_wait_seconds)
+    return json.dumps(status, indent=2, ensure_ascii=False)
 
 
 @tool()
@@ -84,13 +80,9 @@ def get_recording_status() -> str:
     State of the current or last record_arrangement run (finished, reason,
     stop position), plus Arrangement Record, transport and armed tracks.
     """
-    try:
-        live.require("get_recording_status")
-        result = live.client().call("get_recording_status")
-        return json.dumps(result, indent=2, ensure_ascii=False)
-    except Exception as e:
-        log.error(f"Error getting recording status: {str(e)}")
-        return f"Error getting recording status: {str(e)}"
+    live.require("get_recording_status")
+    result = live.client().call("get_recording_status")
+    return json.dumps(result, indent=2, ensure_ascii=False)
 
 
 @tool()
@@ -99,13 +91,9 @@ def stop_arrangement_recording() -> str:
     Stop a running record_arrangement now (turns Arrangement Record off and
     stops playback).
     """
-    try:
-        live.require("stop_arrangement_recording")
-        result = live.client().call("stop_arrangement_recording")
-        return json.dumps(result, indent=2, ensure_ascii=False)
-    except Exception as e:
-        log.error(f"Error stopping recording: {str(e)}")
-        return f"Error stopping recording: {str(e)}"
+    live.require("stop_arrangement_recording")
+    result = live.client().call("stop_arrangement_recording")
+    return json.dumps(result, indent=2, ensure_ascii=False)
 
 
 @tool()
@@ -116,19 +104,15 @@ def get_audio_clip_file(track_index: int, clip_index: int,
     recorded with record_arrangement), with its length and sample rate.
 
     Parameters:
-    - track_index: Track that owns the clip
+    - track_index: The track holding the clip
     - clip_index: Arrangement clip index (get_arrangement_clips) or Session slot
     - location: "arrangement" (default) or "session"
     """
-    try:
-        live.require("get_audio_clip_file")
-        result = live.client().call("get_audio_clip_file", {
-            "track_index": track_index, "clip_index": clip_index,
-            "location": (location or "arrangement").lower()})
-        return json.dumps(result, indent=2, ensure_ascii=False)
-    except Exception as e:
-        log.error(f"Error getting audio clip file: {str(e)}")
-        return f"Error getting audio clip file: {str(e)}"
+    live.require("get_audio_clip_file")
+    result = live.client().call("get_audio_clip_file", {
+        "track_index": track_index, "clip_index": clip_index,
+        "location": (location or "arrangement").lower()})
+    return json.dumps(result, indent=2, ensure_ascii=False)
 
 
 @tool()
@@ -143,14 +127,10 @@ def analyze_audio_file(file_path: str, segment_seconds: float = 1.0) -> str:
     - file_path: Absolute path of the audio file
     - segment_seconds: Length of each loudness segment (default 1 s)
     """
-    try:
-        from ..audio_analysis import analyze_audio
+    from ..audio_analysis import analyze_audio
 
-        result = analyze_audio(os.path.expanduser(file_path), segment_seconds=segment_seconds)
-        return json.dumps(result, indent=2, ensure_ascii=False)
-    except Exception as e:
-        log.error(f"Error analyzing audio file: {str(e)}")
-        return f"Error analyzing audio file: {str(e)}"
+    result = analyze_audio(os.path.expanduser(file_path), segment_seconds=segment_seconds)
+    return json.dumps(result, indent=2, ensure_ascii=False)
 
 
 RESAMPLING_NAMES = ("resampling", "rééchantillonnage", "reechantillonnage",
@@ -271,13 +251,9 @@ def get_track_meters() -> str:
     main track (0.0-1.0 on Live's meter scale, as in the mixer). Meaningful
     while the song plays; listen_to_arrangement samples them for you.
     """
-    try:
-        live.require("get_track_meters")
-        result = live.client().call("get_track_meters")
-        return json.dumps(result, indent=2, ensure_ascii=False)
-    except Exception as e:
-        log.error(f"Error getting track meters: {str(e)}")
-        return f"Error getting track meters: {str(e)}"
+    live.require("get_track_meters")
+    result = live.client().call("get_track_meters")
+    return json.dumps(result, indent=2, ensure_ascii=False)
 
 
 @tool()
@@ -300,14 +276,10 @@ def analyze_mix(file_path: str, target: str = "streaming",
       (EBU -23 LUFS) or "podcast"
     - spectrogram: Also return the spectrogram image (default True)
     """
-    try:
-        if target not in MIX_TARGETS:
-            return "target must be one of: %s" % ", ".join(MIX_TARGETS)
-        report, png = _mix_report(os.path.expanduser(file_path), target, spectrogram)
-        return _with_image(report, png)
-    except Exception as e:
-        log.error(f"Error analyzing mix: {str(e)}")
-        return f"Error analyzing mix: {str(e)}"
+    if target not in MIX_TARGETS:
+        return "target must be one of: %s" % ", ".join(MIX_TARGETS)
+    report, png = _mix_report(os.path.expanduser(file_path), target, spectrogram)
+    return _with_image(report, png)
 
 
 @tool()
@@ -440,17 +412,17 @@ def listen_to_arrangement(start_time: float,
         else:
             result["recorded"]["track_index"] = track_index
         return _with_image(result, png)
-    except Exception as e:
-        log.error(f"Error listening to arrangement: {str(e)}")
+    except Exception:
+        # Leave the set as it was: no half-recorded listening track or take.
         if track_index is not None and not keep_track:
             try:
                 ableton.call("stop_arrangement_recording")
                 ableton.call("delete_track", {"track_index": track_index})
                 if path and not keep_audio:
                     _discard_take(path)
-            except Exception:
-                pass
-        return f"Error listening to arrangement: {str(e)}"
+            except Exception:   # best effort; the original error matters more
+                log.warning("Could not clean up the listening track %s", track_index)
+        raise
     finally:
         for idx in armed_before:
             try:

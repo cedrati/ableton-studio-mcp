@@ -45,3 +45,15 @@ ableton_studio_mcp = ["live_script/AbletonStudioMCP/*.py"]
 "Homepage" = "https://github.com/cedrati/ableton-studio-mcp"
 "Bug Tracker" = "https://github.com/cedrati/ableton-studio-mcp/issues"
 "Upstream" = "https://github.com/ahujasid/ableton-mcp"
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+# Pyflakes (real bugs: undefined names, unused imports...) and pycodestyle errors.
+select = ["F", "E9"]
+
+[tool.ruff.lint.per-file-ignores]
+"ableton_studio_mcp/tools/__init__.py" = ["F401", "F403"]   # re-exports every tool
+"ableton_studio_mcp/live_script/**" = ["E402"]               # version set before imports
+"tests/**" = ["F811"]                                         # pytest fixtures imported from other test modules

@@ -20,8 +20,9 @@ CAPS = ["get_session_info", "set_tempo", "get_scenes"]
 class FakeLive:
     """A minimal control surface: answers JSON requests on 127.0.0.1."""
 
-    def __init__(self, version=__version__, caps=CAPS, handshake=True):
+    def __init__(self, version=__version__, caps=CAPS, handshake=True, newline=True):
         self.version, self.caps, self.handshake = version, caps, handshake
+        self.newline = newline   # False: a pre-2.0 control surface (no line framing)
         self.requests = []
         self.connections = 0
         self.handlers = {}
@@ -63,7 +64,9 @@ class FakeLive:
             reply = self._answer(request)
             if reply is None:
                 continue
-            data = json.dumps(reply).encode()
+            data = reply if isinstance(reply, bytes) else json.dumps(reply).encode()
+            if self.newline:
+                data += b"\n"
             for i in range(0, len(data), 7):      # deliberately fragmented
                 conn.sendall(data[i:i + 7])
 
@@ -291,3 +294,30 @@ def test_supports_is_false_when_live_is_unreachable(monkeypatch):
         raise live.LiveUnavailable("closed")
     monkeypatch.setattr(live, "require", require)
     assert live.supports("anything") is False
+
+
+# ── framing ──────────────────────────────────────────────────────────────────
+
+def test_requests_are_sent_as_json_lines(fake):
+    f = fake()
+    seen = []
+    f.handlers["get_scenes"] = lambda p: seen.append(p) or {"status": "success", "result": {}}
+    c = live.LiveClient("127.0.0.1", f.port)
+    c.call("get_scenes", {"name": "a\nb"})       # a newline inside a value stays escaped
+    assert seen == [{"name": "a\nb"}]
+
+
+def test_pre_2_0_control_surface_without_newlines_still_works(fake):
+    f = fake(version="1.17.0", newline=False)
+    c = live.LiveClient("127.0.0.1", f.port)
+    assert c.call("get_scenes")["echo"] == "get_scenes"
+    assert c.info.version == "1.17.0"
+
+
+def test_garbled_reply_closes_the_connection(fake):
+    f = fake()
+    f.handlers["get_scenes"] = lambda p: b"<html>oops</html>"
+    c = live.LiveClient("127.0.0.1", f.port)
+    with pytest.raises(live.LiveUnavailable, match="Unreadable reply"):
+        c.call("get_scenes")
+    assert not c.connected

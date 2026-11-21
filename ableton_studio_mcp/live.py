@@ -145,6 +145,8 @@ class LiveClient:
     # ── requests ────────────────────────────────────────────────────────────
 
     def _read_reply(self, timeout: float) -> dict:
+        """One reply: a JSON line (protocol 2). Control surfaces before 2.0
+        send no newline, so a buffer that already parses is accepted too."""
         self._sock.settimeout(timeout)
         data = b""
         while True:
@@ -152,13 +154,26 @@ class LiveClient:
             if not chunk:
                 raise ConnectionError("Live closed the connection")
             data += chunk
-            try:
-                return json.loads(data)
-            except ValueError:
-                continue   # reply not complete yet
+            if b"\n" in data:
+                line, rest = data.split(b"\n", 1)
+                if rest.strip():
+                    log.warning("Ignoring %d unexpected bytes after a reply", len(rest))
+                return self._decode(line)
+            if data.rstrip().endswith(b"}"):
+                try:
+                    return self._decode(data)
+                except ValueError:
+                    continue   # not complete yet
+
+    @staticmethod
+    def _decode(raw: bytes) -> dict:
+        reply = json.loads(raw)
+        if not isinstance(reply, dict):
+            raise ValueError("reply is not a JSON object")
+        return reply
 
     def _exchange(self, command: str, params: dict) -> Any:
-        payload = json.dumps({"type": command, "params": params}).encode()
+        payload = (json.dumps({"type": command, "params": params}) + "\n").encode()
         try:
             self._sock.sendall(payload)
             reply = self._read_reply(SLOW_COMMANDS.get(command, DEFAULT_TIMEOUT))
@@ -168,6 +183,9 @@ class LiveClient:
         except OSError as e:
             self.close()
             raise LiveUnavailable(f"Connection to Live lost during '{command}': {e}")
+        except ValueError as e:      # garbled reply: the stream can't be trusted any more
+            self.close()
+            raise LiveUnavailable(f"Unreadable reply from Live to '{command}': {e}")
         if reply.get("status") == "error":
             raise LiveRefused(reply.get("message") or f"Live refused '{command}'")
         return reply.get("result", {})
