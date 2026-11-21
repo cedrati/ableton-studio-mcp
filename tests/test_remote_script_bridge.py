@@ -358,3 +358,37 @@ def test_update_display_polls_the_server_and_survives_errors(script_module):
     inst.log_message = logged.append
     inst.update_display()
     assert calls == [1] and "socket poll failed" in logged[0]
+
+
+def test_a_change_ends_the_pass_so_live_can_catch_up(script_module):
+    """Regression (Live 12.4 crashed): create a track and change its routing
+    in the same display update. Reads chain; anything else ends the pass."""
+    import socket as _socket
+    ran = []
+    server = script_module.transport.SocketServer(
+        "127.0.0.1", 0, lambda r, respond: (ran.append(r["type"]), respond({"status": "success"})),
+        lambda *_: None, is_read=lambda r: r["type"].startswith("get_"))
+    server.start()
+    port = server.listener.getsockname()[1]
+    c = _socket.create_connection(("127.0.0.1", port), timeout=3)
+    try:
+        c.sendall(b'{"type": "get_a"}\n{"type": "get_b"}\n{"type": "create_audio_track"}\n'
+                  b'{"type": "set_track_routing"}\n{"type": "get_c"}\n')
+        import time as _time
+        _time.sleep(0.05)
+        server.poll()
+        assert ran == ["get_a", "get_b", "create_audio_track"]
+        server.poll()
+        assert ran[3:] == ["set_track_routing"]
+        server.poll()
+        assert ran[4:] == ["get_c"]
+    finally:
+        c.close()
+        server.stop()
+
+
+def test_only_get_commands_count_as_reads(script_module):
+    reg = script_module.registry
+    assert reg.is_read("get_session_info") and reg.is_read("get_track_routing")
+    assert not reg.is_read("set_track_routing") and not reg.is_read("create_audio_track")
+    assert not reg.is_read("get_nothing_registered")

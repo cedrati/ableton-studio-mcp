@@ -45,7 +45,7 @@ class AbletonStudioMCP(Waiting, SessionCommands, TrackCommands, ClipCommands, No
         ControlSurface.__init__(self, c_instance)
         from . import SCRIPT_VERSION
         self._song = self.song()
-        self._server = SocketServer(HOST, PORT, self._execute, self.log_message)
+        self._server = SocketServer(HOST, PORT, self._execute, self.log_message, is_read=self._is_read)
         try:
             self._server.start()
         except (OSError, IOError) as e:
@@ -82,6 +82,11 @@ class AbletonStudioMCP(Waiting, SessionCommands, TrackCommands, ClipCommands, No
                 "capabilities": registry.capabilities()}
 
     # ── requests ────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _is_read(request):
+        """Reads leave the set untouched and can be chained in one pass."""
+        return registry.is_read(request.get("type", ""))
 
     def _execute(self, request, respond):
         """Run one request and pass its reply to ``respond`` (now, or later

@@ -48,7 +48,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (305) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (307) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -314,7 +314,7 @@ MCP client (Claude…)  ⇄  MCP server (ableton_studio_mcp/, Python)  ⇄  TCP 
   | `tools/` | The tools, one module per domain: session, tracks, clips, devices, browser, routing, listening, midi, theory, drums, evolution. |
   | `audio_analysis.py`, `mix_analysis.py`, `music_theory.py`, `drums.py`, `arrangement.py`… | The domain logic, independent of Live and fully unit-tested. |
   | `install.py`, `doctor.py`, `server.py` | Installer, diagnostics, command-line entry point. |
-  | `live_script/AbletonStudioMCP/` | The control surface that runs inside Live: `transport.py` (socket, newline-delimited JSON), `registry.py` (the command table: each handler's signature is its contract, and the advertised capabilities are generated from it), `surface.py` (everything runs on Live's main thread from `update_display`: no threads, non-blocking sockets, requests of a sequence answered in the same pass — under 1 ms each), and one module per domain (session, tracks, clips, notes, warp, automation, devices, groove, browser, recording, snapshot). It runs in Live's own Python (3.7 in Live 11), so it avoids newer syntax. |
+  | `live_script/AbletonStudioMCP/` | The control surface that runs inside Live: `transport.py` (socket, newline-delimited JSON), `registry.py` (the command table: each handler's signature is its contract, and the advertised capabilities are generated from it), `surface.py` (everything runs on Live's main thread from `update_display`: no threads, non-blocking sockets; reads of a sequence answered in the same pass in under 1 ms, each change given its own display update), and one module per domain (session, tracks, clips, notes, warp, automation, devices, groove, browser, recording, snapshot). It runs in Live's own Python (3.7 in Live 11), so it avoids newer syntax. |
 
 - Messages are one JSON object per line: `{"type": ..., "params": ...}` → `{"status": ..., "result" | "message": ...}` (protocol 2; the server still understands 1.x control surfaces, which send no newline).
 
@@ -323,7 +323,7 @@ MCP client (Claude…)  ⇄  MCP server (ableton_studio_mcp/, Python)  ⇄  TCP 
 ```bash
 git clone -b feat/mixer-scenes https://github.com/cedrati/ableton-studio-mcp
 cd ableton-studio-mcp
-uv run --with pytest pytest -q             # 305 tests, no Live needed
+uv run --with pytest pytest -q             # 307 tests, no Live needed
 uv run ableton-studio-mcp install          # install your working copy into Live
 uv run ableton-studio-mcp doctor           # check the whole chain
 ```
