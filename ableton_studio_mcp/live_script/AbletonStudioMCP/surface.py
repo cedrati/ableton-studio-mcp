@@ -63,6 +63,7 @@ class AbletonStudioMCP(Waiting, SessionCommands, TrackCommands, ClipCommands, No
         if server is not None:
             try:
                 server.poll()
+                self._close_stale_undo_group()
             except Exception as e:   # never let a network problem break Live's display loop
                 self.log_message("socket poll failed: %s\n%s" % (e, traceback.format_exc()))
 
@@ -100,20 +101,46 @@ class AbletonStudioMCP(Waiting, SessionCommands, TrackCommands, ClipCommands, No
             kwargs = registry.bind_arguments(handler, name, request.get("params"))
         except registry.CommandError as e:
             return respond({"status": "error", "message": str(e)})
+        # Live merges every change a script makes into one undo step until
+        # something closes it, so Undo would wipe out a whole session's work.
+        # Each change therefore gets a step of its own (or joins the open
+        # group, see session.py).
+        own_step = self._opens_undo_step(name)
+        if own_step:
+            self._song.begin_undo_step()
+        closed = []
+
+        def close_step():
+            if own_step and not closed:
+                closed.append(True)
+                self._song.end_undo_step()
+
+        def finish(reply):
+            close_step()
+            respond(reply)
+
         started = time.time()
         try:
             result = handler(**kwargs)
         except Exception as e:
             self.log_message("%s failed: %s\n%s" % (name, e, traceback.format_exc()))
-            return respond({"status": "error", "message": str(e)})
+            return finish({"status": "error", "message": str(e)})
         elapsed = time.time() - started
         if elapsed > SLOW_COMMAND_LOG_SECONDS:
             self.log_message("%s took %.0f ms" % (name, elapsed * 1000))
         if isinstance(result, Deferred):
-            result.start(lambda value: respond({"status": "success", "result": value}),
-                         lambda message: respond({"status": "error", "message": message}))
+            result.start(lambda value: finish({"status": "success", "result": value}),
+                         lambda message: finish({"status": "error", "message": message}))
         else:
-            respond({"status": "success", "result": result})
+            finish({"status": "success", "result": result})
+
+    UNDO_CONTROL = frozenset(("undo", "redo", "begin_undo_group", "end_undo_group"))
+
+    def _opens_undo_step(self, name):
+        """Whether ``name`` runs in an undo step of its own."""
+        return (not registry.is_read(name) and name not in self.UNDO_CONTROL
+                and not getattr(self, "_undo_group", None)
+                and hasattr(getattr(self, "_song", None), "begin_undo_step"))
 
     def _process_command(self, request):
         """Run a request and return its reply, when it settles right away

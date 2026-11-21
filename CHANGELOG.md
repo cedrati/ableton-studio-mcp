@@ -4,7 +4,18 @@ Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](https://gith
 
 Since 2.0 one version number covers the server and the Live control surface; the server refuses a control surface of another version. After updating, run `ableton-studio-mcp install` and **restart Live** — re-selecting the control surface does not reload the code. (1.x versions below are the Remote Script version.)
 
-## Unreleased
+## 2.1.0
+
+New control surface series: run `ableton-studio-mcp install` and restart Live.
+
+### Added
+
+- **Undo and redo** (#37): `undo` / `redo` tools (Live's own Undo, 1–50 steps) and `start_undo_group` / `end_undo_group` to make a whole request one step.
+- **One undo step per change.** Measured in Live 12.4: Live merges every change a script makes into a single undo step, whatever the delay between them, so one Cmd+Z used to take back a whole session of edits. The control surface now wraps each change in its own step (closed even when the change fails or settles on a later tick), so Undo takes back exactly the last action.
+- **Multi-change tools are one step:** `write_drum_pattern`, `write_progression`, `transform_clip`, `write_clip_evolution`, `build_arrangement`, `import_midi_file`, `load_drum_kit`, `simpler_sample` and `listen_to_arrangement` group their work.
+- An undo group left open (server stopped, client gone) is closed after two minutes so it can't swallow later edits.
+
+### Changed
 
 - The server no longer tries to reach Live when it starts (up to 9 s when Live was unreachable): it starts at once and connects on the first tool call.
 

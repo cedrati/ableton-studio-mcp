@@ -1,6 +1,6 @@
 [project]
 name = "ableton-studio-mcp"
-version = "2.0.1"
+version = "2.1.0"
 description = "Ableton Live integration through the Model Context Protocol — AI music production: compose, arrange, mix, master and analyse in Ableton Live"
 readme = "README.md"
 keywords = ["ableton", "ableton-live", "mcp", "mcp-server", "model-context-protocol", "claude", "ai-music",
@@ -54,3 +54,6 @@ select = ["F", "E9"]
 "ableton_studio_mcp/tools/__init__.py" = ["F401", "F403"]   # re-exports every tool
 "ableton_studio_mcp/live_script/**" = ["E402"]               # version set before imports
 "tests/**" = ["F811"]                                         # pytest fixtures imported from other test modules
+
+[tool.pytest.ini_options]
+markers = ["undo_groups: keep real undo grouping in tools"]

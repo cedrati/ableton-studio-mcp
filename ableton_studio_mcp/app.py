@@ -38,7 +38,7 @@ mcp = FastMCP("Ableton Studio MCP", lifespan=_lifespan)
 _EXPECTED = (live.LiveUnavailable, live.MissingCapability)
 
 
-def guard(fn: Callable, needs: Iterable[str] = ()) -> Callable:
+def guard(fn: Callable, needs: Iterable[str] = (), undo_step: str | None = None) -> Callable:
     """Wrap a tool body: check the commands it needs, then run it, turning
     failures into one readable line. Live refusing a command, or a bad
     argument (ValueError), comes back as "<tool> failed: <reason>"."""
@@ -49,6 +49,9 @@ def guard(fn: Callable, needs: Iterable[str] = ()) -> Callable:
         try:
             for capability in required:
                 live.require(capability)
+            if undo_step:
+                with live.undo_group(undo_step):
+                    return fn(*args, **kwargs)
             return fn(*args, **kwargs)
         except _EXPECTED as e:
             return str(e)
@@ -61,15 +64,18 @@ def guard(fn: Callable, needs: Iterable[str] = ()) -> Callable:
     return run
 
 
-def tool(needs: str | Iterable[str] | None = None) -> Callable[[Callable], Callable]:
+def tool(needs: str | Iterable[str] | None = None,
+         undo_step: str | None = None) -> Callable[[Callable], Callable]:
     """Register a function as an MCP tool, guarded by :func:`guard`.
 
     ``needs`` names the control-surface commands the tool relies on.
+    ``undo_step`` makes everything the tool changes one step of Live's Undo
+    (for tools that send many commands).
     """
     required = (needs,) if isinstance(needs, str) else tuple(needs or ())
 
     def register(fn: Callable) -> Callable:
-        run = guard(fn, required)
+        run = guard(fn, required, undo_step)
         mcp.tool()(run)
         return run
 

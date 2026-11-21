@@ -125,7 +125,7 @@ def analyze_clip_music(track_index: int,
     return as_json(result)
 
 
-@tool()
+@tool(undo_step="Transform clip")
 def transform_clip(track_index: int,
     clip_index: int,
     operations: List[Dict[str, Any]],
@@ -192,7 +192,7 @@ def transform_clip(track_index: int,
     })
 
 
-@tool()
+@tool(undo_step="Write progression")
 def write_progression(track_index: int,
     clip_index: int,
     root: str,

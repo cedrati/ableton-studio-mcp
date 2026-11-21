@@ -93,7 +93,7 @@ def load_instrument_or_effect(track_index: int, uri: str, track_type: str = "tra
     return f"Loaded '{uri}' on {where}. Chain: {chain}"
 
 
-@tool()
+@tool(undo_step="Load drum kit")
 def load_drum_kit(track_index: int, rack_uri: str, kit_path: str) -> str:
     """
     Load a Drum Rack, then the first loadable kit found in a browser folder.
