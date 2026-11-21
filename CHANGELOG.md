@@ -4,6 +4,27 @@ Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](https://gith
 
 Since 2.0 one version number covers the server and the Live control surface; the server refuses a control surface of another version. After updating, run `ableton-studio-mcp install` and **restart Live** — re-selecting the control surface does not reload the code. (1.x versions below are the Remote Script version.)
 
+## 2.4.0
+
+New control surface series (its code is unchanged): run `ableton-studio-mcp install` and restart Live.
+
+Learned building a full track in Live 12.4 with the assistant.
+
+### Added
+
+- **Producer automation gestures** (`automation_gesture`): `delay_throw` (delay send up on the last beat of each phrase), `reverb_swell`, `filter_rise` / `filter_fall`, `drop_cut` (the breath before a drop), `stutter` (16th-note gate), `fade_in` / `fade_out`, drawn in a Session clip and aimed at the right parameter by themselves: the return named like a delay or a reverb, the track's filter (an Auto Filter first, then the synth's own; a high-pass cleaning the lows is skipped). Measured in Live: a clip envelope leaves its parameter where it ends and a clip without an envelope doesn't reset it, so after a cut the next section stayed silent; when a move ends away from the resting value, the track's other clips now get it held.
+- **Chop a sample in one call** (`chop_sample`): loads it in a Simpler (adding one if needed), slices it (16 slices, or 64 grains for micro-sampling), warps it from the tempo in its file name and transposes it to the song's key from the key in its name (Splice-style names: `_127_`, `Fmin`, `D#m`), then writes a chop pattern: `hook` (the same grain at the same place every bar — a hook, where a random grain on every hit sounds like noise — off-beat accents, ghost hits with a chance), `rearrange` or `stutter`. Checked in Live: a guitar loop named 122 BPM, D#m was warped over 32 beats and moved +2 semitones to F.
+
+### Fixed
+
+- **`build_arrangement` left sections silent.** A clip that didn't divide its section, or was longer than it, was skipped with only a warning. It is now placed once more and cropped at the section's end (measured in Live 12.4: an Arrangement clip takes the length of its loop brace once looping is off).
+- **`build_arrangement` kept older clips.** A copy only overwrites where it lands, so a rebuild kept the previous build's clips where a track no longer played. The clips already in the range are now listed (`existing_clips`, also in a dry run) and deleted only with `clear=true` — deleting is the artist's call.
+- **A groove could have no effect without anyone knowing.** A new set's global Groove amount is 0 %, where a clip's groove changes nothing; `set_clip_groove` now says so and how to raise it.
+
+### Changed
+
+- Development and the release build use Python 3.15 (`.python-version`); the tests also run on 3.10, 3.13 and 3.14, and the Docker image uses Python 3.15.
+
 ## 2.3.0
 
 New control surface series: run `ableton-studio-mcp install` and restart Live.

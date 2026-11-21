@@ -47,7 +47,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (352) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (370) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -194,6 +194,7 @@ Indexes start at 0. Times and lengths are in **beats**. Notes use MIDI numbers (
 | `set_device_sidechain` | Route a Compressor's sidechain from another track and switch it on (ducking). |
 | `plugin_presets` | List or select a plug-in's presets (as exposed to Live). |
 | `simpler_sample` | Load a sample into Simpler; classic / one-shot / slicing by transient, beat, region; warp, crop, reverse. |
+| `chop_sample` | Chop a sample in one call: loads it in a Simpler, slices it (16 slices, or 64 grains for micro-sampling), warps it from the tempo in its name (`_127_`, `120bpm`), transposes it to the song's key from the key in its name (`Fmin`, `D#m`), and writes a chop pattern — `hook` (the same grain at the same place every bar, off-beat accents, ghost hits with a chance), `rearrange` or `stutter`. |
 | `rack_variation` · `set_drum_choke` | Rack macro variations (list, recall, store, randomize); Drum Rack choke groups. |
 
 ### Sound design
@@ -237,14 +238,15 @@ The mix report checks: integrated / short-term / momentary loudness and loudness
 | `drum_patterns` | Pattern library (techno four, rolling, hypnotic, minimal, dub, hard, acid, Detroit, house, deep house, tech house, afro house, UK garage, breakbeat, electro, drum & bass, dubstep, trap, EBM) with tempo, swing and production notes; Euclidean rhythms. |
 | `get_drum_map` | A track's Drum Rack pads and the role each plays (kick, clap, hats, perc...). |
 | `write_drum_pattern` | Program a clip from a style and/or grids per role: `x` hit, `X` accent, `o` ghost, `2`-`4` ratchet, `?`/`*` probability; Euclidean layers, swing, fills, variation, humanize. |
-| `get_groove_pool` · `set_clip_groove` · `set_groove_params` | Live's Groove Pool: list grooves, apply one to a clip, adjust amounts and the global Groove amount. |
+| `get_groove_pool` · `set_clip_groove` · `set_groove_params` | Live's Groove Pool: list grooves, apply one to a clip, adjust amounts and the global Groove amount. `set_clip_groove` warns when the global amount is 0 % (a new set's default), where a groove has no audible effect. |
 
 ### Evolution and arrangement
 
 | Tool | Description |
 |---|---|
 | `write_clip_evolution` | Extend a MIDI loop to N bars and write long curves per lane (device parameter or volume/pan/send): linear, exp build-up, log, S-curve, swell, slow sine/triangle, steps, random walk. |
-| `build_arrangement` | Lay out the Arrangement from Session clips by section (template or custom), roles from track names, per-section clip variants, tiling, locators, `dry_run`. Envelopes of the placed clips become track automation. |
+| `automation_gesture` | A producer's automation move in a Session clip, aimed at the right parameter by itself: `delay_throw` (delay send up at the end of each phrase), `reverb_swell`, `filter_rise` / `filter_fall` (the track's filter, never a high-pass cleaning the lows), `drop_cut` (the breath before a drop), `stutter` (16th-note gate), `fade_in` / `fade_out`. When a move ends away from the parameter's resting value, the track's other clips get it held so the next section doesn't stay silent or filtered. |
+| `build_arrangement` | Lay out the Arrangement from Session clips by section (template or custom), roles from track names, per-section clip variants, tiling, locators, `dry_run`. A clip that doesn't divide its section is placed once more and cropped at the section's end. Clips already in the range are listed and kept unless `clear=true`. Clip envelopes travel with the placed clips. |
 | `arrangement_overview` | Map of which track plays in each block of bars. |
 | `arrangement_templates` | Templates (`techno_dj`, `techno_64`, `minimal`, `house`) and curve shapes. |
 
@@ -262,7 +264,7 @@ The mix report checks: integrated / short-term / momentary loudness and loudness
 
 ### Good to know
 
-- **Live's API has limits.** A script cannot save the set, export audio, create group tracks, or write Arrangement automation directly (tempo changes included). Track automation still reaches the Arrangement through Session clip envelopes, which `build_arrangement` places for you. Live's own analysers (Spectrum, EQ Eight's display, Max for Live meters) don't expose their readings — which is why listening works by recording the main output.
+- **Live's API has limits.** A script cannot save the set, export audio, create group tracks, or write Arrangement automation directly (tempo changes included). Automation still reaches the Arrangement through Session clip envelopes, which `build_arrangement` places for you; a clip envelope leaves its parameter where it ends, which `automation_gesture` takes care of. Live's own analysers (Spectrum, EQ Eight's display, Max for Live meters) don't expose their readings — which is why listening works by recording the main output.
 - **Listening takes real time:** analysing a 3-minute song means playing it for 3 minutes.
 - **Device loading, playhead moves and locators** reply only once Live has applied them. Loading the same device that is already on a track resets it in place (the reply says so).
 - **Undo works step by step.** Live on its own merges everything a script changes into one undo step, so one Cmd+Z would wipe out a whole session of edits; Ableton Studio MCP gives each change its own step, and ask the assistant to `undo` to take back exactly its last action. Destructive tools (`delete_track`, `delete_scene`, `delete_clip`, `delete_arrangement_clip`) can be undone the same way, but saving your set before big experiments is still wise.
@@ -323,8 +325,8 @@ MCP client (Claude…)  ⇄  MCP server (ableton_studio_mcp/, Python)  ⇄  TCP 
   |---|---|
   | `live.py` | The connection to Live: one socket, reopened when Live restarts, one request at a time, per-command timeouts, and the control surface's version and command list checked on every connection. |
   | `app.py` | The MCP application and the `@tool` decorator: checks the commands a tool needs and turns any failure into one readable line. |
-  | `tools/` | The tools, one module per domain: session, tracks, clips, devices, browser, routing, listening, midi, theory, drums, evolution. |
-  | `audio_analysis.py`, `mix_analysis.py`, `music_theory.py`, `drums.py`, `arrangement.py`… | The domain logic, independent of Live and fully unit-tested. |
+  | `tools/` | The tools, one module per domain: session, tracks, clips, devices, browser, routing, listening, midi, theory, drums, evolution, sound. |
+  | `audio_analysis.py`, `mix_analysis.py`, `music_theory.py`, `drums.py`, `arrangement.py`, `gestures.py`, `chops.py`… | The domain logic, independent of Live and fully unit-tested. |
   | `install.py`, `doctor.py`, `server.py` | Installer, diagnostics, command-line entry point. |
   | `live_script/AbletonStudioMCP/` | The control surface that runs inside Live: `transport.py` (socket, newline-delimited JSON), `registry.py` (the command table: each handler's signature is its contract, and the advertised capabilities are generated from it), `surface.py` (everything runs on Live's main thread from `update_display`: no threads, non-blocking sockets; reads of a sequence answered in the same pass in under 1 ms, each change given its own display update), `undo.py` (one undo step per assistant action, even across device loads), and one module per domain (session, tracks, clips, notes, warp, automation, devices, groove, browser, recording, snapshot). It runs in Live's own Python (3.7 in Live 11), so it avoids newer syntax. |
 
@@ -335,12 +337,12 @@ MCP client (Claude…)  ⇄  MCP server (ableton_studio_mcp/, Python)  ⇄  TCP 
 ```bash
 git clone -b feat/mixer-scenes https://github.com/cedrati/ableton-studio-mcp
 cd ableton-studio-mcp
-uv run --with pytest pytest -q             # 352 tests, no Live needed
+uv run --with pytest pytest -q             # 370 tests, no Live needed
 uv run ableton-studio-mcp install          # install your working copy into Live
 uv run ableton-studio-mcp doctor           # check the whole chain
 ```
 
-The Live control surface lives in `ableton_studio_mcp/live_script/AbletonStudioMCP/` and is shipped inside the package. Versions: `__version__` (`ableton_studio_mcp/__init__.py`), `version` in `pyproject.toml` and in `server.json` are the release number; the control surface's `SCRIPT_VERSION` only has to be in the same series (major.minor). A release that changes the control surface starts a new series (2.1.0), so users know to reinstall it; a patch release of the server alone (2.0.1) doesn't touch Live. The tests and the release workflow check all of this. Add an entry to the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md). GitHub Actions runs the tests on Python 3.10, 3.12 and 3.13 on every push and pull request.
+The Live control surface lives in `ableton_studio_mcp/live_script/AbletonStudioMCP/` and is shipped inside the package. Versions: `__version__` (`ableton_studio_mcp/__init__.py`), `version` in `pyproject.toml` and in `server.json` are the release number; the control surface's `SCRIPT_VERSION` only has to be in the same series (major.minor). A release that changes the control surface starts a new series (2.1.0), so users know to reinstall it; a patch release of the server alone (2.0.1) doesn't touch Live. The tests and the release workflow check all of this. Add an entry to the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md). GitHub Actions runs the tests on Python 3.10, 3.13, 3.14 and 3.15 on every push and pull request.
 
 **Releasing:** push a tag `vX.Y.Z` matching that version. The `release` workflow checks the versions, runs the tests, builds the package, publishes it to PyPI (trusted publishing, no token stored), creates the GitHub release and publishes `server.json` to the [official MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.cedrati/ableton-studio-mcp` (GitHub OIDC; the `mcp-name:` comment at the top of this README proves the PyPI package is ours).
 

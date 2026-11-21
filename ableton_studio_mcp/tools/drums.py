@@ -188,9 +188,26 @@ def set_clip_groove(track_index: int, clip_index: int, groove_index: int = None,
     - location: "session" (default) or "arrangement"
     """
     live.require("set_clip_groove")
-    return as_json(live.client().call("set_clip_groove", {
+    ableton = live.client()
+    reply = ableton.call("set_clip_groove", {
         "track_index": track_index, "clip_index": clip_index, "groove_index": groove_index,
-        "location": (location or "session").lower()}))
+        "location": (location or "session").lower()})
+    if groove_index is not None:
+        reply = dict(reply, **_global_groove_warning(ableton))
+    return as_json(reply)
+
+
+def _global_groove_warning(ableton) -> dict:
+    """Live applies a clip's groove scaled by the global Groove amount: at 0 %
+    (the default in a new set) the groove is assigned but changes nothing."""
+    try:
+        amount = float(ableton.call("get_groove_pool").get("global_amount", 1.0))
+    except Exception:
+        return {}
+    if amount > 0:
+        return {}
+    return {"warning": "The global Groove amount is 0 %, so this groove has no audible effect yet. "
+                       "Raise it with set_groove_params(global_amount=0.7) (70 %)."}
 
 
 @tool()

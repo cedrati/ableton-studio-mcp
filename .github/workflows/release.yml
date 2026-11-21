@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.4.0
         with:
-          python-version: "3.12"
+          python-version: "3.15"
       - name: Tag matches the package and Remote Script versions
         run: |
           tag="${GITHUB_REF_NAME#v}"
