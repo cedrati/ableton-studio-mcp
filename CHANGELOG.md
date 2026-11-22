@@ -6,11 +6,15 @@ Since 2.0 one version number covers the server and the Live control surface; the
 
 ## Unreleased
 
-New control surface command (`back_to_arrangement`): run `ableton-studio-mcp install` and restart Live.
+New control surface commands (`back_to_arrangement`, `delete_device`, `move_device`): run `ableton-studio-mcp install` and restart Live.
 
 ### Added
 
 - **Back to Arrangement** (`back_to_arrangement`): once a track has played a Session clip, Live ignores its Arrangement clips until *Back to Arrangement* is pressed — stopping the transport doesn't reset it (measured in Live 12.4). The tool presses it, waits until Live has applied it, and names the tracks whose Session clips it stopped. `get_session_info` now reports `back_to_arranger`.
+
+- **Delete and move devices** (`delete_device`, `move_device`, #84) on tracks, return tracks and the main track, replying with the new chain. Measured in Live 12.4: `move_device` counts the target position with the device still in the chain, so moving right is corrected by one.
+- **`get_device_parameters` filters** (#85): `names` (exact or parts of names), `query` (substring) and `brief` (index, name, displayed value). Operator's full reply is about 56,000 characters; `query="Filter"` returns 9 of its 195 parameters.
+- **Ratios as producers say them** (#86): `set_device_parameters` accepts `8`, `"8"`, `"8:1"`, `"8.00 : 1"` and `"inf : 1"` on parameters Live shows as `N : 1` (Compressor, Glue...), and picks the nearest value Live can show (`"10.00 : 1"` → `10.0 : 1`). A plain number inside the internal range still sets the raw value.
 
 ### Fixed
 

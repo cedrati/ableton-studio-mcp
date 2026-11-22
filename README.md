@@ -49,7 +49,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (376) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (397) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -199,7 +199,8 @@ Indexes start at 0. Times and lengths are in **beats**. Notes use MIDI numbers (
 |---|---|
 | `get_browser_tree` · `get_browser_items_at_path` | Browse `instruments`, `sounds`, `drums`, `audio_effects`, `midi_effects`, `plugins`, `user_library`, `packs`, `samples`, `max_for_live`, `current_project`. |
 | `load_instrument_or_effect` · `load_drum_kit` | Load by browser URI, on a track, a return track or the main track. |
-| `get_device_parameters` · `set_device_parameter` | Every parameter with its range, Live's display string and, for list parameters, the names of the values. |
+| `get_device_parameters` · `set_device_parameter` | Every parameter with its range, Live's display string and, for list parameters, the names of the values; narrowed by `names` or `query`, or `brief` (name and value only) for big devices like Operator. |
+| `delete_device` · `move_device` | Remove a device, or move it within its chain (a limiter last on the main track, an EQ before a reverb), on tracks, return tracks and the main track. |
 | `device_inventory` | Every device in the set and what it is for; optionally every installed plug-in by vendor. |
 | `device_knowledge` | Sheet for a native device (Live 12 manual), a bundled Max for Live device or a known plug-in; the native catalogue. |
 | `get_device_info` | Real device name, kind, latency, and device-specific state: sidechain, plug-in presets, Simpler, rack. |
@@ -215,7 +216,7 @@ Indexes start at 0. Times and lengths are in **beats**. Notes use MIDI numbers (
 |---|---|
 | `find_presets` · `read_preset` | Search the presets of Live's native devices and racks (Core Library, packs, User Library — no Live needed) and read what a preset does: the parameters that differ from the device's default, samples, and for racks the named macros and every chain. |
 | `load_preset` | Load a native preset or rack onto a track by name. |
-| `set_device_parameters` | Set several parameters by name with musical values — "800 Hz", "5 ms", "-6 dB", "35 %", "Bell", "1/16" — found through Live's own display, so it works for every native device; checked before anything changes. |
+| `set_device_parameters` | Set several parameters by name with musical values — "800 Hz", "5 ms", "-6 dB", "35 %", "8:1", "Bell", "1/16" — found through Live's own display, so it works for every native device; checked before anything changes. |
 | `sound_recipes` · `design_sound` | Starting points for classic sounds on Drift, Wavetable and Operator (sub, acid and reese bass, dub chord stab, pluck, warm pad, supersaw, FM bell), applied in one undo step, with how to play them and what to listen for. |
 | `audition_sound` | Plays a test phrase (bass line, chords or arpeggio) on a track after the end of the song, records and analyses it (loudness, tonal balance, spectrogram), then removes everything: the listen-and-tune loop. |
 | `save_sound` · `list_sounds` · `load_sound` | Keep a designed sound (the device and all its values) in your User Library and put it back on any track; one undo step. |

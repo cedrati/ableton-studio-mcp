@@ -136,6 +136,41 @@ class DeviceCommands(object):
                             "now": self._param_display(param), "value": float(param.value)})
         return {"device": device.name, "changes": changes}
 
+    # ── the device chain ────────────────────────────────────────────────────
+
+    @staticmethod
+    def _chain_names(track):
+        return [d.name for d in track.devices]
+
+    @command("delete_device")
+    def _delete_device(self, track_index, device_index, track_type="track"):
+        """Remove a device from a track, a return track or the main track."""
+        track, label = self._resolve_track(track_index, track_type)
+        device = self._device_on(track_index, device_index, track_type)
+        name = device.name
+        track.delete_device(device_index)
+        return {"deleted": name, "device_index": device_index, "on": label,
+                "devices": self._chain_names(track)}
+
+    @command("move_device")
+    def _move_device(self, track_index, device_index, new_index, track_type="track"):
+        """Move a device to another position in the same chain (Live 11+)."""
+        track, label = self._resolve_track(track_index, track_type)
+        device = self._device_on(track_index, device_index, track_type)
+        count = len(list(track.devices))
+        if not 0 <= new_index < count:
+            raise IndexError("%s has %d device(s): new_index goes from 0 to %d, not %d"
+                             % (label, count, count - 1, new_index))
+        if not hasattr(self._song, "move_device"):
+            raise RuntimeError("Moving devices needs Live 11 or later")
+        if new_index != device_index:
+            # Live counts the target position with the device still in the
+            # chain (measured in Live 12.4): moving right needs one more.
+            position = new_index + 1 if new_index > device_index else new_index
+            self._song.move_device(device, track, position)
+        return {"moved": device.name, "from": device_index, "to": new_index, "on": label,
+                "devices": self._chain_names(track)}
+
     @command("apply_device_state")
     def _apply_device_state(self, track_index, device_index, parameters, track_type="track"):
         """Restore saved parameter values: [{index, name, value}, ...]. Each
