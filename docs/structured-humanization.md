@@ -2,6 +2,19 @@
 
 Random humanization adds noise: every note moves on its own, nothing is remembered from one note to the next. Musicians don't play like that. Their timing and dynamics drift, push and lay back, with a long memory. Listeners hear the difference: studies of human timing fluctuations find long-range correlations rather than white noise, and listeners prefer them.
 
+> *"Cedra adds a very human vibe."* Olivier Cedrati, after the first track made with these tools.
+
+## Why it sounds human
+
+A musician never plays the same bar twice, yet never plays at random either: the variations have a memory. Structured humanization has the same four traits:
+
+- **never identical**: the rotation is irrational, so nothing repeats exactly;
+- **never messy**: hits and values stay evenly spread (gaps of only two or three sizes);
+- **a memory**: near-periods (13, 47 steps for Cedra) come back almost unchanged, like a phrase played again with small changes;
+- **independent gestures**: timing, velocity and length follow rotations that are independent over Q, like the two hands of a drummer.
+
+Random humanization only has the first trait, a rigid grid only the second.
+
 Ableton Studio MCP offers a third way between the rigid grid and random jitter: **irrational rotations**.
 
 $$x_n = \{ n\theta + \varphi \}, \qquad \theta \text{ irrational}$$
