@@ -147,7 +147,10 @@ def transform_clip(track_index: int,
     - time_scale: factor (2 = half speed, 0.5 = double)
     - quantize: [grid=0.25, strength=1.0, durations=false]
     - swing: [amount_pct=60 (50 straight, 66.7 triplet), grid=0.5]
-    - humanize: [timing=0.01 beats, velocity=8, seed=0]
+    - humanize: [timing=0.01 beats, velocity=8, seed=0] (random)
+    - humanize_structured: [timing=0.01, velocity=8, duration=0, drift=0.3, drift_bars=8, phase=0]
+      quasi-periodic instead of random: variations that never repeat but stay even,
+      plus a slow push/lay-back curve over drift_bars; another phase = another take
     - accent: [pattern=[1,0.7,0.85,0.7], grid=1.0, base=110]
     - articulate: factor (0.5 = staccato) or legato=true
     - fold_range: low, high (e.g. "C3", "C5")

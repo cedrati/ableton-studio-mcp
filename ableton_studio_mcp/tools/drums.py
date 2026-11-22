@@ -161,6 +161,108 @@ def write_drum_pattern(track_index: int,
     })
 
 
+@tool(undo_step="Quasi-periodic rhythm")
+def quasiperiodic_rhythm(track_index: int,
+    clip_index: int,
+    role: str = "closed_hat",
+    bars: int = 8,
+    steps_per_bar: int = 16,
+    length_steps: int = None,
+    density: float = None,
+    rotation: str = "cedra",
+    phase: float = 0.0,
+    velocity_low: int = 50,
+    velocity_high: int = 95,
+    accent_role: str = None,
+    accent_near_period: int = 13,
+    replace: bool = False,
+) -> str:
+    """
+    Write a quasi-periodic rhythm into a Session slot: a pattern that seems to
+    loop but never repeats exactly, with hits spread as evenly as possible
+    (the infinite relatives of Euclidean rhythms) and dynamics that never
+    repeat either. Structured humanization rather than random variation.
+
+    Hits fall where {n * theta + phase} < density (n = step). With the default
+    density (= theta) the pattern is a Sturmian word: gaps of only two sizes.
+    Each hit's velocity follows {n * theta + phase} between velocity_low and
+    velocity_high. With `accent_role`, a second voice (e.g. rim) plays only
+    where the pattern slips against its near-period `accent_near_period`:
+    sparse accents at places the rhythm itself defines.
+
+    Rotations: "cedra" (ln of the Cedra constant, ~0.617: starts like the golden
+    ratio, then drifts), "golden" (~0.618, the most even), "silver" (~0.414),
+    or a number between 0 and 1. The reply lists `near_periods`: loop lengths
+    in steps that close almost seamlessly (Cedra: 13, 47, 1376...).
+
+    Parameters:
+    - track_index / clip_index: Drum track and Session slot
+    - role: Pad role (closed_hat, rim, perc, shaker...) or a MIDI note number
+    - bars / steps_per_bar: Clip length (4/4) and grid (16 = 16ths)
+    - length_steps: Exact length in steps instead of bars, e.g. a near-period (47, 1376)
+    - density: Share of steps with a hit, 0-1 (default: the rotation number)
+    - rotation: cedra, golden, silver or a number
+    - phase: 0-1, starts the sequence elsewhere (another variation, same character)
+    - velocity_low / velocity_high: Velocity range of the hits
+    - accent_role: Second voice on the slips (optional)
+    - accent_near_period: Near-period the accents are measured against
+    - replace: Clear an existing clip in the slot first
+    """
+    from .. import drums
+    from .. import quasiperiodic as qp
+
+    ableton = live.client()
+    roles, kit = _kit_roles(ableton, track_index)
+
+    def note_for(name):
+        if name is None:
+            return None, None
+        if str(name).strip().isdigit():
+            return int(name), "note"
+        found = drums.resolve_note(str(name).strip().lower(), roles, use_gm=kit is None)
+        return found if found else (None, None)
+
+    pitch, how = note_for(role)
+    if pitch is None:
+        return "No pad for role '%s' on track %d (see get_drum_map)" % (role, track_index)
+    accent_pitch, accent_how = note_for(accent_role)
+    if accent_role is not None and accent_pitch is None:
+        return "No pad for accent role '%s' on track %d (see get_drum_map)" % (accent_role, track_index)
+
+    grid = 4.0 / steps_per_bar
+    steps = int(length_steps) if length_steps else int(bars * steps_per_bar)
+    result = qp.rhythm_notes(steps, pitch, grid=grid, density=density, rotation=rotation, phase=phase,
+                             velocity_low=velocity_low, velocity_high=velocity_high,
+                             accent_pitch=accent_pitch, accent_near_period=accent_near_period)
+    length = steps * grid
+
+    info = ableton.call("get_track_info", {"track_index": track_index})
+    slots = info.get("clip_slots", [])
+    if clip_index < 0 or clip_index >= len(slots):
+        return f"Clip slot {clip_index} out of range ({len(slots)} slots)"
+    if slots[clip_index].get("has_clip"):
+        if not replace:
+            return "Slot %d already has a clip; pass replace=true or pick an empty slot" % clip_index
+        ableton.call("clear_notes_from_clip", clip_target(track_index, clip_index, "session"))
+        ableton.call("set_clip_loop", {"track_index": track_index, "clip_index": clip_index,
+                                       "loop_start": 0.0, "loop_end": length, "end_marker": length})
+    else:
+        ableton.call("create_clip", {"track_index": track_index, "clip_index": clip_index,
+                                     "length": length})
+    write_notes(track_index, clip_index, result["notes"], "session")
+    return as_json({
+        "kit": kit.get("rack_name") if kit else "no Drum Rack: General MIDI notes",
+        "role": role, "note": pitch, "mapping": how,
+        "accent_role": accent_role, "accent_note": accent_pitch,
+        "rotation": rotation, "rotation_number": round(qp.resolve_rotation(rotation), 6),
+        "steps": steps, "length_beats": length,
+        "hits": result["hits"], "accents": result["accents"],
+        "density": round(result["density"], 4), "gap_sizes_in_steps": result["gap_sizes"],
+        "seam_mismatch": round(result["seam_mismatch"], 5),
+        "near_periods": qp.near_periods(rotation, max_steps=4096),
+    })
+
+
 @tool()
 def get_groove_pool() -> str:
     """

@@ -4,6 +4,17 @@ Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](https://gith
 
 Since 2.0 one version number covers the server and the Live control surface; the server refuses a control surface of another version. After updating, run `ableton-studio-mcp install` and **restart Live**: re-selecting the control surface does not reload the code. (1.x versions below are the Remote Script version.)
 
+## Unreleased
+
+Server only: no new control surface, nothing to reinstall in Live.
+
+### Added
+
+- **Structured humanization**: variation that never repeats but stays even, instead of random noise. Random humanization moves every note independently; musicians drift with a long memory. These tools use irrational rotations n -> {n * theta + phase} ([docs/structured-humanization.md](docs/structured-humanization.md)).
+  - `quasiperiodic_rhythm`: writes a pattern where hits fall when the rotation is inside a window. With the default density it is a Sturmian word (gaps of only two sizes, the infinite relative of a Euclidean rhythm): it seems to loop, then slowly slides. Velocities follow the rotation and never settle; `accent_role` adds a second pad only where the pattern slips against a near-period. Pads are found by role like `write_drum_pattern`. The reply gives the loop lengths that close almost seamlessly (`near_periods`) and how audible the loop point is (`seam_mismatch`). Checked in Live 12 on the 808 Core Kit: 8 bars, 78 hats, 4 rim accents, gaps of 1 and 2 steps.
+  - `transform_clip` operation `humanize_structured`: timing, velocity and length moved by three rotations that are linearly independent over Q (so they don't move together), mixed with a slow quasi-periodic push and lay-back curve over `drift_bars`; notes of a chord move as one; another `phase` gives another take with the same character.
+- The default rotation comes from the Cedra constant C = sqrt(3) + (3/2) sqrt(2) - 2, ln C ~ 0.617 ([cedrati/cedra](https://github.com/cedrati/cedra)), which starts like the golden ratio then drifts away from it; `golden` and `silver` are also available.
+
 ## 2.5.0
 
 New control surface series, with new commands (`back_to_arrangement`, `delete_device`, `move_device`): run `ableton-studio-mcp install` and restart Live.

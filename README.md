@@ -41,15 +41,16 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Sound design** | Search and read the presets of Live's native devices, racks and packs; build classic sounds from recipes (sub, acid and reese bass, dub chord stab, pluck, warm pad, supersaw, FM bell); set any parameter with musical values (`800 Hz`, `5 ms`, `PRD`, `Saw D`); audition a patch (a test phrase played after the song, recorded, measured, then removed) and save the finished sound to your User Library. |
 | **Sampling** | Load and slice samples in Simpler (transient, beat, region); chop a loop in one call: warped from the tempo in its name, transposed to the song's key, written as a hook, a rearrangement or a stutter. |
 | **Drums** | Program a Drum Rack from 19 electronic patterns (techno, house, garage, breaks, d'n'b...) or your own step grids: pads found by name, Euclidean and polyrhythmic layers, ratchets, ghost notes, per-note probability, fills, swing, Live's Groove Pool. |
+| **Structured humanization** | Variation that never repeats but stays even, instead of random noise: quasi-periodic rhythms (the infinite relatives of Euclidean rhythms, a loop that seems to repeat but slowly slides) with dynamics that never settle and accents where the pattern slips; micro-timing, velocity and length moved by irrational rotations with a slow push and lay-back curve. See [Structured humanization](https://github.com/cedrati/ableton-studio-mcp/blob/main/docs/structured-humanization.md). |
 | **Long-form evolution & arrangement** | Curves over 16–64 bars (filter builds, reverb swells, slow LFOs, phrase steps) on extended clips; whole Arrangements built from Session clips by section (DJ-friendly techno, compact 64 bars, minimal, house) with locators; the clip envelopes play as track automation. |
-| **Music theory** | ~50 scales and modes with their character and typical styles; 24 style sheets (baroque to techno); key, mode and chord analysis of a clip with roman numerals; 17 clip transformations (mode change, diatonic transposition, harmonization, arpeggios, voicings, swing...); voice-led chord progressions; Live 12's song scale. |
+| **Music theory** | ~50 scales and modes with their character and typical styles; 24 style sheets (baroque to techno); key, mode and chord analysis of a clip with roman numerals; 18 clip transformations (mode change, diatonic transposition, harmonization, arpeggios, voicings, swing, structured humanization...); voice-led chord progressions; Live 12's song scale. |
 | **Clips** | Notes in Arrangement clips, partial note removal, loop brace and markers, warp (modes, markers, conform a loop to the tempo), clip automation envelopes. |
 | **Files** | Import Standard MIDI Files into clips; analyse any WAV/AIFF. |
 | **Session** | Duplicate and delete tracks; list, create, rename, duplicate, launch and delete scenes; delete Arrangement clips. |
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (397) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (408) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -145,6 +146,7 @@ To try unreleased changes, use the development branch instead of PyPI: replace `
 - *"Re-harmonise this melody in Dorian, add a third above, swing it at 58 %."*
 - *"Import this MIDI file and transpose it to F#."*
 - *"Program 8 bars of rolling techno on the 909 kit, with a 5-in-16 percussion layer and a clap roll every 4 bars."*
+- *"Give the hats a quasi-periodic groove on the Cedra rotation, with rim accents where it slips, then humanize the bassline with a slow push and lay-back."*
 - *"Open the acid bass filter over 16 bars, then lay out a 64-bar techno arrangement with a DJ intro and outro."*
 
 **Design sounds**
@@ -251,6 +253,7 @@ The mix report checks: integrated / short-term / momentary loudness and loudness
 | `drum_patterns` | Pattern library (techno four, rolling, hypnotic, minimal, dub, hard, acid, Detroit, house, deep house, tech house, afro house, UK garage, breakbeat, electro, drum & bass, dubstep, trap, EBM) with tempo, swing and production notes; Euclidean rhythms. |
 | `get_drum_map` | A track's Drum Rack pads and the role each plays (kick, clap, hats, perc...). |
 | `write_drum_pattern` | Program a clip from a style and/or grids per role: `x` hit, `X` accent, `o` ghost, `2`-`4` ratchet, `?`/`*` probability; Euclidean layers, swing, fills, variation, humanize. |
+| `quasiperiodic_rhythm` | A pattern that seems to loop but never repeats exactly: hits where an irrational rotation falls in a window (Sturmian words, gaps of only two sizes), velocities that never settle, optional accents on a second pad where the pattern slips against a near-period. Rotations `cedra`, `golden`, `silver` or any number; the reply lists the loop lengths that close almost seamlessly. |
 | `get_groove_pool` · `set_clip_groove` · `set_groove_params` | Live's Groove Pool: list grooves, apply one to a clip, adjust amounts and the global Groove amount. `set_clip_groove` warns when the global amount is 0 % (a new set's default), where a groove has no audible effect. |
 
 ### Evolution and arrangement
@@ -271,7 +274,7 @@ The mix report checks: integrated / short-term / momentary loudness and loudness
 | `music_styles` | 24 style sheets (baroque, classical, jazz, bossa nova, blues, gospel/neo-soul, funk, pop, rock, house, techno, trance, drum & bass, boom bap, lo-fi, trap, R&B, reggae, reggaeton, afrobeat, flamenco, film score, ambient, synthwave): tempo, metre, scales, harmony, progressions, groove and swing, bass, melody, arrangement, Live devices. |
 | `music_chord_ideas` | Reharmonisation ideas for a chord, with the reason for each. |
 | `analyze_clip_music` | Key and mode, chords with roman numerals (`basic` or `jazz` vocabulary), out-of-scale notes, range, rhythm, melodic motion. |
-| `transform_clip` | Chain of operations, in place or into an empty slot: `transpose`, `transpose_diatonic`, `change_mode`, `snap_to_scale`, `invert`, `retrograde`, `time_scale`, `quantize`, `swing`, `humanize`, `accent`, `articulate`, `fold_range`, `harmonize`, `arpeggiate`, `strum`, `voice_chords`. |
+| `transform_clip` | Chain of operations, in place or into an empty slot: `transpose`, `transpose_diatonic`, `change_mode`, `snap_to_scale`, `invert`, `retrograde`, `time_scale`, `quantize`, `swing`, `humanize`, `humanize_structured`, `accent`, `articulate`, `fold_range`, `harmonize`, `arpeggiate`, `strum`, `voice_chords`. |
 | `write_progression` | Roman numerals (secondary dominants, borrowed chords, Neapolitan) or a style's progression, voice-led, played with an accompaniment pattern and a bass line. |
 | `get_song_scale` · `set_song_scale` | Live 12's song scale and Scale Mode. |
 
@@ -342,7 +345,7 @@ MCP client (Claude…)  ⇄  MCP server (ableton_studio_mcp/, Python)  ⇄  TCP 
   | `live.py` | The connection to Live: one socket, reopened when Live restarts, one request at a time, per-command timeouts, and the control surface's version and command list checked on every connection. |
   | `app.py` | The MCP application and the `@tool` decorator: checks the commands a tool needs and turns any failure into one readable line. |
   | `tools/` | The tools, one module per domain: session, tracks, clips, devices, browser, routing, listening, midi, theory, drums, evolution, sound. |
-  | `audio_analysis.py`, `mix_analysis.py`, `music_theory.py`, `drums.py`, `arrangement.py`, `gestures.py`, `chops.py`… | The domain logic, independent of Live and fully unit-tested. |
+  | `audio_analysis.py`, `mix_analysis.py`, `music_theory.py`, `drums.py`, `quasiperiodic.py`, `arrangement.py`, `gestures.py`, `chops.py`… | The domain logic, independent of Live and fully unit-tested. |
   | `install.py`, `doctor.py`, `server.py` | Installer, diagnostics, command-line entry point. |
   | `live_script/AbletonStudioMCP/` | The control surface that runs inside Live: `transport.py` (socket, newline-delimited JSON), `registry.py` (the command table: each handler's signature is its contract, and the advertised capabilities are generated from it), `surface.py` (everything runs on Live's main thread from `update_display`: no threads, non-blocking sockets; reads of a sequence answered in the same pass in under 1 ms, each change given its own display update), `undo.py` (one undo step per assistant action, even across device loads), and one module per domain (session, tracks, clips, notes, warp, automation, devices, groove, browser, recording, snapshot). It runs in Live's own Python (3.7 in Live 11), so it avoids newer syntax. |
 
