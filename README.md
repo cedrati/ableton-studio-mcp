@@ -148,7 +148,6 @@ To try unreleased changes, use the development branch instead of PyPI: replace `
 - *"Re-harmonise this melody in Dorian, add a third above, swing it at 58 %."*
 - *"Import this MIDI file and transpose it to F#."*
 - *"Program 8 bars of rolling techno on the 909 kit, with a 5-in-16 percussion layer and a clap roll every 4 bars."*
-- *"Give the hats a quasi-periodic groove on the Cedra rotation, with rim accents where it slips, then humanize the bassline with a slow push and lay-back."*
 - *"Open the acid bass filter over 16 bars, then lay out a 64-bar techno arrangement with a DJ intro and outro."*
 
 **Design sounds**
@@ -156,6 +155,14 @@ To try unreleased changes, use the development branch instead of PyPI: replace `
 - *"Find me a dark plucky preset in my packs and tell me what it does."*
 - *"Build a reese bass, play it to check the low end, and save it to my User Library."*
 - *"Chop this guitar loop into a hook in the song's key."*
+
+**Humanize with Cedra**
+- *"Give the hats a quasi-periodic groove on the Cedra rotation, with rim accents where it slips."*
+- *"Humanize the bassline with Cedra: small timing and velocity moves, and a slow push and lay-back over 8 bars."*
+- *"Write a dub chord stab on a 47-step loop, so it slowly slides against the bars."*
+- *"Give me three takes of the same hats with different Cedra phases and let me compare them."*
+- *"Make the pad filter breathe with 1.853 cycles over 32 bars, so it never lines up with the sections."*
+- *"Make a whole hypnotic techno track where every layer is driven by Cedra."*
 
 **From an idea to a track**
 - *"Write a march in a classical style for harpsichord, piano and percussion, then a modern take of it with Operator synths, a melody in the same spirit rather than the same notes, and 909 drums."*
