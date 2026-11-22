@@ -233,3 +233,100 @@ def test_device_knowledge_tool():
     assert json.loads(call(tools.device_knowledge, name="Glue Compressor"))["sidechain"] is True
     cat = json.loads(call(tools.device_knowledge, kind="midi_effect"))
     assert any(d["name"] == "Arpeggiator" for d in cat["devices"]) and "API" in cat["midi_tools"]
+
+
+# ------------------------------------------------ device chain (#84)
+
+class Dev:
+    def __init__(self, name):
+        self.name, self.parameters = name, []
+
+
+class ChainTrack:
+    def __init__(self, names):
+        self.name, self.devices = "Bass", [Dev(n) for n in names]
+
+    def delete_device(self, index):
+        del self.devices[index]
+
+
+class MovingSong:
+    """Live 12.4's move_device: the position counts the device still in place."""
+
+    def __init__(self, track):
+        self.tracks, self.return_tracks = [track], []
+
+    def move_device(self, device, target, position):
+        chain = target.devices
+        chain.insert(position, device)
+        for i, d in enumerate(chain):
+            if d is device and i != position:
+                del chain[i]
+                break
+
+
+def _chain_live(script_module, names, can_move=True):
+    track = ChainTrack(names)
+    inst = make_instance(script_module)
+    inst._song = MovingSong(track) if can_move else type("S", (), {"tracks": [track], "return_tracks": []})()
+    return inst, track
+
+
+def test_delete_device(script_module):
+    inst, track = _chain_live(script_module, ["Operator", "Glue", "Limiter", "Rack"])
+    out = inst._delete_device(0, 1)
+    assert out["deleted"] == "Glue" and out["devices"] == ["Operator", "Limiter", "Rack"]
+    with pytest.raises(IndexError):
+        inst._delete_device(0, 7)
+
+
+@pytest.mark.parametrize("src, dst, order", [
+    (1, 3, ["Op", "EQ", "Comp", "Sat", "Lim"]),   # right: Live needs one more
+    (4, 1, ["Op", "Lim", "Sat", "EQ", "Comp"]),   # left
+    (0, 4, ["Sat", "EQ", "Comp", "Lim", "Op"]),   # to the very end
+    (2, 2, ["Op", "Sat", "EQ", "Comp", "Lim"]),   # in place
+])
+def test_move_device_lands_where_asked(script_module, src, dst, order):
+    inst, track = _chain_live(script_module, ["Op", "Sat", "EQ", "Comp", "Lim"])
+    out = inst._move_device(0, src, dst)
+    assert out["devices"] == order and [d.name for d in track.devices] == order
+
+
+def test_move_device_checks(script_module):
+    inst, _ = _chain_live(script_module, ["Op", "Lim"])
+    with pytest.raises(IndexError, match="new_index goes from 0 to 1"):
+        inst._move_device(0, 0, 2)
+    old, _ = _chain_live(script_module, ["Op", "Lim"], can_move=False)
+    with pytest.raises(RuntimeError, match="Live 11"):
+        old._move_device(0, 0, 1)
+    assert {"delete_device", "move_device"} <= set(script_module.SCRIPT_CAPABILITIES)
+
+
+def test_chain_tools_show_the_new_order(conn):
+    conn({"delete_device": {"deleted": "Glue", "on": "main track", "devices": ["Rack", "Limiter"]},
+          "move_device": {"moved": "Limiter", "on": "main track", "devices": ["Rack", "Limiter"]}})
+    assert call(tools.delete_device, 0, 1, track_type="master") == \
+        "Deleted Glue from main track. Chain now: 0 Rack → 1 Limiter"
+    assert call(tools.move_device, 0, 0, 1, track_type="master").endswith("0 Rack → 1 Limiter")
+
+
+# ------------------------------------------- parameter filters (#85)
+
+def _params():
+    names = ["Device On", "Algorithm", "Ae Attack", "Ae Release", "Filter Freq", "Filter Res", "Fe Attack"]
+    return {"track_index": 0, "device": {"name": "Operator", "parameters": [
+        {"index": i, "name": n, "value": 0.5, "min": 0, "max": 1, "display": "v%d" % i}
+        for i, n in enumerate(names)]}}
+
+
+def test_parameters_by_names_query_and_brief(conn):
+    conn({"get_device_parameters": _params()})
+    by_name = json.loads(call(tools.get_device_parameters, 0, 0, names=["filter freq", "Ae "]))["device"]
+    assert [p["name"] for p in by_name["parameters"]] == ["Ae Attack", "Ae Release", "Filter Freq"]
+    assert by_name["parameters_shown"] == "3 of 7"
+    q = json.loads(call(tools.get_device_parameters, 0, 0, query="attack", brief=True))["device"]
+    assert q["parameters"] == [{"index": 2, "name": "Ae Attack", "display": "v2"},
+                               {"index": 6, "name": "Fe Attack", "display": "v6"}]
+    whole = json.loads(call(tools.get_device_parameters, 0, 0))["device"]
+    assert len(whole["parameters"]) == 7 and "parameters_shown" not in whole
+    assert "did you mean Filter Freq" in call(tools.get_device_parameters, 0, 0, names=["Filtre Freq"])

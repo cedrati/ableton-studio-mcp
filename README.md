@@ -1,17 +1,17 @@
 <!-- mcp-name: io.github.cedrati/ableton-studio-mcp -->
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/cedrati/ableton-studio-mcp/main/docs/social-preview.png" alt="Ableton Studio MCP — AI music production in Ableton Live with Claude: compose, arrange, mix, master, listen, music theory, techno drums" width="100%">
+<img src="https://raw.githubusercontent.com/cedrati/ableton-studio-mcp/main/docs/social-preview.png" alt="Ableton Studio MCP — AI music production in Ableton Live with Claude: compose, arrange, sound design, mix, master, listen, music theory, techno drums" width="100%">
 
 # Ableton Studio MCP
 
-**The Ableton Live MCP server that lets Claude (or any MCP client) compose, arrange, mix, master, listen to and analyse music in Ableton Live 11 & 12.**
+**The Ableton Live MCP server that lets Claude (or any MCP client) assist you in Live — or take over — to compose, arrange, design sounds, mix, master, listen to and analyse music in Ableton Live 11 & 12.**
 
 By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/cedrati/ableton-studio-mcp/blob/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/ableton-studio-mcp)](https://pypi.org/project/ableton-studio-mcp/)
-![Remote Script](https://img.shields.io/badge/Remote%20Script-2.3.0-blue)
+![Remote Script](https://img.shields.io/badge/Remote%20Script-2.5.0-blue)
 ![Live](https://img.shields.io/badge/Ableton%20Live-11%20%7C%2012-black)
 [![Tests](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml/badge.svg)](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml)
 
@@ -23,9 +23,9 @@ By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)).
 
 ## About
 
-**AI music production in Ableton Live.** This is a [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server and Ableton Remote Script that connect Ableton Live to Claude, Claude Code, Claude Desktop, Cursor and other MCP clients, so an AI assistant can work inside your Live set: write MIDI, program drums, build arrangements, mix with Live's devices, check loudness (LUFS) and true peak, and reason about harmony.
+**AI music production in Ableton Live.** This is a [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server and Ableton Remote Script that connect Ableton Live to Claude, Claude Code, Claude Desktop, Cursor and other MCP clients, so an AI assistant can work inside your Live set: write MIDI, program drums, design and tune synth sounds, chop samples, build arrangements, mix with Live's devices, check loudness (LUFS) and true peak, and reason about harmony.
 
-**Ableton Studio MCP, written and maintained by Olivier Cedrati, is a full production assistant.** Beyond writing notes, the assistant can mix (faders, sends, return and main-track effects, routing), **listen** to the result and judge it like a mastering engineer (LUFS, true peak, tonal balance, stereo, a spectrogram it can look at), and compose with real music-theory knowledge (scales and modes, style sheets, key and chord analysis, clip transformations, voice-led progressions).
+**Ableton Studio MCP, written and maintained by Olivier Cedrati, is a full production assistant.** Beyond writing notes, the assistant can **shape sounds** like a synth programmer (presets, recipes, every parameter set with musical values, then a test phrase played, recorded and measured to tune the patch), mix (faders, sends, return and main-track effects, routing), **listen** to the result and judge it like a mastering engineer (LUFS, true peak, tonal balance, stereo, a spectrogram it can look at), and compose with real music-theory knowledge (scales and modes, style sheets, key and chord analysis, clip transformations, voice-led progressions). One conversation can take an idea from a style to a finished, mixed Session: the melody, the drums, the patches and the arrangement.
 
 It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp). It is published on PyPI as [`ableton-studio-mcp`](https://pypi.org/project/ableton-studio-mcp/). (The `ableton-mcp` package on PyPI is the **original** project and does not include any of this.)
 
@@ -38,6 +38,8 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Mixing** | Volume, pan, sends, mute, solo, arm on tracks, return tracks and the main track. Load effects on return tracks and the main track (a shared reverb, a limiter). Read every parameter as Live displays it (`Bell`, `1.56 kHz`, `-6.0 dB`). |
 | **Routing** | Set track inputs, outputs and monitoring: layer one MIDI part on several instruments, resample the main output, route to a return. |
 | **Listening & mastering analysis** | Record the main output in real time and get a report: loudness per ITU-R BS.1770 / EBU R128 (integrated, short-term, momentary, loudness range), true peak, PLR, tonal balance against a reference curve, resonances, stereo width per band, low-end mono, each track's meter level, a spectrogram image — and ranked findings with fixes for a delivery target (streaming, club, classical, broadcast, podcast). |
+| **Sound design** | Search and read the presets of Live's native devices, racks and packs; build classic sounds from recipes (sub, acid and reese bass, dub chord stab, pluck, warm pad, supersaw, FM bell); set any parameter with musical values (`800 Hz`, `5 ms`, `PRD`, `Saw D`); audition a patch — a test phrase played after the song, recorded, measured, then removed — and save the finished sound to your User Library. |
+| **Sampling** | Load and slice samples in Simpler (transient, beat, region); chop a loop in one call — warped from the tempo in its name, transposed to the song's key, written as a hook, a rearrangement or a stutter. |
 | **Drums** | Program a Drum Rack from 19 electronic patterns (techno, house, garage, breaks, d'n'b...) or your own step grids: pads found by name, Euclidean and polyrhythmic layers, ratchets, ghost notes, per-note probability, fills, swing, Live's Groove Pool. |
 | **Long-form evolution & arrangement** | Curves over 16–64 bars (filter builds, reverb swells, slow LFOs, phrase steps) on extended clips; whole Arrangements built from Session clips by section (DJ-friendly techno, compact 64 bars, minimal, house) with locators — the clip envelopes play as track automation. |
 | **Music theory** | ~50 scales and modes with their character and typical styles; 24 style sheets (baroque to techno); key, mode and chord analysis of a clip with roman numerals; 17 clip transformations (mode change, diatonic transposition, harmonization, arpeggios, voicings, swing...); voice-led chord progressions; Live 12's song scale. |
@@ -47,7 +49,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (370) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (397) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -121,7 +123,7 @@ Run the built-in check, which looks at Python, uv, the script installed in your 
 uvx ableton-studio-mcp doctor
 ```
 
-Or ask the assistant to run `get_remote_script_info`: it should report `script_version` **2.3.x** and `up_to_date: true`.
+Or ask the assistant to run `get_remote_script_info`: it should report `script_version` **2.5.x** and `up_to_date: true`.
 
 ### Updating
 
@@ -145,6 +147,15 @@ To try unreleased changes, use the development branch instead of PyPI: replace `
 - *"Program 8 bars of rolling techno on the 909 kit, with a 5-in-16 percussion layer and a clap roll every 4 bars."*
 - *"Open the acid bass filter over 16 bars, then lay out a 64-bar techno arrangement with a DJ intro and outro."*
 
+**Design sounds**
+- *"Make the bass a fat ladder-filter mono bass, the lead a poly-mod sync lead and the pad a brassy 12 dB state-variable pad — all on Operator."*
+- *"Find me a dark plucky preset in my packs and tell me what it does."*
+- *"Build a reese bass, play it to check the low end, and save it to my User Library."*
+- *"Chop this guitar loop into a hook in the song's key."*
+
+**From an idea to a track**
+- *"Write a march in a classical style for harpsichord, piano and percussion — then a modern take of it with Operator synths, a melody in the same spirit rather than the same notes, and 909 drums."*
+
 **Mix and master**
 - *"Listen to the whole track and tell me if it's ready for streaming."*
 - *"What's loaded in this set, and which of my plug-ins would make a better acid line?"*
@@ -167,6 +178,7 @@ Indexes start at 0. Times and lengths are in **beats**. Notes use MIDI numbers (
 | `set_tempo` · `start_playback` · `stop_playback` | Transport. |
 | `get_scenes` · `create_scene` · `set_scene_name` · `duplicate_scene` · `fire_scene` · `delete_scene` | Scenes. |
 | `switch_to_arrangement_view` · `set_arrangement_time` · `create_locator` · `delete_locator` | Arrangement view, playhead, locators (create, rename, delete by name or position). |
+| `back_to_arrangement` | Live's *Back to Arrangement*: tracks that played Session clips follow their Arrangement clips again (they ignore them until then, even after the transport stops). |
 | `undo` · `redo` | Live's Undo and Redo. Each tool call that changes the set is one step, and tools that make many changes at once (drum patterns, progressions, arrangements, MIDI imports…) are one step too. |
 | `start_undo_group` · `end_undo_group` | Make a whole request one undo step (closed automatically after two minutes if left open). |
 | `get_remote_script_info` | Version handshake and capabilities. |
@@ -187,7 +199,8 @@ Indexes start at 0. Times and lengths are in **beats**. Notes use MIDI numbers (
 |---|---|
 | `get_browser_tree` · `get_browser_items_at_path` | Browse `instruments`, `sounds`, `drums`, `audio_effects`, `midi_effects`, `plugins`, `user_library`, `packs`, `samples`, `max_for_live`, `current_project`. |
 | `load_instrument_or_effect` · `load_drum_kit` | Load by browser URI, on a track, a return track or the main track. |
-| `get_device_parameters` · `set_device_parameter` | Every parameter with its range, Live's display string and, for list parameters, the names of the values. |
+| `get_device_parameters` · `set_device_parameter` | Every parameter with its range, Live's display string and, for list parameters, the names of the values; narrowed by `names` or `query`, or `brief` (name and value only) for big devices like Operator. |
+| `delete_device` · `move_device` | Remove a device, or move it within its chain (a limiter last on the main track, an EQ before a reverb), on tracks, return tracks and the main track. |
 | `device_inventory` | Every device in the set and what it is for; optionally every installed plug-in by vendor. |
 | `device_knowledge` | Sheet for a native device (Live 12 manual), a bundled Max for Live device or a known plug-in; the native catalogue. |
 | `get_device_info` | Real device name, kind, latency, and device-specific state: sidechain, plug-in presets, Simpler, rack. |
@@ -203,7 +216,7 @@ Indexes start at 0. Times and lengths are in **beats**. Notes use MIDI numbers (
 |---|---|
 | `find_presets` · `read_preset` | Search the presets of Live's native devices and racks (Core Library, packs, User Library — no Live needed) and read what a preset does: the parameters that differ from the device's default, samples, and for racks the named macros and every chain. |
 | `load_preset` | Load a native preset or rack onto a track by name. |
-| `set_device_parameters` | Set several parameters by name with musical values — "800 Hz", "5 ms", "-6 dB", "35 %", "Bell", "1/16" — found through Live's own display, so it works for every native device; checked before anything changes. |
+| `set_device_parameters` | Set several parameters by name with musical values — "800 Hz", "5 ms", "-6 dB", "35 %", "8:1", "Bell", "1/16" — found through Live's own display, so it works for every native device; checked before anything changes. |
 | `sound_recipes` · `design_sound` | Starting points for classic sounds on Drift, Wavetable and Operator (sub, acid and reese bass, dub chord stab, pluck, warm pad, supersaw, FM bell), applied in one undo step, with how to play them and what to listen for. |
 | `audition_sound` | Plays a test phrase (bass line, chords or arpeggio) on a track after the end of the song, records and analyses it (loudness, tonal balance, spectrogram), then removes everything: the listen-and-tune loop. |
 | `save_sound` · `list_sounds` · `load_sound` | Keep a designed sound (the device and all its values) in your User Library and put it back on any track; one undo step. |
@@ -224,7 +237,7 @@ Indexes start at 0. Times and lengths are in **beats**. Notes use MIDI numbers (
 
 | Tool | Description |
 |---|---|
-| `listen_to_arrangement` | Records the main output between two song positions on a temporary track (in real time), samples every track's meter, then returns the mix report and the spectrogram image. The track and the recorded file are deleted afterwards, so listening never fills the project with audio (`keep_track` / `keep_audio` to keep them). |
+| `listen_to_arrangement` | Records the main output between two song positions on a temporary track (in real time), samples every track's meter, then returns the mix report and the spectrogram image. It goes *Back to Arrangement* first and flags any track whose meter contradicts its Arrangement clips, so it never measures Session clips by mistake. The track and the recorded file are deleted afterwards, so listening never fills the project with audio (`keep_track` / `keep_audio` to keep them). |
 | `analyze_mix` | The same mastering report for any WAV/AIFF file. |
 | `analyze_audio_file` | Lightweight level report (no `numpy` needed). |
 | `record_arrangement` · `get_recording_status` · `stop_arrangement_recording` · `get_audio_clip_file` | Record armed tracks into the Arrangement between two positions; find the recorded file. |
@@ -291,8 +304,11 @@ Any MCP client: Claude Code, Claude Desktop, Cursor, and others that speak the M
 **Can it make techno and electronic music?**
 Yes — drum programming from 19 electronic styles or step grids (Euclidean rhythms, ratchets, per-note probability), long filter builds over 64 bars, DJ-friendly arrangements with intro and outro, sidechain ducking, and a club loudness target.
 
+**Can it design sounds, not only write notes?**
+Yes. It finds and reads presets from Live's library and your packs, builds classic sounds from recipes on Operator, Wavetable and Drift, sets every parameter with musical values (Operator's filter circuits, for instance: PRD ladder, OSR state-variable, MS2 Sallen-Key), then auditions the patch — plays a test phrase, records and measures it — so it can tune by ear and measurement, and saves the result to your User Library.
+
 **What's next?**
-The [roadmap](https://github.com/cedrati/ableton-studio-mcp/issues?q=is%3Aissue+is%3Aopen+label%3Aroadmap) lists the planned work: sound design recipes, A/B comparison with reference tracks, finding samples by sound, audio-to-MIDI transcription, and more. Ideas and contributions are welcome in the issues.
+The [roadmap](https://github.com/cedrati/ableton-studio-mcp/issues?q=is%3Aissue+is%3Aopen+label%3Aroadmap) lists the planned work: hearing a sound and reverse-engineering its patch, A/B comparison with reference tracks, learning a style from your own sets, finding samples by sound, audio-to-MIDI transcription, and more. Ideas and contributions are welcome in the issues.
 
 **What can't it do?**
 Live's API doesn't let a script save the set, export audio, create group tracks, write Arrangement automation directly or use Live 12's MIDI Tools; see [Good to know](#good-to-know).

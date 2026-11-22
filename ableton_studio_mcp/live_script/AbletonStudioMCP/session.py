@@ -29,7 +29,36 @@ class SessionCommands(object):
             "loop": read(song, "loop", bool, False),
             "loop_start": read(song, "loop_start", float, 0.0),
             "loop_length": read(song, "loop_length", float, 0.0),
+            # True while tracks play (or were stopped from) Session clips
+            # instead of following the Arrangement: Live lights "Back to
+            # Arrangement".
+            "back_to_arranger": read(song, "back_to_arranger", bool, False),
         }
+
+    @command("back_to_arrangement")
+    def _back_to_arrangement(self):
+        """Press Back to Arrangement: every track follows the Arrangement
+        again. Session clips playing on those tracks stop, as in Live."""
+        song = self._song
+        if not hasattr(song, "back_to_arranger"):
+            raise RuntimeError("This version of Live has no Back to Arrangement in its API")
+        session_tracks = [t.name for t in song.tracks
+                          if self._safe_attr(t, "playing_slot_index", int, -1) >= 0]
+        was = bool(song.back_to_arranger)
+        if not was:
+            return {"was_overriding": False, "tracks_playing_session_clips": session_tracks,
+                    "back_to_arranger": False}
+        song.back_to_arranger = False
+
+        # Live applies it on a later tick: reply once the button is off.
+        def start(resolve, reject):
+            def report(settled):
+                resolve({"was_overriding": True, "tracks_playing_session_clips": session_tracks,
+                         "back_to_arranger": bool(song.back_to_arranger), "settled": settled})
+            self._poll_until(lambda: not song.back_to_arranger, on_ready=lambda: report(True),
+                             on_timeout=lambda: report(False), reject=reject,
+                             max_ticks=PLAYHEAD_SETTLE_TICKS)
+        return Deferred(start)
 
     @command("set_tempo")
     def _set_tempo(self, tempo):

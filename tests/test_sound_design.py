@@ -297,3 +297,40 @@ def test_audition_cleans_up_even_when_listening_fails(fake_live, monkeypatch):
     assert dup["destination_time"] == 292.0       # the song ends inside bar 72: start of bar 74
     assert ("delete_arrangement_clip", {"track_index": 1, "clip_index": 1}) in r.sent
     assert names[-1] == "delete_clip"
+
+
+# ------------------------------------------------ ratios (#86)
+
+class Ratio(object):
+    """Like Compressor's Ratio: 0–1 internally, shown '2.00 : 1' … 'inf : 1'."""
+    name, min, max, is_quantized, value_items = "Ratio", 0.0, 1.0, False, ()
+    value = 0.3
+
+    def str_for_value(self, v):
+        if v >= 0.999:
+            return "inf : 1"
+        r = 1 + 99 * v ** 3
+        return "%.1f : 1" % r if r >= 10 else "%.2f : 1" % r
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("8.00 : 1", (8.0, "ratio")), ("8:1", (8.0, "ratio")), ("inf : 1", (float("inf"), "ratio")),
+    ("∞:1", (float("inf"), "ratio")), ("2,5 : 1", (2.5, "ratio")),
+])
+def test_parse_ratio(values, text, expected):
+    assert values.parse_quantity(text) == expected
+
+
+@pytest.mark.parametrize("wanted, shown", [
+    ("8", "8.00 : 1"), (8, "8.00 : 1"), ("8:1", "8.00 : 1"), ("8.00 : 1", "8.00 : 1"),
+    ("10.00 : 1", "10.0 : 1"), ("inf : 1", "inf : 1"), ("1.5:1", "1.50 : 1"),
+])
+def test_ratio_from_what_producers_say(values, wanted, shown):
+    p = Ratio()
+    assert p.str_for_value(values.resolve_value(p, wanted)) == shown
+
+
+def test_plain_numbers_in_range_stay_internal(values):
+    assert values.resolve_value(Ratio(), 0.5) == 0.5       # backward compatible
+    with pytest.raises(ValueError, match="takes 0.0 to 1.0"):
+        values.resolve_value(Freq(), 8)                     # not a ratio: still refused

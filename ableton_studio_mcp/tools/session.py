@@ -73,6 +73,23 @@ def stop_playback() -> str:
     return "Stopped"
 
 
+@tool(needs="back_to_arrangement")
+def back_to_arrangement() -> str:
+    """
+    Press Live's "Back to Arrangement": once a track has played a Session
+    clip, it ignores its Arrangement clips (greyed out) until this is done,
+    even after the transport stops. Session clips still playing stop.
+    Use it before playing or listening to the Arrangement after auditioning
+    scenes; listen_to_arrangement does it by default.
+    """
+    reply = live.call("back_to_arrangement")
+    if not reply.get("was_overriding"):
+        return "Every track already follows the Arrangement"
+    playing = reply.get("tracks_playing_session_clips") or []
+    tail = (" (stopped the Session clips of: %s)" % ", ".join(playing)) if playing else ""
+    return "Back to Arrangement: every track follows the Arrangement again" + tail
+
+
 @tool()
 def switch_to_arrangement_view() -> str:
     """Bring Live's Arrangement view to the front."""

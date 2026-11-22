@@ -244,6 +244,32 @@ class _MeterSampler:
         return out
 
 
+def _arrangement_mismatches(ableton, meters: List[Dict[str, Any]],
+                            start: float, end: float) -> List[str]:
+    """Tracks whose meter contradicts their Arrangement clips over the take:
+    silent although clips play there, or sounding although none does (a
+    Session clip, an input being monitored...)."""
+    found = []
+    for m in meters:
+        if m["type"] != "track":
+            continue
+        try:
+            clips = ableton.call("get_arrangement_clips",
+                                 {"track_index": m["index"]}).get("clips", [])
+        except Exception:
+            continue
+        has_clips = any(float(c.get("start_time", 0)) < end and float(c.get("end_time", 0)) > start
+                        for c in clips)
+        active = m.get("active_pct") or 0
+        if has_clips and active == 0:
+            found.append("%s stayed silent although it has Arrangement clips in the take "
+                         "(muted, an empty clip, or still overriding the Arrangement?)" % m["name"])
+        elif not has_clips and active > 0:
+            found.append("%s sounded although it has no Arrangement clip in the take "
+                         "(a Session clip, a monitored input, or a long release?)" % m["name"])
+    return found
+
+
 @tool()
 def get_track_meters() -> str:
     """
@@ -291,11 +317,16 @@ def listen_to_arrangement(start_time: float,
     keep_audio: bool = False,
     segment_seconds: float = 1.0,
     max_wait_seconds: float = 600.0,
+    back_to_arrangement: bool = True,
 ):
     """
     "Listen" to the song like a mastering engineer: record the main output
     between two song positions (beats) onto a temporary resampling audio
     track, sample every track's meter during the take, then analyze it.
+    Tracks left playing Session clips are first sent back to the
+    Arrangement, and the report flags any track whose meter disagrees with
+    its Arrangement clips (silent where it has clips, playing where it has
+    none), so a measurement of the wrong material doesn't go unnoticed.
 
     report="mix" (default) returns the full analyze_mix report (LUFS, true
     peak, PLR, tonal balance, resonances, stereo, findings with fixes against
@@ -317,6 +348,8 @@ def listen_to_arrangement(start_time: float,
       piles up audio files in the project)
     - segment_seconds: Length of each loudness segment (basic report)
     - max_wait_seconds: Safety limit for the recording
+    - back_to_arrangement: Press "Back to Arrangement" first (default true);
+      false records whatever Live plays, Session clips included
     """
     for cap in ("set_track_routing", "record_arrangement", "get_audio_clip_file"):
         live.require(cap)
@@ -331,6 +364,13 @@ def listen_to_arrangement(start_time: float,
     try:
         session = ableton.call("get_session_info")
         tempo = float(session.get("tempo") or 120.0)
+        warnings: List[str] = []
+        arrangement_state = None
+        if back_to_arrangement and live.supports("back_to_arrangement"):
+            arrangement_state = ableton.call("back_to_arrangement")
+        elif session.get("back_to_arranger"):
+            warnings.append("Some tracks play Session clips instead of the Arrangement "
+                            "(Back to Arrangement is lit): the take is not the Arrangement.")
         # Only the listening track may record: disarm the others for the take.
         status = ableton.call("get_recording_status")
         armed_before = [t["index"] for t in status.get("armed_tracks", [])]
@@ -394,12 +434,20 @@ def listen_to_arrangement(start_time: float,
                          "file_path": path, "status": rec_status.get("recording")},
             "analysis": analysis,
         }
+        if arrangement_state and arrangement_state.get("was_overriding"):
+            result["back_to_arrangement"] = {
+                "pressed": True,
+                "stopped_session_clips_on": arrangement_state.get("tracks_playing_session_clips", [])}
         if sampler is not None:
+            meters = sampler.summary()
             result["track_meters_during_take"] = {
                 "scale": "Live meter scale 0.0-1.0 (as in the mixer), sampled every %.1f s"
                          % RECORDING_POLL_S,
-                "tracks": sampler.summary(),
+                "tracks": meters,
             }
+            warnings.extend(_arrangement_mismatches(ableton, meters, start_time, end_time))
+        if warnings:
+            result["warnings"] = warnings
         if not keep_track:
             ableton.call("delete_track", {"track_index": track_index})
             track_index = None

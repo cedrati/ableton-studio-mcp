@@ -26,8 +26,16 @@ SAMPLES = 64        # coarse scan of the range
 BISECTIONS = 40     # refinement inside the bracket
 
 
+_RATIO = re.compile(r"^\s*(\d+(?:[.,]\d*)?|[.,]\d+|inf|∞)\s*:\s*1(?:[.,]0*)?\s*$", re.I)
+
+
 def parse_quantity(text):
-    """'2.2 kHz' -> (2200.0, 'hz'); '-inf dB' -> (-inf, 'db'); 'Bell' -> None."""
+    """'2.2 kHz' -> (2200.0, 'hz'); '-inf dB' -> (-inf, 'db'); '8.00 : 1' ->
+    (8.0, 'ratio'); 'Bell' -> None."""
+    ratio = _RATIO.match(text)
+    if ratio:
+        number = ratio.group(1).replace(",", ".").lower()
+        return (float("inf") if number in ("inf", "∞") else float(number)), "ratio"
     match = _NUMBER.match(text.replace("−", "-"))
     if not match:
         return None
@@ -78,6 +86,9 @@ def resolve_value(param, wanted):
         wanted = 1.0 if wanted else 0.0
     if isinstance(wanted, (int, float)):
         if not low <= float(wanted) <= high:
+            # "Ratio": 8 means 8 : 1 on a parameter Live shows as a ratio.
+            if _numeric_display(param, (low + high) / 2, "ratio") is not None:
+                return _search(param, float(wanted), "ratio", low, high, "%s : 1" % wanted)
             raise ValueError("%s takes %s to %s, not %s" % (param.name, low, high, wanted))
         return float(wanted)
 

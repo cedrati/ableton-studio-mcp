@@ -14,18 +14,62 @@ log = logging.getLogger("ableton_studio_mcp")
 
 
 @tool()
-def get_device_parameters(track_index: int, device_index: int, track_type: str = "track") -> str:
+def get_device_parameters(track_index: int, device_index: int, track_type: str = "track",
+                          names: List[str] = None, query: str = None,
+                          brief: bool = False) -> str:
     """
     Every parameter of a device with its index, value, range and the value
-    as Live displays it (dB, Hz, %, mode names).
+    as Live displays it (dB, Hz, %, mode names). Big devices (Operator,
+    Wavetable, Roar...) have dozens or hundreds of parameters: narrow the
+    reply with `names` or `query`, or ask for `brief`.
 
     Parameters:
     - track_index: The track (return index for "return", ignored for "master")
     - device_index: Position of the device in the chain
     - track_type: "track" (default), "return" or "master"
+    - names: Only these parameters: exact names or parts of names, as
+      set_device_parameters accepts them (["Filter Freq", "Ae "])
+    - query: Only parameters whose name contains this text ("Filter", "Osc-A")
+    - brief: Index, name and displayed value only (no ranges, value lists or
+      automation state): an overview of the whole device
     """
-    return as_json(live.call("get_device_parameters",
-                             track_target(track_index, track_type, device_index=device_index)))
+    reply = live.call("get_device_parameters",
+                      track_target(track_index, track_type, device_index=device_index))
+    reply = dict(reply)
+    device = reply["device"] = dict(reply.get("device") or {})
+    params = list(device.get("parameters") or [])
+    total = len(params)
+    if names:
+        params = _select_parameters(params, names)
+    if query:
+        needle = query.strip().lower()
+        params = [p for p in params if needle in str(p.get("name", "")).lower()]
+    if brief:
+        params = [{"index": p.get("index"), "name": p.get("name"), "display": p.get("display")}
+                  for p in params]
+    if names or query or brief:
+        device["parameters"] = params
+        device["parameters_shown"] = "%d of %d" % (len(params), total)
+    return as_json(reply)
+
+
+def _select_parameters(params: List[Dict[str, Any]], names: List[str]) -> List[Dict[str, Any]]:
+    """The parameters named in ``names`` (exact name, any case, else every
+    name containing it), in the device's order, without duplicates; a name
+    matching nothing is an error listing close names."""
+    import difflib
+
+    chosen = set()
+    for name in names:
+        wanted = str(name).strip().lower()
+        part = str(name).lower() or wanted   # "Ae " keeps its space: not "Release"
+        exact = [p["index"] for p in params if str(p.get("name", "")).lower() == wanted]
+        hits = exact or [p["index"] for p in params if part in str(p.get("name", "")).lower()]
+        if not hits:
+            close = difflib.get_close_matches(str(name), [p.get("name", "") for p in params], n=6, cutoff=0.5)
+            raise ValueError("No parameter '%s'%s" % (name, (" (did you mean %s?)" % ", ".join(close)) if close else ""))
+        chosen.update(hits)
+    return [p for p in params if p.get("index") in chosen]
 
 
 @tool()
@@ -48,6 +92,44 @@ def set_device_parameter(track_index: int, device_index: int, parameter_index: i
     before = reply.get("old_display") or reply.get("old_value")
     after = reply.get("display") or reply.get("value")
     return f"{reply.get('name', 'Parameter')}: {before} → {after}"
+
+
+def _chain(names: List[str]) -> str:
+    return " → ".join("%d %s" % (i, n) for i, n in enumerate(names)) or "(empty)"
+
+
+@tool(needs="delete_device")
+def delete_device(track_index: int, device_index: int, track_type: str = "track") -> str:
+    """
+    Remove a device from a track, a return track or the main track (one
+    undo step). The reply lists the chain left, whose indexes have moved.
+
+    Parameters:
+    - track_index: The track (return index for "return", ignored for "master")
+    - device_index: Position of the device in the chain (see get_track_info)
+    - track_type: "track" (default), "return" or "master"
+    """
+    reply = live.call("delete_device", track_target(track_index, track_type, device_index=device_index))
+    return f"Deleted {reply['deleted']} from {reply['on']}. Chain now: {_chain(reply.get('devices', []))}"
+
+
+@tool(needs="move_device")
+def move_device(track_index: int, device_index: int, new_index: int,
+                track_type: str = "track") -> str:
+    """
+    Move a device to another position in the same chain, e.g. a limiter to
+    the very end of the main track (Live 11+). Order matters: a compressor
+    before or after a saturator, an EQ before a reverb...
+
+    Parameters:
+    - track_index: The track (return index for "return", ignored for "master")
+    - device_index: The device's current position
+    - new_index: Where it should end up (0 = first; last = number of devices − 1)
+    - track_type: "track" (default), "return" or "master"
+    """
+    reply = live.call("move_device", track_target(track_index, track_type, device_index=device_index,
+                                                  new_index=new_index))
+    return f"Moved {reply['moved']} on {reply['on']}. Chain now: {_chain(reply.get('devices', []))}"
 
 
 @tool()

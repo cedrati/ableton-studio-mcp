@@ -657,3 +657,130 @@ def test_recording_is_not_armed_until_the_preroll_is_reached(script_module):
     song.current_song_time = 40.0                       # playback began inside the passage
     resolve(inst._record_arrangement(32.0, 48.0), lambda: None)
     assert not song.record_mode                         # never records from the wrong place
+
+
+# ------------------------------------------------ Back to Arrangement (#83)
+
+class TimedSong(Song):
+    """A song get_session_info can describe."""
+
+    def __init__(self):
+        Song.__init__(self)
+        self.tempo, self.signature_numerator, self.signature_denominator = 120.0, 4, 4
+
+
+class OverridingSong(TimedSong):
+    def __init__(self):
+        TimedSong.__init__(self)
+        self.back_to_arranger = True
+        self.tracks[0].playing_slot_index = 2     # a Session clip plays
+        self.tracks[1].playing_slot_index = -2    # stopped, but still overriding
+
+
+def test_back_to_arrangement_presses_the_button(script_module):
+    song = OverridingSong()
+    inst, _ = live_instance(script_module, song)
+    assert inst._get_session_info()["back_to_arranger"] is True
+    inst, run = live_instance(script_module, song)
+    out = resolve(inst._back_to_arrangement(), run)["ok"]
+    assert out == {"was_overriding": True, "tracks_playing_session_clips": ["1-Audio"],
+                   "back_to_arranger": False, "settled": True}
+    assert song.back_to_arranger is False
+    # Already following the Arrangement: nothing to press.
+    assert inst._back_to_arrangement()["was_overriding"] is False
+
+
+class LateSong(OverridingSong):
+    """Live turns the button off a few ticks after the script asks."""
+
+    def __init__(self):
+        OverridingSong.__init__(self)
+        self._lit, self._ticks_left = True, None
+
+    @property
+    def back_to_arranger(self):
+        if self._ticks_left is not None:
+            self._ticks_left -= 1
+            if self._ticks_left < 0:
+                self._lit = False
+        return self._lit
+
+    @back_to_arranger.setter
+    def back_to_arranger(self, value):
+        if value:
+            self._lit = True
+        else:
+            self._ticks_left = 3
+
+
+def test_back_to_arrangement_replies_once_live_applied_it(script_module):
+    inst, run = live_instance(script_module, LateSong())
+    out = resolve(inst._back_to_arrangement(), run)["ok"]
+    assert (out["back_to_arranger"], out["settled"]) == (False, True)
+
+
+def test_back_to_arrangement_needs_the_api(script_module):
+    inst, _ = live_instance(script_module, TimedSong())
+    assert inst._get_session_info()["back_to_arranger"] is False
+    with pytest.raises(RuntimeError, match="no Back to Arrangement"):
+        inst._back_to_arrangement()
+    assert "back_to_arrangement" in set(script_module.SCRIPT_CAPABILITIES)
+
+
+def test_back_to_arrangement_tool_reports_what_it_stopped(connect):
+    connect({"back_to_arrangement": {"was_overriding": True,
+                                     "tracks_playing_session_clips": ["Lead", "Drums"]}})
+    assert call(tools.back_to_arrangement).endswith("(stopped the Session clips of: Lead, Drums)")
+    connect({"back_to_arrangement": {"was_overriding": False}})
+    assert call(tools.back_to_arrangement) == "Every track already follows the Arrangement"
+
+
+def _listen_answers(take, clips_by_track, overriding=True):
+    polls = iter([{"armed_tracks": [], "recording": {"finished": False}}] * 2
+                 + [{"armed_tracks": [], "recording": {"finished": True}}] * 10)
+    return {
+        "get_session_info": {"tempo": 120.0, "back_to_arranger": overriding},
+        "back_to_arrangement": {"was_overriding": overriding,
+                                "tracks_playing_session_clips": ["Lead"] if overriding else []},
+        "get_recording_status": lambda p: next(polls),
+        "create_audio_track": {"index": 3, "name": "4-Audio"},
+        "get_track_routing": {"input": {"available_types": ["Resampling"]}},
+        "get_arrangement_clips": lambda p: {"clips": clips_by_track.get(p["track_index"], [])},
+        "get_audio_clip_file": {"file_path": str(take)},
+        "get_track_meters": {"meters": [
+            {"type": "track", "index": 0, "name": "Lead", "level": 0.7},
+            {"type": "track", "index": 1, "name": "Clavecin", "level": 0.0},
+            {"type": "track", "index": 2, "name": "Bass", "level": 0.6},
+            {"type": "master", "index": 0, "name": "Main", "level": 0.9}]},
+    }
+
+
+def test_listen_goes_back_to_arrangement_and_flags_mismatches(connect, monkeypatch, tmp_path):
+    pytest.importorskip("numpy")
+    monkeypatch.setattr(listening, "RECORDING_POLL_S", 0.0)
+    monkeypatch.setattr(listening, "_spectrogram_path", lambda p: None)
+    take = tmp_path / "Claude – écoute 0001 [2026-11-22 120000].wav"
+    _wav(take, seconds=1.0)
+    clips = {1: [{"start_time": 0.0, "end_time": 16.0}],      # clavecin: clips, silent
+             2: [{"start_time": 0.0, "end_time": 16.0}],      # bass: clips, playing
+             3: [{"start_time": 0.0, "end_time": 8.0}]}       # the take itself
+    conn = connect(_listen_answers(take, clips))
+    data = json.loads(call(tools.listen_to_arrangement, 0.0, 8.0, target="club"))
+    sent = [c for c, _ in conn.sent]
+    assert sent.index("back_to_arrangement") < sent.index("record_arrangement")
+    assert data["back_to_arrangement"] == {"pressed": True, "stopped_session_clips_on": ["Lead"]}
+    warnings = data["warnings"]
+    assert any(w.startswith("Lead sounded although it has no Arrangement clip") for w in warnings)
+    assert any(w.startswith("Clavecin stayed silent although it has Arrangement clips") for w in warnings)
+    assert not any(w.startswith("Bass") for w in warnings)
+
+
+def test_listen_can_keep_session_clips_but_says_so(connect, monkeypatch, tmp_path):
+    monkeypatch.setattr(listening, "RECORDING_POLL_S", 0.0)
+    take = tmp_path / "Claude – écoute 0002 [2026-11-22 120100].wav"
+    _wav(take)
+    conn = connect(_listen_answers(take, {3: [{"start_time": 0.0, "end_time": 4.0}]}))
+    data = json.loads(call(tools.listen_to_arrangement, 0.0, 4.0, report="basic",
+                           back_to_arrangement=False))
+    assert "back_to_arrangement" not in [c for c, _ in conn.sent]
+    assert data["warnings"][0].startswith("Some tracks play Session clips")
