@@ -135,8 +135,8 @@ def move_device(track_index: int, device_index: int, new_index: int,
 @tool()
 def device_inventory(installed_plugins: bool = False) -> str:
     """
-    Everything loaded in the set — every device on every track, return track
-    and the main track, racks with their chains — with what each one is and
+    Everything loaded in the set (every device on every track, return track
+    and the main track, racks with their chains) with what each one is and
     what it is for (native devices from the Live 12 manual, Max for Live
     devices, known plug-in families such as Arturia emulations), plus, with
     installed_plugins=true, the VST/VST3/AU plug-ins installed, by vendor.
@@ -468,7 +468,7 @@ def rack_variation(track_index: int, device_index: int, action: str = "list",
 @tool()
 def set_drum_choke(track_index: int, notes: List[int], group: int = 1) -> str:
     """
-    Put Drum Rack pads in a choke group so they cut each other — the classic:
+    Put Drum Rack pads in a choke group so they cut each other. The classic:
     closed and open hi-hat together (e.g. notes [42, 46], group 1). Group 0
     removes the choke.
 

@@ -181,7 +181,7 @@ def remove_notes(track_index: int, clip_index: int, from_time: float = 0.0,
                  time_span: Union[float, None] = None, from_pitch: int = 0,
                  pitch_span: int = 128, location: str = "session") -> str:
     """
-    Remove only the notes starting inside a time window and a pitch range —
+    Remove only the notes starting inside a time window and a pitch range,
     to rewrite one bar, or one drum lane, then add the new notes.
 
     Parameters:
@@ -362,7 +362,7 @@ def set_clip_automation(track_index: int, clip_index: int, points: List[Dict[str
     Parameters:
     - track_index: The track holding the clip and the parameter
     - clip_index: The Session slot
-    - points: [{"time": 0, "value": 0.2}, {"time": 16, "value": 0.9}] — time in
+    - points: [{"time": 0, "value": 0.2}, {"time": 16, "value": 0.9}]: time in
       beats from the clip start, value in the parameter's own range (clamped);
       the last value holds to the clip end. [] with clear_first removes the envelope.
     - location: "session" (the only place Live accepts)

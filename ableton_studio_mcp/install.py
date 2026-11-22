@@ -189,7 +189,7 @@ def main(argv: list[str] | None = None) -> int:
             shutil.rmtree(folder)
             print(f"removed old control surface: {folder}")
         else:
-            print(f"old control surface still present: {folder} — it uses the same port; "
+            print(f"old control surface still present: {folder}. It uses the same port: "
                   f"run with --remove-legacy to delete it")
 
     if all(o.action == "failed" for o in outcomes):

@@ -58,7 +58,7 @@ logs/
 
 MANIFEST.in
 
-# Export output — contains collected user session data
+# Export output: contains collected user session data
 *.jsonl
 exports/
 

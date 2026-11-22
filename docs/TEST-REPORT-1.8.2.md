@@ -1,4 +1,4 @@
-# Test report — Remote Script 1.8.2 (fork `cedrati/ableton-mcp`)
+# Test report: Remote Script 1.8.2 (fork `cedrati/ableton-mcp`)
 
 - **Date:** 2026-11-19
 - **Branch tested:** `feat/mixer-scenes` @ `8d77407`
@@ -85,7 +85,7 @@
 | Branch | Local | GitHub | State |
 |---|---|---|---|
 | `feat/mixer-scenes` | `8d77407` | `8d77407` | ✅ up to date, clean working tree |
-| `main` (default branch) | `6f7b801` | `6f7b801` | ⚠️ did not contain `8d77407` (1.8.2) — since fast-forwarded |
+| `main` (default branch) | `6f7b801` | `6f7b801` | ⚠️ did not contain `8d77407` (1.8.2), since fast-forwarded |
 | `fix/async-live-state` | `eaf52de` | missing | local only, already included in `feat/mixer-scenes` |
 
 No pull request was open, neither on the fork nor towards `ahujasid/ableton-mcp`.

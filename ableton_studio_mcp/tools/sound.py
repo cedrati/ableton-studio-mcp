@@ -287,7 +287,7 @@ def audition_sound(track_index: int, role: str = "melody", root: Union[int, None
 
     Parameters:
     - track_index: The MIDI track to audition
-    - role: "bass", "chords" or "melody" — picks the phrase and its register
+    - role: "bass", "chords" or "melody": picks the phrase and its register
     - root: MIDI note of the phrase's root (default C1 for bass, C3 chords, C4 melody)
     - bars: How many bars to play (1–4)
     - report: "mix" (full report and spectrogram) or "basic"

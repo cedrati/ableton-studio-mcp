@@ -1,4 +1,4 @@
-"""AbletonStudioMCP — the Ableton Live control surface of Ableton Studio MCP.
+"""AbletonStudioMCP: the Ableton Live control surface of Ableton Studio MCP.
 
 Live loads this folder from ``<User Library>/Remote Scripts`` and calls
 :func:`create_instance` when the control surface is selected. The surface

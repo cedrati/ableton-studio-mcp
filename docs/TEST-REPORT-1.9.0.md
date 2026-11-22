@@ -1,4 +1,4 @@
-# Test report — Remote Script 1.9.0 (fork `cedrati/ableton-mcp`)
+# Test report: Remote Script 1.9.0 (fork `cedrati/ableton-mcp`)
 
 - **Date:** 2026-11-19
 - **Branch tested:** `feat/warp-automation` @ `45b89df` (first pass), then `014a8e7` (second pass, §5)
@@ -21,9 +21,9 @@
 | `set_clip_warp` | `complex_pro`, pitch −2 st +15 ct, gain 0.5 | ✅ read back, gain `4.00 dB` |
 | `set_clip_warp` | `warp_mode="rex"` on a WAV | ✅ refused: not available (lists the 6 available modes) |
 | `set_clip_warp` | `warping=false`, then `true` | ✅ |
-| `set_clip_warp` | `original_bpm=131` | ❌ **bug 1** — see §4 |
+| `set_clip_warp` | `original_bpm=131` | ❌ **bug 1**, see §4 |
 | `edit_warp_markers` | move the marker at 16 by −0.5, then back by +0.5 | ✅ hidden marker follows (15.53125, then 16.03125) |
-| `edit_warp_markers` (`add`) | — | not run: same cause as bug 1, fixed |
+| `edit_warp_markers` (`add`) | n/a | not run: same cause as bug 1, fixed |
 | `get_clip_warp` (`location="arrangement"`) | copy of the loop in the Arrangement | ✅ warp settings and markers carried over |
 | `set_clip_warp` | on a MIDI clip | ✅ refused: "Warp settings only apply to audio clips" |
 | `get_clip_warp` | empty slot 7 | ✅ "No clip in slot 7 of track 4" |
@@ -33,11 +33,11 @@
 | Tool | Test | Result |
 |---|---|---|
 | `set_clip_automation` | Wavetable `Flt 1 Freq`, linear 0.2 → 0.9 over beats 0–12, held to 16 | ✅ 49 steps written |
-| `get_clip_automation` | read at 1/16 resolution | ✅ ramp 0.2 → 0.9 in 0.0146 steps, 0.9 held to the end. ⚠️ **bug 2** at boundaries — see §4 |
+| `get_clip_automation` | read at 1/16 resolution | ✅ ramp 0.2 → 0.9 in 0.0146 steps, 0.9 held to the end. ⚠️ **bug 2** at boundaries, see §4 |
 | `set_clip_automation` (mixer, `step`) | audio clip volume: 0.85, 0.5 at beat 8, 1.4 at beat 12 | ✅ 1.4 clamped to 1.0 and reported |
 | `set_clip_automation` (`send:0`) | 0 → 0.6 over 16 beats, resolution 1 | ✅ `A-Reverb`, 16 steps |
 | `get_clip_automation` | panning, not automated | ✅ `has_envelope: false` |
-| `set_clip_automation` (`location="arrangement"`) | MIDI clip copied to the Arrangement | ❌ Live: "Not a session clip or parameter belongs to another track." — **limit 3**, see §4 |
+| `set_clip_automation` (`location="arrangement"`) | MIDI clip copied to the Arrangement | ❌ Live: "Not a session clip or parameter belongs to another track." **Limit 3**, see §4 |
 | `get_clip_automation` (`location="arrangement"`) | Arrangement copies of the automated clips | ✅ reads, `has_envelope: false`: `duplicate_to_arrangement` doesn't copy the clip envelope into the clip |
 | `set_clip_automation` | parameter index 500 | ✅ "Parameter index out of range (93 parameters)" |
 | `set_clip_automation` | `send:9` | ✅ "Send index out of range (2 sends)" |
@@ -63,7 +63,7 @@ The set was restored by Live's restart; the test tracks were recreated, then del
 | `edit_warp_markers` (`add` with `sample_time`) | beat 8 = 3.6641 s | ✅ |
 | `edit_warp_markers` (`add` without `sample_time`) | beat 4 | ❌ **finding 4**, clip left untouched ✅ |
 | `get_clip_automation` | linear 0.2 → 0.9 over 0–12 | ✅ exact: 0.2 at beat 0, 0.3167 at 2 … 0.9 at 12, held to 16 |
-| `set_clip_automation(location="arrangement")` | — | ✅ refused up front with the explanation |
+| `set_clip_automation(location="arrangement")` | n/a | ✅ refused up front with the explanation |
 
 ### Findings and fixes (not re-run in Live; covered by unit tests)
 

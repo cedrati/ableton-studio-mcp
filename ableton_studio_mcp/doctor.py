@@ -55,7 +55,7 @@ def check_uv() -> Check:
     uv = shutil.which("uv")
     if not uv:
         return Check("uv", "warn", "uv not found on PATH",
-                     "Install uv (https://docs.astral.sh/uv/) — MCP clients start the server with `uvx`.")
+                     "Install uv (https://docs.astral.sh/uv/): MCP clients start the server with `uvx`.")
     try:
         out = subprocess.run([uv, "--version"], capture_output=True, text=True, timeout=10).stdout.strip()
     except Exception as e:
