@@ -393,6 +393,7 @@ The only files the tools write are on your machine (recordings you ask for, temp
 
 - **Author:** Olivier Cedrati ([@cedrati](https://github.com/cedrati)). Report issues on [cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp/issues).
 - **Thanks:** Ableton Studio MCP began as a fork of [ableton-mcp](https://github.com/ahujasid/ableton-mcp) by [Siddharth Ahuja](https://x.com/sidahuj), which first connected Live to AI assistants through MCP. Since 2.0 it is an independent codebase, rewritten from the ground up (versions 1.x remain available under their original license).
+- **Cedra:** structured humanization (`quasiperiodic_rhythm`, the `humanize_structured` operation) is built on the Cedra constant and its mathematical notes, from [cedrati/cedra](https://github.com/cedrati/cedra) by Olivier Cedrati. That work has its own license, [Creative Commons Attribution-NonCommercial 4.0](https://creativecommons.org/licenses/by-nc/4.0/) (CC BY-NC 4.0): reusing it requires crediting Olivier Cedrati and excludes commercial use.
 
 MIT License. Copyright (c) 2026 Olivier Cedrati. See [LICENSE](https://github.com/cedrati/ableton-studio-mcp/blob/main/LICENSE). This is a third-party integration, not made or endorsed by Ableton.
 
