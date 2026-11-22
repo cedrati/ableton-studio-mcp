@@ -427,6 +427,10 @@ def build_arrangement(template: str = None,
                 except Exception as e:
                     summary.setdefault("warnings", []).append("locator %s: %s" % (loc["name"], e))
     summary["locators_created"] = made
+    if info.get("back_to_arranger"):
+        summary.setdefault("warnings", []).append(
+            "Some tracks still play Session clips instead of the Arrangement "
+            "(Back to Arrangement is lit): call back_to_arrangement before playing it.")
     return as_json(summary)
 
 

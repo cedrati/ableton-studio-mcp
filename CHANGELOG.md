@@ -6,6 +6,17 @@ Since 2.0 one version number covers the server and the Live control surface; the
 
 ## Unreleased
 
+New control surface command (`back_to_arrangement`): run `ableton-studio-mcp install` and restart Live.
+
+### Added
+
+- **Back to Arrangement** (`back_to_arrangement`): once a track has played a Session clip, Live ignores its Arrangement clips until *Back to Arrangement* is pressed — stopping the transport doesn't reset it (measured in Live 12.4). The tool presses it, waits until Live has applied it, and names the tracks whose Session clips it stopped. `get_session_info` now reports `back_to_arranger`.
+
+### Fixed
+
+- **`listen_to_arrangement` could measure the wrong material** (#83). After auditioning scenes, tracks still overriding the Arrangement played Session clips during the take, and the report (LUFS, true peak, findings) described that instead of the Arrangement. It now goes back to the Arrangement first (`back_to_arrangement=true` by default; `false` keeps whatever plays and says so), reports what it stopped, and warns when a track's meter contradicts its Arrangement clips: silent where it has clips, sounding where it has none.
+- `build_arrangement` warns when tracks still override the Arrangement it just built.
+
 ### Documentation
 
 - README, package and registry descriptions now present **sound design** and **sampling** as features of their own: a *Sound design* row (presets, recipes, musical parameter values, auditioning, saved sounds) and a *Sampling* row (Simpler slicing, `chop_sample`) in the features table, examples for designing sounds and for taking an idea from a style to a finished track, and a FAQ answer on sound design.

@@ -49,7 +49,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 | **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
 | **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
 
-Everything is covered by automated tests (370) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (376) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -178,6 +178,7 @@ Indexes start at 0. Times and lengths are in **beats**. Notes use MIDI numbers (
 | `set_tempo` · `start_playback` · `stop_playback` | Transport. |
 | `get_scenes` · `create_scene` · `set_scene_name` · `duplicate_scene` · `fire_scene` · `delete_scene` | Scenes. |
 | `switch_to_arrangement_view` · `set_arrangement_time` · `create_locator` · `delete_locator` | Arrangement view, playhead, locators (create, rename, delete by name or position). |
+| `back_to_arrangement` | Live's *Back to Arrangement*: tracks that played Session clips follow their Arrangement clips again (they ignore them until then, even after the transport stops). |
 | `undo` · `redo` | Live's Undo and Redo. Each tool call that changes the set is one step, and tools that make many changes at once (drum patterns, progressions, arrangements, MIDI imports…) are one step too. |
 | `start_undo_group` · `end_undo_group` | Make a whole request one undo step (closed automatically after two minutes if left open). |
 | `get_remote_script_info` | Version handshake and capabilities. |
@@ -235,7 +236,7 @@ Indexes start at 0. Times and lengths are in **beats**. Notes use MIDI numbers (
 
 | Tool | Description |
 |---|---|
-| `listen_to_arrangement` | Records the main output between two song positions on a temporary track (in real time), samples every track's meter, then returns the mix report and the spectrogram image. The track and the recorded file are deleted afterwards, so listening never fills the project with audio (`keep_track` / `keep_audio` to keep them). |
+| `listen_to_arrangement` | Records the main output between two song positions on a temporary track (in real time), samples every track's meter, then returns the mix report and the spectrogram image. It goes *Back to Arrangement* first and flags any track whose meter contradicts its Arrangement clips, so it never measures Session clips by mistake. The track and the recorded file are deleted afterwards, so listening never fills the project with audio (`keep_track` / `keep_audio` to keep them). |
 | `analyze_mix` | The same mastering report for any WAV/AIFF file. |
 | `analyze_audio_file` | Lightweight level report (no `numpy` needed). |
 | `record_arrangement` · `get_recording_status` · `stop_arrangement_recording` · `get_audio_clip_file` | Record armed tracks into the Arrangement between two positions; find the recorded file. |
