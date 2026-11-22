@@ -5,7 +5,7 @@
 
 # Ableton Studio MCP
 
-**The Ableton Live MCP server that lets Claude (or any MCP client) compose, arrange, design sounds, mix, master, listen to and analyse music in Ableton Live 11 & 12.**
+**The Ableton Live MCP server that lets Claude (or any MCP client) assist you in Live — or take over — to compose, arrange, design sounds, mix, master, listen to and analyse music in Ableton Live 11 & 12.**
 
 By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)).
 

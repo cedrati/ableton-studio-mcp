@@ -11,6 +11,7 @@ Since 2.0 one version number covers the server and the Live control surface; the
 - README, package and registry descriptions now present **sound design** and **sampling** as features of their own: a *Sound design* row (presets, recipes, musical parameter values, auditioning, saved sounds) and a *Sampling* row (Simpler slicing, `chop_sample`) in the features table, examples for designing sounds and for taking an idea from a style to a finished track, and a FAQ answer on sound design.
 - The *What's next* answer follows the roadmap: hearing a sound and reverse-engineering its patch (#82), A/B with reference tracks, learning a style from your own sets.
 - The Remote Script badge and the `doctor` / `get_remote_script_info` check now say 2.4.
+- The tagline and the GitHub description say the assistant can work alongside you in Live, not only in your place.
 
 ## 2.4.0
 
