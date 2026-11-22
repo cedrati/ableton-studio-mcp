@@ -1,7 +1,7 @@
 [project]
 name = "ableton-studio-mcp"
 version = "2.5.0"
-description = "Ableton Live integration through the Model Context Protocol — AI music production: compose, arrange, design sounds, mix, master and analyse in Ableton Live"
+description = "Ableton Live integration through the Model Context Protocol: AI music production: compose, arrange, design sounds, mix, master and analyse in Ableton Live"
 readme = "README.md"
 keywords = ["ableton", "ableton-live", "mcp", "mcp-server", "model-context-protocol", "claude", "ai-music",
             "music-production", "daw", "midi", "mixing", "mastering", "lufs", "music-theory", "techno"]
