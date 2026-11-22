@@ -1,4 +1,4 @@
-# Ableton Studio MCP — Privacy & data
+# Ableton Studio MCP: Privacy & data
 
 _Last updated: 21 November 2026_
 

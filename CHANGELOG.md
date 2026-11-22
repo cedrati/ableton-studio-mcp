@@ -2,7 +2,7 @@
 
 Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp)). Versions 1.x were a fork of [ahujasid/ableton-mcp](https://github.com/ahujasid/ableton-mcp); 2.0 is an independent rewrite.
 
-Since 2.0 one version number covers the server and the Live control surface; the server refuses a control surface of another version. After updating, run `ableton-studio-mcp install` and **restart Live** — re-selecting the control surface does not reload the code. (1.x versions below are the Remote Script version.)
+Since 2.0 one version number covers the server and the Live control surface; the server refuses a control surface of another version. After updating, run `ableton-studio-mcp install` and **restart Live**: re-selecting the control surface does not reload the code. (1.x versions below are the Remote Script version.)
 
 ## 2.5.0
 
@@ -10,7 +10,7 @@ New control surface series, with new commands (`back_to_arrangement`, `delete_de
 
 ### Added
 
-- **Back to Arrangement** (`back_to_arrangement`): once a track has played a Session clip, Live ignores its Arrangement clips until *Back to Arrangement* is pressed — stopping the transport doesn't reset it (measured in Live 12.4). The tool presses it, waits until Live has applied it, and names the tracks whose Session clips it stopped. `get_session_info` now reports `back_to_arranger`.
+- **Back to Arrangement** (`back_to_arrangement`): once a track has played a Session clip, Live ignores its Arrangement clips until *Back to Arrangement* is pressed; stopping the transport doesn't reset it (measured in Live 12.4). The tool presses it, waits until Live has applied it, and names the tracks whose Session clips it stopped. `get_session_info` now reports `back_to_arranger`.
 - **Delete and move devices** (`delete_device`, `move_device`, #84) on tracks, return tracks and the main track, replying with the new chain. Measured in Live 12.4: `move_device` counts the target position with the device still in the chain, so moving right is corrected by one.
 - **`get_device_parameters` filters** (#85): `names` (exact or parts of names), `query` (substring) and `brief` (index, name, displayed value). Operator's full reply is about 56,000 characters; `query="Filter"` returns 9 of its 195 parameters.
 - **Ratios as producers say them** (#86): `set_device_parameters` accepts `8`, `"8"`, `"8:1"`, `"8.00 : 1"` and `"inf : 1"` on parameters Live shows as `N : 1` (Compressor, Glue...), and picks the nearest value Live can show (`"10.00 : 1"` → `10.0 : 1`). A plain number inside the internal range still sets the raw value.
@@ -36,12 +36,12 @@ Learned building a full track in Live 12.4 with the assistant.
 ### Added
 
 - **Producer automation gestures** (`automation_gesture`): `delay_throw` (delay send up on the last beat of each phrase), `reverb_swell`, `filter_rise` / `filter_fall`, `drop_cut` (the breath before a drop), `stutter` (16th-note gate), `fade_in` / `fade_out`, drawn in a Session clip and aimed at the right parameter by themselves: the return named like a delay or a reverb, the track's filter (an Auto Filter first, then the synth's own; a high-pass cleaning the lows is skipped). Measured in Live: a clip envelope leaves its parameter where it ends and a clip without an envelope doesn't reset it, so after a cut the next section stayed silent; when a move ends away from the resting value, the track's other clips now get it held.
-- **Chop a sample in one call** (`chop_sample`): loads it in a Simpler (adding one if needed), slices it (16 slices, or 64 grains for micro-sampling), warps it from the tempo in its file name and transposes it to the song's key from the key in its name (Splice-style names: `_127_`, `Fmin`, `D#m`), then writes a chop pattern: `hook` (the same grain at the same place every bar — a hook, where a random grain on every hit sounds like noise — off-beat accents, ghost hits with a chance), `rearrange` or `stutter`. Checked in Live: a guitar loop named 122 BPM, D#m was warped over 32 beats and moved +2 semitones to F.
+- **Chop a sample in one call** (`chop_sample`): loads it in a Simpler (adding one if needed), slices it (16 slices, or 64 grains for micro-sampling), warps it from the tempo in its file name and transposes it to the song's key from the key in its name (Splice-style names: `_127_`, `Fmin`, `D#m`), then writes a chop pattern: `hook` (the same grain at the same place every bar, a hook where a random grain on every hit would sound like noise, off-beat accents, ghost hits with a chance), `rearrange` or `stutter`. Checked in Live: a guitar loop named 122 BPM, D#m was warped over 32 beats and moved +2 semitones to F.
 
 ### Fixed
 
 - **`build_arrangement` left sections silent.** A clip that didn't divide its section, or was longer than it, was skipped with only a warning. It is now placed once more and cropped at the section's end (measured in Live 12.4: an Arrangement clip takes the length of its loop brace once looping is off).
-- **`build_arrangement` kept older clips.** A copy only overwrites where it lands, so a rebuild kept the previous build's clips where a track no longer played. The clips already in the range are now listed (`existing_clips`, also in a dry run) and deleted only with `clear=true` — deleting is the artist's call.
+- **`build_arrangement` kept older clips.** A copy only overwrites where it lands, so a rebuild kept the previous build's clips where a track no longer played. The clips already in the range are now listed (`existing_clips`, also in a dry run) and deleted only with `clear=true`: deleting is the artist's call.
 - **A groove could have no effect without anyone knowing.** A new set's global Groove amount is 0 %, where a clip's groove changes nothing; `set_clip_groove` now says so and how to raise it.
 
 ### Changed
@@ -54,29 +54,29 @@ New control surface series: run `ableton-studio-mcp install` and restart Live.
 
 ### Added
 
-- **Sound recipes** (`sound_recipes`, `design_sound`): sub, acid and reese bass, dub chord stab, pluck and warm pad on Drift, supersaw on Wavetable, FM bell on Operator — the device, parameter values as musical values, how to play the sound and what to listen for; applied in one undo step, with your own tweaks on top. Every recipe was applied in Live 12.4 without error.
+- **Sound recipes** (`sound_recipes`, `design_sound`): sub, acid and reese bass, dub chord stab, pluck and warm pad on Drift, supersaw on Wavetable, FM bell on Operator: the device, parameter values as musical values, how to play the sound and what to listen for; applied in one undo step, with your own tweaks on top. Every recipe was applied in Live 12.4 without error.
 - **Listen-and-tune loop** (`audition_sound`): plays a bass line, chords or an arpeggio on a track in an empty stretch after the song, records and analyses it like `listen_to_arrangement`, then removes everything it added (one undo step). In Live, a sub bass, a pad, a pluck and an acid bass came out clearly different (e.g. sub +29 dB below 60 Hz, pluck centred on the mids).
 
 ### Fixed
 
 - **Listening and recording could capture the wrong passage.** Measured in Live 12.4: playback started by a script begins at Live's own start marker, not where `current_song_time` was set, and moving the playhead while recording splits the take. Recording now sets the passage as the punch-in/out range, starts playback, jumps one beat before the range and only then switches Arrangement Record on, so exactly the requested passage is recorded; loop and punch settings are put back. `start_playback` now plays from the playhead.
-- **Undo of grouped actions** (a tool that records, or loads devices) now steps back until the set matches the fingerprint taken before the action, up to 32 of Live's steps; if that never happens, every step is redone and the action is reported as not undoable — it never undoes an earlier action. The fingerprint now includes the notes of MIDI clips.
+- **Undo of grouped actions** (a tool that records, or loads devices) now steps back until the set matches the fingerprint taken before the action, up to 32 of Live's steps; if that never happens, every step is redone and the action is reported as not undoable; it never undoes an earlier action. The fingerprint now includes the notes of MIDI clips.
 
 
 New control surface series: run `ableton-studio-mcp install` and restart Live.
 
-### Added — sound design
+### Added: sound design
 
 - **Read Live's presets** (`find_presets`, `read_preset`): about 10,000 native device and rack presets on a typical install (Core Library, packs, User Library), searched by name, device, category or library and read straight from their files without Live. A preset is shown as what differs from the device's default preset (Live ships one per device), in the device's own units, with its samples, and for racks the named macros and every chain with its devices.
 - **Load a preset by name** (`load_preset`), found where Live's browser shows it (Core Library racks live under Sounds, Drum Racks under Drums…), with a targeted name search as a fallback.
 - **Musical values** (`set_device_parameters`): "800 Hz", "2.5 kHz", "5 ms", "-6 dB", "-inf dB", "35 %", "+7 st", a named setting ("Bell") or a textual display ("1/16"). The internal value is found by searching the parameter's range until Live's own display matches, so it works for every native device without per-device tables. All values are checked before anything changes.
-- **Save and reload designed sounds** (`save_sound`, `list_sounds`, `load_sound`) as JSON in `<User Library>/Ableton Studio MCP/Sounds/` — Live's API cannot write `.adv` presets. Verified in Live: a Drift sound reloaded with all 66 parameters identical.
+- **Save and reload designed sounds** (`save_sound`, `list_sounds`, `load_sound`) as JSON in `<User Library>/Ableton Studio MCP/Sounds/`, since Live's API cannot write `.adv` presets. Verified in Live: a Drift sound reloaded with all 66 parameters identical.
 
 ## 2.1.1
 
 ### Fixed
 
-- **Undo of an action that loads a device.** In Live 12.4, loading a browser item closes the open undo step and records its own, so an action such as "new track, load Drift, set the tempo" spanned three of Live's undo steps and one `undo` only took back part of it. Each action is now recorded with a fingerprint of the set taken before it; undoing it steps back until the set matches that fingerprint — never further than the action itself — and redo replays the same steps. Undo logic moved to its own module (`undo.py`).
+- **Undo of an action that loads a device.** In Live 12.4, loading a browser item closes the open undo step and records its own, so an action such as "new track, load Drift, set the tempo" spanned three of Live's undo steps and one `undo` only took back part of it. Each action is now recorded with a fingerprint of the set taken before it; undoing it steps back until the set matches that fingerprint (never further than the action itself), and redo replays the same steps. Undo logic moved to its own module (`undo.py`).
 
 
 New control surface series: run `ableton-studio-mcp install` and restart Live.
@@ -111,11 +111,11 @@ Ableton Studio MCP becomes a project of its own. Everything that still came from
 - **One copy of the control surface:** it lives inside the package (`ableton_studio_mcp/live_script/`) instead of a repository folder plus a bundled duplicate; a single version number is checked by the tests and the release workflow.
 - `doctor` also warns when the old *AbletonMCP* control surface is still installed.
 - Dockerfile and `smithery.yaml` rewritten for the new entry point.
-- **Server core rewritten.** New connection to Live (`live.py`): one socket reopened automatically when Live restarts, a stale socket detected before use, one request at a time, per-command timeouts, and the control surface's version checked on every connection (replaces the old handshake module and its retry hook). Typed errors — Live unavailable, Live refused, control surface too old — each reported to the assistant as one clear line by the new `@tool` decorator (`app.py`).
+- **Server core rewritten.** New connection to Live (`live.py`): one socket reopened automatically when Live restarts, a stale socket detected before use, one request at a time, per-command timeouts, and the control surface's version checked on every connection (replaces the old handshake module and its retry hook). Typed errors (Live unavailable, Live refused, control surface too old), each reported to the assistant as one clear line by the new `@tool` decorator (`app.py`).
 - **Tools split by domain** into `ableton_studio_mcp/tools/` (session, tracks, clips, devices, browser, routing, listening, midi, theory, drums, evolution) instead of one 3,500-line `server.py`; tool descriptions rewritten. Same 92 tools with the same parameters. Tools no longer take the unused `ctx` argument.
 - Error messages changed: "<tool> failed: <Live's reason>" instead of "Error <doing something>: …".
 - CI now builds the package, installs it in a clean environment and checks that every tool and the control surface are inside (the `tools` subpackage was missing from the first 2.0 build).
-- **Control surface rewritten** as a package of modules instead of one 4,100-line file (now 2,800 lines): a command registry replaces the 460-line `if/elif` dispatcher — each handler's signature is its contract (missing or unknown parameters are refused by name instead of silently defaulting to track 0 or 120 BPM) and the advertised capability list is generated from it; a new socket server; browser, snapshot, clip, note, track, session and device code written anew.
+- **Control surface rewritten** as a package of modules instead of one 4,100-line file (now 2,800 lines): a command registry replaces the 460-line `if/elif` dispatcher; each handler's signature is its contract (missing or unknown parameters are refused by name instead of silently defaulting to track 0 or 120 BPM) and the advertised capability list is generated from it; a new socket server; browser, snapshot, clip, note, track, session and device code written anew.
 - **No more threads in the control surface, and much faster.** Live's embedded Python only lets background threads run when Live calls into Python (~10 times a second), so the socket thread of 1.x paid for several of those per request. The control surface now does everything on Live's main thread from `update_display`: non-blocking sockets, requests run and answered in the same pass, and a few milliseconds' wait for the next request of a sequence. Reads (`get_*`) are chained in one pass; after any change Live gets a display update of its own before the next command (changing the routing of a track created in the same pass crashed Live 12.4 during testing). Measured on the same set (Live 12.4, 3 tracks, 2 returns): session or track info 200 ms → under 1 ms, a write (tempo) 409 ms → 100 ms, full snapshot with notes and parameters 5.9 s → 0.23 s. This also means every command runs on the main thread, as Live's API requires (1.x ran reads on the socket thread).
 - **Protocol 2: newline-delimited JSON** both ways (no more re-parsing the whole buffer after every packet). The server still talks to 1.x control surfaces, and the control surface still accepts 1.x servers.
 - Stricter input checks: notes (pitch 0–127, positive duration, start ≥ 0, velocity clamped; a bad note is refused with its position and nothing is written), tempo 20–999, positive clip length, parameter values within the parameter's range, track insert positions, negative song positions.
@@ -156,10 +156,10 @@ First release published on PyPI: `uvx ableton-studio-mcp`.
 
 ### Added
 
-- **`device_inventory`:** everything loaded in the set — every device on tracks, return tracks and the main track, rack chains — with what each one is and what it is for, plus (optionally) the installed VST/VST3/AU plug-ins by vendor.
+- **`device_inventory`:** everything loaded in the set (every device on tracks, return tracks and the main track, rack chains) with what each one is and what it is for, plus (optionally) the installed VST/VST3/AU plug-ins by vendor.
 - **`device_knowledge`:** sheets for Live's native instruments, audio and MIDI effects and the Max for Live devices bundled with Live 12, summarised from the Live 12 manual (purpose, key parameters, electronic/techno uses, sidechain, tips), and descriptions of common plug-in families (Arturia V Collection emulations, Xfer, u-he, FabFilter, Valhalla, Plugin Alliance, Newfangled Audio, Elektron Overbridge...). It also records that Live 12's MIDI Tools (Transform/Generate) are not reachable from the API, and which server tools cover the same ground.
 - **`get_device_info`** (Remote Script): Live's real device name (`class_display_name`, also added to every device listing), kind, latency, and the device-specific API below.
-- **`set_device_sidechain`** (Remote Script): routes a Compressor's sidechain from another track and switches it on — kick-to-bass ducking without touching the interface. Live's API exposes sidechain routing on the Compressor only.
+- **`set_device_sidechain`** (Remote Script): routes a Compressor's sidechain from another track and switches it on: kick-to-bass ducking without touching the interface. Live's API exposes sidechain routing on the Compressor only.
 - **`plugin_presets`** (Remote Script): a plug-in's preset list and preset selection, as far as the plug-in exposes them to Live.
 - **`simpler_sample`** (Remote Script): load a sample into Simpler, choose classic / one-shot / slicing, slice by transient, beat, region or manually, warp as N beats, crop, reverse.
 - **`rack_variation`** (Remote Script): list, recall, store rack macro variations, randomize macros.
@@ -169,12 +169,12 @@ First release published on PyPI: `uvx ableton-studio-mcp`.
 
 Inventory of a set (Drum Rack with its 18 chains, Operator presets, return effects) and of 429 installed plug-ins from 46 vendors; a Compressor on the bass routed to the drum track (Post FX) with S/C On; closed and open hats choked together; an 85-second recording loaded into Simpler and sliced into 16 regions. Arturia Acid V (VST3) exposes a single "Default" preset and no parameters to Live until its parameters are configured in Live: plug-ins that keep presets in their own browser can't be browsed from the API.
 
-## Server update — long-form evolution and arrangement (Remote Script unchanged, 1.15.0)
+## Server update: long-form evolution and arrangement (Remote Script unchanged, 1.15.0)
 
 ### Added
 
 - **`write_clip_evolution`:** extends a MIDI loop to N bars (notes tiled, probability kept) and writes long automation curves on it: linear, exp (build-up), log, S-curve, swell, slow sine/triangle LFO, phrase steps, random walk, hold; per lane, on a device parameter or the mixer (volume, pan, sends), optionally over part of the clip.
-- **Arrangement automation through Session clips:** Live's API cannot write Arrangement automation, but a Session clip's envelopes become track automation when the clip is copied to the Arrangement — checked by ear in Live 12 (a volume envelope plays as a −60 → −22 dBFS ramp in the Arrangement).
+- **Arrangement automation through Session clips:** Live's API cannot write Arrangement automation, but a Session clip's envelopes become track automation when the clip is copied to the Arrangement, checked by ear in Live 12 (a volume envelope plays as a −60 → −22 dBFS ramp in the Arrangement).
 - **`build_arrangement`:** lays out the Arrangement from Session clips, section by section, from a template (`techno_dj` ≈ 208 bars with DJ intro/outro, `techno_64`, `minimal`, `house`) or custom sections; track roles from track names (kick, drums, hats, perc, rumble, bass, chords, pad, lead, vocal, fx), per-section clip variants (e.g. the automated build), clips tiled to fill each section, named locators, `dry_run` to preview.
 - **`arrangement_overview`:** a map of the Arrangement, one character per block of bars per track.
 - **`arrangement_templates`:** the templates (sections, bars, energy, roles, production tips) and curve shapes.
@@ -319,7 +319,7 @@ When Live hasn't applied the change within the wait budget (1 s for the playhead
 
 New MCP tools and matching Remote Script commands:
 
-- **Mixer:** `set_track_volume`, `set_track_panning`, `set_track_send`, `set_track_mute`, `set_track_solo`, `set_track_arm` — on regular tracks, and (where it applies) return tracks and the master via `track_type`.
+- **Mixer:** `set_track_volume`, `set_track_panning`, `set_track_send`, `set_track_mute`, `set_track_solo`, `set_track_arm`, on regular tracks, and (where it applies) return tracks and the master via `track_type`.
 - **Tracks:** `duplicate_track`, `delete_track`.
 - **Scenes:** `get_scenes`, `create_scene`, `set_scene_name`, `duplicate_scene`, `fire_scene`, `delete_scene`.
 - **Arrangement:** `delete_arrangement_clip` (Live 11+).
