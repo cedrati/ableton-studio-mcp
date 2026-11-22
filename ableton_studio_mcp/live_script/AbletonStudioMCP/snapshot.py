@@ -172,8 +172,8 @@ class SnapshotCommands(object):
     # ── fingerprint (undo) ──────────────────────────────────────────────────
 
     def _set_fingerprint(self):
-        """A compact summary of the set — tempo, tracks, devices and their
-        parameter values, clips, returns, main track, scenes, locators — to
+        """A compact summary of the set (tempo, tracks, devices and their
+        parameter values, clips, returns, main track, scenes, locators) to
         tell whether an undo brought the set back to an earlier state."""
         song, read = self._song, self._safe_attr
 

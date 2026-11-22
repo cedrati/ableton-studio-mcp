@@ -1,4 +1,4 @@
-# Test report — Remote Script 1.10.0 (fork `cedrati/ableton-mcp`)
+# Test report: Remote Script 1.10.0 (fork `cedrati/ableton-mcp`)
 
 - **Date:** 2026-11-19
 - **Branch tested:** `feat/arrangement-notes` @ `84743b8`

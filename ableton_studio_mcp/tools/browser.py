@@ -37,7 +37,7 @@ def get_browser_tree(category_type: str = "all") -> str:
     if not roots:
         offered = ", ".join(reply.get("available_categories", [])) or BROWSER_ROOTS
         return f"Nothing under '{category_type}'. Browser roots: {offered}"
-    lines = [f"Browser — {category_type} ({reply.get('total_folders', '?')} folders)", ""]
+    lines = [f"Browser: {category_type} ({reply.get('total_folders', '?')} folders)", ""]
     for root in roots:
         lines += _outline(root) + [""]
     return "\n".join(lines)
@@ -64,8 +64,8 @@ def get_browser_items_at_path(path: str) -> str:
 @tool()
 def load_instrument_or_effect(track_index: int, uri: str, track_type: str = "track") -> str:
     """
-    Load a browser item — instrument, effect, preset, plug-in, User Library
-    file — onto a track, by its URI. Effects can also go on a return track
+    Load a browser item (instrument, effect, preset, plug-in, User Library
+    file) onto a track, by its URI. Effects can also go on a return track
     (track_type="return", track_index 0 = A) or on the main track
     (track_type="master"). Find URIs with get_browser_items_at_path.
 

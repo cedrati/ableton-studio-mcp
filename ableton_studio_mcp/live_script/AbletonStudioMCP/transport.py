@@ -1,4 +1,4 @@
-"""The TCP side of the control surface — without threads.
+"""The TCP side of the control surface, without threads.
 
 Live's embedded Python only lets other threads run while Live itself calls
 into Python, about ten times a second. A socket thread handing work to the

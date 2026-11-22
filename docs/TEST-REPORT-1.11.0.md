@@ -1,4 +1,4 @@
-# Test report — Remote Script 1.11.0 (fork `cedrati/ableton-mcp`)
+# Test report: Remote Script 1.11.0 (fork `cedrati/ableton-mcp`)
 
 - **Date:** 2026-11-19
 - **Branch tested:** `feat/clip-loop` @ `191fae5`, then `feat/mixer-scenes` @ `5313403` after merging (§4)
