@@ -4,7 +4,7 @@ Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](https://gith
 
 Since 2.0 one version number covers the server and the Live control surface; the server refuses a control surface of another version. After updating, run `ableton-studio-mcp install` and **restart Live**: re-selecting the control surface does not reload the code. (1.x versions below are the Remote Script version.)
 
-## Unreleased
+## 2.5.1
 
 Server only: no new control surface, nothing to reinstall in Live.
 

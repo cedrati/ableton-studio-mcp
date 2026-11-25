@@ -1,6 +1,6 @@
 """Ableton Studio MCP: AI music production in Ableton Live through the Model Context Protocol."""
 
-__version__ = "2.5.0"
+__version__ = "2.5.1"
 
 # The server works with any control surface of the same series (major.minor).
 # A release that changes the control surface starts a new series; patch
