@@ -22,6 +22,20 @@ def test_native_sheets_and_plugin_families():
     assert all(e["kind"] in ("instrument", "audio_effect", "midi_effect", "max_for_live") for e in dk.NATIVE.values())
 
 
+def test_legacy_and_pack_devices():
+    legacy = ["Auto Filter Legacy", "Auto Pan Legacy", "Chorus", "Erosion Legacy", "Flanger", "Frequency Shifter",
+              "Phaser", "Redux Legacy"]
+    for name in legacy:
+        entry = dk.lookup(name)
+        assert entry["kind"] == "audio_effect" and entry["source"] == "Ableton Live 12 manual"
+    assert "Shifter" in dk.lookup("frequency shifter")["tip"]
+    conv = dk.lookup("Convolution Reverb")
+    assert conv["kind"] == "max_for_live" and conv["source"] == "Ableton Pack (Max for Live)"
+    card = dk.describe_device({"name": "Gated Delay", "class_name": "MxDeviceAudioEffect",
+                               "class_display_name": "Max Audio Effect"})
+    assert "gate" in card["what"]
+
+
 def test_describe_device_cards():
     op = dk.describe_device({"name": "Acid Bass", "class_name": "Operator", "class_display_name": "Operator"})
     assert op["device"] == "Operator" and "FM" in op["category"] and op["preset_or_name"] == "Acid Bass"
