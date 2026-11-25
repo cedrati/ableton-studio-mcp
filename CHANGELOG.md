@@ -8,6 +8,10 @@ Since 2.0 one version number covers the server and the Live control surface; the
 
 Control surface fix: run `ableton-studio-mcp install` and restart Live.
 
+### Changed
+
+- `quasiperiodic_rhythm`: no default rotation any more. The user chooses `golden`, `cedra`, `silver` or any number; without one the tool writes nothing and lists the options so the assistant asks. Humanization in any form is always the user's choice.
+
 ### Fixed
 
 - `listen_to_arrangement` and `record_arrangement` failed on a passage late in the song with "Cannot set the Loopstart behind the Songlength" when the set's loop was long (for example a 452-beat loop in a 740-beat song, passage from beat 320). Live checks the loop against the song length at every write, and the start was moved before the length. The loop is now shrunk first, then moved, then given its length, and it is put back the same way afterwards.

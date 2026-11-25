@@ -13,10 +13,12 @@ rotations* instead of random numbers, n -> {n * theta + phase}:
 - a loop of a *near-period* length (a continued fraction denominator of
   theta) closes almost seamlessly.
 
-The default rotation comes from the Cedra constant
+Which rotation to use is the user's choice: the `quasiperiodic_rhythm` tool
+has no default and asks (these pure functions fall back to the golden ratio,
+theta ~ 0.618, the most even of all). The Cedra rotation comes from the Cedra constant
 C = sqrt(3) + (3/2) sqrt(2) - 2, theta = ln C ~ 0.617, which starts like the
 golden ratio and then drifts away from it (https://github.com/cedrati/cedra).
-Timing, velocity and duration are driven by the logarithms of three Galois
+In `humanize_structured`, timing, velocity and duration are driven by the logarithms of three Galois
 conjugates of C. These are linearly independent over Q together with 1
 (proved in the cedra notes, Theorem D), so the three variations are jointly
 equidistributed: no hidden correlation between them.
@@ -56,7 +58,7 @@ class QuasiPeriodicError(ValueError):
 def resolve_rotation(rotation: Union[str, float, None]) -> float:
     """A rotation number in (0, 1): a name from ROTATIONS or a number."""
     if rotation is None:
-        return ROTATIONS["cedra"]
+        return ROTATIONS["golden"]
     if isinstance(rotation, str):
         key = rotation.strip().lower()
         if key in ROTATIONS:

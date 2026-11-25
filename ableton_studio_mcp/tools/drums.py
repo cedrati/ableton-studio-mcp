@@ -169,7 +169,7 @@ def quasiperiodic_rhythm(track_index: int,
     steps_per_bar: int = 16,
     length_steps: int = None,
     density: float = None,
-    rotation: str = "cedra",
+    rotation: str = None,
     phase: float = 0.0,
     velocity_low: int = 50,
     velocity_high: int = 95,
@@ -190,9 +190,12 @@ def quasiperiodic_rhythm(track_index: int,
     where the pattern slips against its near-period `accent_near_period`:
     sparse accents at places the rhythm itself defines.
 
-    Rotations: "cedra" (ln of the Cedra constant, ~0.617: starts like the golden
-    ratio, then drifts), "golden" (~0.618, the most even), "silver" (~0.414),
-    or a number between 0 and 1. The reply lists `near_periods`: loop lengths
+    The rotation is the user's choice, with no default: ask the user which one
+    they want and never pick it for them. "golden" (~0.618, the most even,
+    Fibonacci loop lengths), "cedra" (ln of the Cedra constant, ~0.617: starts
+    like the golden ratio, then a 47-step cycle that slowly slides), "silver"
+    (~0.414, sparser), or any number between 0 and 1. Without a rotation the
+    tool writes nothing and lists these options. The reply lists `near_periods`: loop lengths
     in steps that close almost seamlessly (Cedra: 13, 47, 1376...).
 
     Parameters:
@@ -201,7 +204,7 @@ def quasiperiodic_rhythm(track_index: int,
     - bars / steps_per_bar: Clip length (4/4) and grid (16 = 16ths)
     - length_steps: Exact length in steps instead of bars, e.g. a near-period (47, 1376)
     - density: Share of steps with a hit, 0-1 (default: the rotation number)
-    - rotation: cedra, golden, silver or a number
+    - rotation: golden, cedra, silver or a number (required, the user's choice)
     - phase: 0-1, starts the sequence elsewhere (another variation, same character)
     - velocity_low / velocity_high: Velocity range of the hits
     - accent_role: Second voice on the slips (optional)
@@ -210,6 +213,17 @@ def quasiperiodic_rhythm(track_index: int,
     """
     from .. import drums
     from .. import quasiperiodic as qp
+
+    if rotation is None or not str(rotation).strip():
+        return ("No rotation chosen: ask the user which one they want, nothing was written. "
+                "golden (~0.618, the most even, loops of 13, 21, 34 steps), "
+                "cedra (~0.617, starts golden then a 47-step cycle that slowly slides), "
+                "silver (~0.414, sparser, loops of 12, 29, 70 steps), "
+                "or any number between 0 and 1.")
+    try:
+        qp.resolve_rotation(rotation)
+    except qp.QuasiPeriodicError as e:
+        return str(e)
 
     ableton = live.client()
     roles, kit = _kit_roles(ableton, track_index)

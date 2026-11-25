@@ -24,6 +24,10 @@ def test_rotations():
         qp.resolve_rotation(2)
 
 
+def test_default_rotation_is_golden():
+    assert qp.resolve_rotation(None) == qp.ROTATIONS["golden"]
+
+
 def test_cedra_near_periods_are_its_convergents():
     assert qp.continued_fraction(qp.ROTATIONS["cedra"], 9) == [0, 1, 1, 1, 1, 1, 1, 3, 29]
     assert qp.near_periods("cedra", 2000) == [2, 3, 5, 8, 13, 47, 1376, 1423]
@@ -31,7 +35,7 @@ def test_cedra_near_periods_are_its_convergents():
 
 
 def test_sturmian_word_is_balanced_and_aperiodic():
-    w = qp.word(2000)
+    w = qp.word(2000, rotation="cedra")
     assert w[:20] == [0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1]
     hits = [i for i, b in enumerate(w) if b]
     assert {b - a for a, b in zip(hits, hits[1:])} == {1, 2}
@@ -54,10 +58,10 @@ def test_other_density_keeps_at_most_three_gaps():
 
 
 def test_seam_mismatch_formula_and_near_period_loops():
-    w = qp.word(1376 + 1376)
+    w = qp.word(1376 + 1376, rotation="cedra")
     measured = sum(a != b for a, b in zip(w, w[1376:])) / 1376
-    assert measured == pytest.approx(qp.seam_mismatch(1376), abs=2e-3)
-    assert qp.seam_mismatch(1376) < 0.002 < 0.1 < qp.seam_mismatch(64)
+    assert measured == pytest.approx(qp.seam_mismatch(1376, rotation="cedra"), abs=2e-3)
+    assert qp.seam_mismatch(1376, rotation="cedra") < 0.002 < 0.1 < qp.seam_mismatch(64, rotation="cedra")
 
 
 def test_rhythm_notes_dynamics_and_accents():
@@ -122,22 +126,31 @@ def test_quasiperiodic_rhythm_tool_maps_roles_and_writes(conn):
     c = conn({"get_drum_rack_map": {"rack_name": "909 Core Kit", "pads": KIT_909},
               "get_track_info": {"clip_slots": [{"has_clip": False}] * 4}})
     out = json.loads(call(tools.quasiperiodic_rhythm, 0, 2, role="closed_hat", bars=4,
-                          accent_role="rim"))
+                          rotation="golden", accent_role="rim"))
     assert out["note"] == 42 and out["accent_note"] == 37
     assert out["steps"] == 64 and out["length_beats"] == 16.0
-    assert out["gap_sizes_in_steps"] == [1, 2] and out["near_periods"][:6] == [2, 3, 5, 8, 13, 47]
+    assert out["gap_sizes_in_steps"] == [1, 2] and out["near_periods"][:6] == [2, 3, 5, 8, 13, 21]
+    assert out["rotation"] == "golden"
     assert ("create_clip", {"track_index": 0, "clip_index": 2, "length": 16.0}) in c.sent
     written = [n for cmd, p in c.sent if cmd == "add_notes_to_clip" for n in p["notes"]]
     assert len(written) == out["hits"] + out["accents"]
 
 
+def test_quasiperiodic_rhythm_asks_for_a_rotation(conn):
+    c = conn({"get_drum_rack_map": {"pads": KIT_909}, "get_track_info": {"clip_slots": [{"has_clip": False}]}})
+    reply = call(tools.quasiperiodic_rhythm, 0, 0)
+    assert "ask the user" in reply and "golden" in reply and "cedra" in reply
+    assert "Unknown rotation" in call(tools.quasiperiodic_rhythm, 0, 0, rotation="bronze")
+    assert c.sent == []
+
+
 def test_quasiperiodic_rhythm_near_period_length_and_refusals(conn):
     conn({"get_drum_rack_map": {"pads": KIT_909}, "get_track_info": {"clip_slots": [{"has_clip": True}]}})
-    assert "replace=true" in call(tools.quasiperiodic_rhythm, 0, 0)
+    assert "replace=true" in call(tools.quasiperiodic_rhythm, 0, 0, rotation="cedra")
     conn({"get_drum_rack_map": {"pads": [{"note": 36, "name": "Kick"}]},
           "get_track_info": {"clip_slots": [{"has_clip": False}]}})
-    assert "No pad" in call(tools.quasiperiodic_rhythm, 0, 0, role="closed_hat")
+    assert "No pad" in call(tools.quasiperiodic_rhythm, 0, 0, role="closed_hat", rotation="golden")
     c = conn({"get_drum_rack_map": {"pads": KIT_909}, "get_track_info": {"clip_slots": [{"has_clip": False}]}})
-    out = json.loads(call(tools.quasiperiodic_rhythm, 0, 0, role="42", length_steps=47))
+    out = json.loads(call(tools.quasiperiodic_rhythm, 0, 0, role="42", length_steps=47, rotation="cedra"))
     assert out["steps"] == 47 and out["length_beats"] == 11.75 and out["mapping"] == "note"
     assert ("create_clip", {"track_index": 0, "clip_index": 0, "length": 11.75}) in c.sent
