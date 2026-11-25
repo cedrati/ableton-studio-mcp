@@ -169,7 +169,7 @@ def quasiperiodic_rhythm(track_index: int,
     steps_per_bar: int = 16,
     length_steps: int = None,
     density: float = None,
-    rotation: str = "cedra",
+    rotation: str = "golden",
     phase: float = 0.0,
     velocity_low: int = 50,
     velocity_high: int = 95,
@@ -190,9 +190,9 @@ def quasiperiodic_rhythm(track_index: int,
     where the pattern slips against its near-period `accent_near_period`:
     sparse accents at places the rhythm itself defines.
 
-    Rotations: "cedra" (ln of the Cedra constant, ~0.617: starts like the golden
-    ratio, then drifts), "golden" (~0.618, the most even), "silver" (~0.414),
-    or a number between 0 and 1. The reply lists `near_periods`: loop lengths
+    Rotations: "golden" (default, ~0.618, the most even), "cedra" (ln of the
+    Cedra constant, ~0.617: starts like the golden ratio, then drifts),
+    "silver" (~0.414), or a number between 0 and 1. The reply lists `near_periods`: loop lengths
     in steps that close almost seamlessly (Cedra: 13, 47, 1376...).
 
     Parameters:
@@ -201,7 +201,7 @@ def quasiperiodic_rhythm(track_index: int,
     - bars / steps_per_bar: Clip length (4/4) and grid (16 = 16ths)
     - length_steps: Exact length in steps instead of bars, e.g. a near-period (47, 1376)
     - density: Share of steps with a hit, 0-1 (default: the rotation number)
-    - rotation: cedra, golden, silver or a number
+    - rotation: golden (default), cedra, silver or a number
     - phase: 0-1, starts the sequence elsewhere (another variation, same character)
     - velocity_low / velocity_high: Velocity range of the hits
     - accent_role: Second voice on the slips (optional)
