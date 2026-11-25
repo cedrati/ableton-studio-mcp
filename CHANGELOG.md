@@ -4,6 +4,14 @@ Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](https://gith
 
 Since 2.0 one version number covers the server and the Live control surface; the server refuses a control surface of another version. After updating, run `ableton-studio-mcp install` and **restart Live**: re-selecting the control surface does not reload the code. (1.x versions below are the Remote Script version.)
 
+## Unreleased
+
+Control surface fix: run `ableton-studio-mcp install` and restart Live.
+
+### Fixed
+
+- `listen_to_arrangement` and `record_arrangement` failed on a passage late in the song with "Cannot set the Loopstart behind the Songlength" when the set's loop was long (for example a 452-beat loop in a 740-beat song, passage from beat 320). Live checks the loop against the song length at every write, and the start was moved before the length. The loop is now shrunk first, then moved, then given its length, and it is put back the same way afterwards.
+
 ## 2.5.1
 
 Server only: no new control surface, nothing to reinstall in Live.

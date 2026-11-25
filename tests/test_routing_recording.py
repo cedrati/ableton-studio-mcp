@@ -250,6 +250,48 @@ def test_record_runs_and_stops_at_end(script_module):
     assert not song.record_mode and not song.is_playing
 
 
+class LoopSong(Song):
+    """Song with Live's loop rule: the loop may not end past the song."""
+    def __init__(self, length=740.0, loop_start=0.0, loop_length=452.0):
+        Song.__init__(self)
+        self.song_length, self.loop, self.punch_in, self.punch_out = length, False, False, False
+        self._start, self._length = loop_start, loop_length
+
+    @property
+    def loop_start(self):
+        return self._start
+
+    @loop_start.setter
+    def loop_start(self, v):
+        if v + self._length > self.song_length:
+            raise RuntimeError("Cannot set the Loopstart behind the Songlength")
+        self._start = v
+
+    @property
+    def loop_length(self):
+        return self._length
+
+    @loop_length.setter
+    def loop_length(self, v):
+        if self._start + v > self.song_length:
+            raise RuntimeError("Cannot set the Looplength behind the Songlength")
+        self._length = v
+
+
+def test_record_late_passage_with_a_long_loop(script_module):
+    # Measured in Live 12: a 452-beat loop in a 740-beat song, passage at 320
+    song = LoopSong()
+    song.tracks[0].arm = True
+    inst, run = live_instance(script_module, song)
+    out = resolve(inst._record_arrangement(320.0, 384.0), run)
+    assert out.get("ok", out)["status"] == "recording"
+    assert (song.loop_start, song.loop_length) == (320.0, 64.0)
+    assert song.punch_in and song.punch_out
+    inst._stop_arrangement_recording()
+    assert (song.loop_start, song.loop_length) == (0.0, 452.0)   # put back
+    assert not song.punch_in and not song.loop
+
+
 def test_record_stopped_by_hand_or_command(script_module):
     song = Song()
     song.tracks[0].arm = True
