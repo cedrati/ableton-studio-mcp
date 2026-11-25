@@ -16,6 +16,16 @@ class RecordingCommands(object):
                 armed.append({"index": i, "name": track.name})
         return armed
 
+    def _set_song_loop(self, start, length):
+        """Move the song loop. Live refuses a loop that would end past the
+        song, and checks it at every write: moving the start first with a
+        long loop fails (\"Cannot set the Loopstart behind the Songlength\").
+        So shrink the loop, move its start, then give it its length."""
+        song = self._song
+        song.loop_length = min(float(song.loop_length), 1.0)
+        song.loop_start = float(start)
+        song.loop_length = float(length)
+
     # Transport and loop settings a recording changes and puts back.
     _SAVED_TRANSPORT = ("loop", "loop_start", "loop_length", "punch_in", "punch_out")
 
@@ -49,8 +59,7 @@ class RecordingCommands(object):
         saved = dict((k, getattr(song, k)) for k in self._SAVED_TRANSPORT if hasattr(song, k))
         if hasattr(song, "punch_in"):
             song.loop = False
-            song.loop_start = start
-            song.loop_length = end - start
+            self._set_song_loop(start, end - start)
             song.punch_in = True
             song.punch_out = True
         preroll = max(0.0, start - RECORD_PREROLL_BEATS)
@@ -104,7 +113,13 @@ class RecordingCommands(object):
         finally:
             if song.is_playing:
                 song.stop_playing()
-            for key, value in (rec.pop("saved_transport", None) or {}).items():
+            saved = rec.pop("saved_transport", None) or {}
+            if "loop_start" in saved and "loop_length" in saved:
+                try:
+                    self._set_song_loop(saved.pop("loop_start"), saved.pop("loop_length"))
+                except Exception as e:    # never hide the outcome behind this
+                    self.log_message("could not restore the loop: %s" % e)
+            for key, value in saved.items():
                 try:
                     setattr(song, key, value)
                 except Exception as e:    # never hide the outcome behind this
