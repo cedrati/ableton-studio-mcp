@@ -8,12 +8,12 @@
     "source": "github"
   },
   "websiteUrl": "https://github.com/cedrati/ableton-studio-mcp#readme",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "ableton-studio-mcp",
-      "version": "2.5.1",
+      "version": "2.6.0",
       "transport": {
         "type": "stdio"
       }
