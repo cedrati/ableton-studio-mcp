@@ -2,7 +2,7 @@ name: tests
 
 on:
   push:
-    branches: [main, feat/mixer-scenes]
+    branches: [main]
   pull_request:
 
 jobs:

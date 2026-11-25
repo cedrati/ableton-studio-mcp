@@ -27,7 +27,7 @@ By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)).
 
 **Ableton Studio MCP, written and maintained by Olivier Cedrati, is a full production assistant.** Beyond writing notes, the assistant can **shape sounds** like a synth programmer (presets, recipes, every parameter set with musical values, then a test phrase played, recorded and measured to tune the patch), mix (faders, sends, return and main-track effects, routing), **listen** to the result and judge it like a mastering engineer (LUFS, true peak, tonal balance, stereo, a spectrogram it can look at), and compose with real music-theory knowledge (scales and modes, style sheets, key and chord analysis, clip transformations, voice-led progressions). One conversation can take an idea from a style to a finished, mixed Session: the melody, the drums, the patches and the arrangement.
 
-It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp). It is published on PyPI as [`ableton-studio-mcp`](https://pypi.org/project/ableton-studio-mcp/). (The `ableton-mcp` package on PyPI is the **original** project and does not include any of this.)
+It is developed on the `main` branch of [cedrati/ableton-studio-mcp](https://github.com/cedrati/ableton-studio-mcp). It is published on PyPI as [`ableton-studio-mcp`](https://pypi.org/project/ableton-studio-mcp/). (The `ableton-mcp` package on PyPI is the **original** project and does not include any of this.)
 
 **No data is collected:** no telemetry, no analytics, nothing sent anywhere (see [Privacy](#privacy)).
 
@@ -52,7 +52,7 @@ It is developed on the `feat/mixer-scenes` branch of [cedrati/ableton-studio-mcp
 
 > *"Cedra adds a very human vibe."* Olivier Cedrati, after the first track made with structured humanization (hats, bass, a 47-step dub stab and a pad, all driven by the Cedra rotations).
 
-Everything is covered by automated tests (408) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (412) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -135,7 +135,7 @@ Or ask the assistant to run `get_remote_script_info`: it should report `script_v
 3. Restart your MCP client. If it still runs old code: `uv cache clean ableton-studio-mcp` (with the client closed).
 4. `uvx ableton-studio-mcp doctor` confirms that everything matches.
 
-To try unreleased changes, use the development branch instead of PyPI: replace `ableton-studio-mcp` with `--from git+https://github.com/cedrati/ableton-studio-mcp@feat/mixer-scenes ableton-studio-mcp` in the commands above.
+To try unreleased changes, use the development branch instead of PyPI: replace `ableton-studio-mcp` with `--from git+https://github.com/cedrati/ableton-studio-mcp@main ableton-studio-mcp` in the commands above.
 
 ---
 
@@ -363,9 +363,9 @@ MCP client (Claude…)  ⇄  MCP server (ableton_studio_mcp/, Python)  ⇄  TCP 
 ### Development
 
 ```bash
-git clone -b feat/mixer-scenes https://github.com/cedrati/ableton-studio-mcp
+git clone https://github.com/cedrati/ableton-studio-mcp
 cd ableton-studio-mcp
-uv run --with pytest pytest -q             # 370 tests, no Live needed
+uv run --with pytest pytest -q             # 412 tests, no Live needed
 uv run ableton-studio-mcp install          # install your working copy into Live
 uv run ableton-studio-mcp doctor           # check the whole chain
 ```
