@@ -234,7 +234,137 @@ NATIVE: Dict[str, Dict] = {
     "Shaper MIDI": _d(X, "modulateur MIDI (Max for Live)", "Enveloppe dessinée déclenchée par note.", "Breakpoints, Map",
                       "Modulations rythmiques par note."),
     "MIDI Monitor": _d(X, "MIDI (Max for Live)", "Affiche le MIDI entrant.", "-", "Débogage de contrôleurs."),
+    # ------------------------------------------- legacy (Audio Effects/Legacy)
+    "Auto Filter Legacy": _d(A, "filtre (ancienne version)",
+                             "Auto Filter d'avant Live 12.2, gardé pour ouvrir les anciens projets à l'identique.",
+                             "Filter Type, Frequency, Resonance, Envelope, LFO Amount, Rate",
+                             "Balayages de filtre, ducking par sidechain dans d'anciens sets.", sidechain=True,
+                             tip="Pour un nouveau son, préférer Auto Filter."),
+    "Auto Pan": _d(A, "modulation (ancienne version)", "Panoramique et trémolo par LFO, remplacé par Auto Pan-Tremolo.",
+                   "Amount, Rate, Phase, Shape, Invert", "Trémolo, panoramique rythmique, faux sidechain (Shape + Invert).",
+                   tip="Pour un nouveau son, préférer Auto Pan-Tremolo."),
+    "Chorus": _d(A, "modulation (ancienne version)", "Chorus à deux délais modulés, remplacé par Chorus-Ensemble.",
+                 "Delay 1/2, Rate, Amount, Feedback, Dry/Wet", "Élargir nappes et leads.",
+                 tip="Pour un nouveau son, préférer Chorus-Ensemble."),
+    "Erosion Legacy": _d(A, "lo-fi (ancienne version)", "Erosion d'avant la mise à jour : dégradation par bruit ou sinus modulé.",
+                         "Mode, Frequency, Width, Amount", "Grain numérique, aliasing sur hats et voix.",
+                         tip="Pour un nouveau son, préférer Erosion."),
+    "Flanger": _d(A, "modulation (ancienne version)", "Flanger à délai court modulé, remplacé par Phaser-Flanger.",
+                  "Delay Time, Feedback, Env, Rate, Amount", "Jet sur hats et caisses claires, montées.",
+                  tip="Pour un nouveau son, préférer Phaser-Flanger."),
+    "Frequency Shifter": _d(A, "pitch / fréquence (ancienne version)", "Décalage de fréquence et ring modulation, remplacé par Shifter.",
+                            "Coarse, Fine, Mode (Shift/Ring), Drive, Dry/Wet", "Sons métalliques, ring mod, désaccords inharmoniques.",
+                            tip="Pour un nouveau son, préférer Shifter."),
+    "Phaser": _d(A, "modulation (ancienne version)", "Phaser à filtres passe-tout, remplacé par Phaser-Flanger.",
+                 "Poles, Color, Frequency, Feedback, Rate, Amount", "Mouvement lent sur nappes et accords.",
+                 tip="Pour un nouveau son, préférer Phaser-Flanger."),
+    "Redux Legacy": _d(A, "lo-fi (ancienne version)", "Redux d'avant Live 11 : réduction de fréquence d'échantillonnage et de résolution.",
+                       "Downsample, Bit Reduction, Mode", "Textures 8 bits, crunch sur batterie.",
+                       tip="Pour un nouveau son, préférer Redux."),
 }
+
+# Max for Live devices from Ableton's official Packs (installed separately
+# from the Core Library). Descriptions are functional, no artist names.
+PACK_DEVICES: Dict[str, Dict] = {
+    # Creative Extensions
+    "Bass": _d(X, "instrument (Max for Live)", "Synthé de basse monophonique virtuel analogique.",
+               "Oscillateurs, Filter, Env, Glide", "Basses rondes ou acides, sub."),
+    "Poli": _d(X, "instrument (Max for Live)", "Synthé polyphonique virtuel analogique au caractère vintage.",
+               "Osc, Filter, Env, Chorus", "Nappes et accords 80s, stabs."),
+    "Gated Delay": _d(X, "délai (Max for Live)", "Délai dont l'entrée est ouverte par un séquenceur de gate.",
+                      "Steps, Time, Feedback, Dry/Wet", "Échos rythmiques qui ne répètent que certains pas."),
+    "Pitch Hack": _d(X, "pitch / délai (Max for Live)", "Délai avec transposition, inversion et feedback.",
+                     "Pitch, Time, Reverse, Feedback", "Échos transposés, effets glitch."),
+    "Re-Enveloper": _d(X, "dynamique (Max for Live)", "Remodèle l'enveloppe de trois bandes de fréquence.",
+                       "Crossover, Attack/Release par bande", "Durcir ou adoucir les transitoires, effet d'expansion."),
+    "Spectral Blur": _d(X, "spectral (Max for Live)", "Floute une plage de fréquences en nappe réverbérante.",
+                        "Freq range, Grain, Halo, Dry/Wet", "Nappes à partir de n'importe quel son, ambiances."),
+    "Melodic Steps": _d(X, "séquenceur MIDI (Max for Live)", "Séquenceur mélodique à couloirs indépendants (hauteur, octave, vélocité, durée).",
+                        "Lanes, Length, Direction", "Lignes évolutives, polymétrie entre couloirs."),
+    # Convolution Reverb
+    "Convolution Reverb": _d(X, "réverbe (Max for Live)", "Réverbe par réponses impulsionnelles d'espaces réels et d'appareils.",
+                             "IR, Decay, Size, Predelay, Dry/Wet", "Espaces réalistes, chambres, ressorts, plaques."),
+    "Convolution Reverb Pro": _d(X, "réverbe (Max for Live)", "Convolution Reverb avec édition détaillée de l'IR (EQ, enveloppe, early/late).",
+                                 "IR, Early/Tail, EQ, Envelope", "Réverbe sculptée précisément."),
+    "IR Measurement Device": _d(X, "utilitaire (Max for Live)", "Capture la réponse impulsionnelle d'une pièce ou d'un appareil.",
+                                "Sweep, Length", "Créer ses propres IR pour Convolution Reverb."),
+    # Max for Live Essentials
+    "LFO MIDI": _d(X, "modulateur MIDI (Max for Live)", "LFO placé sur une piste MIDI pour moduler des paramètres.",
+                   "Rate, Depth, Shape, Map", "Mouvements sur les paramètres d'un instrument."),
+    "Map8": _d(X, "modulateur (Max for Live)", "Un contrôle mappé sur huit paramètres, chacun avec sa plage.",
+               "Map 1-8, Min/Max", "Macros de performance hors rack."),
+    "MultiMap": _d(X, "modulateur (Max for Live)", "Un contrôle vers plusieurs paramètres avec courbes de réponse.",
+                   "Map, Min/Max, Curve", "Gestes complexes depuis un seul potard."),
+    "XY Pad": _d(X, "modulateur (Max for Live)", "Pad XY qui pilote deux groupes de paramètres.",
+                 "X, Y, Map", "Morphing de filtre et de délai en live."),
+    "Device Randomizer": _d(X, "utilitaire (Max for Live)", "Tire au hasard les paramètres d'un device.",
+                            "Target, Amount, Randomize", "Chercher des accidents heureux en sound design."),
+    "Mono Sequencer": _d(X, "séquenceur MIDI (Max for Live)", "Séquenceur pas à pas monophonique.",
+                         "Steps, Pitch, Velocity, Length", "Lignes de basse et arpèges à la main."),
+    "Instant Haus": _d(X, "générateur (Max for Live)", "Générateur de grooves house (batterie, basse, accords).",
+                       "Pattern, Variation", "Esquisses rapides de groove."),
+    "PitchDrop": _d(X, "pitch (Max for Live)", "Chute ou montée de hauteur façon arrêt de bande.",
+                    "Time, Curve, Trigger", "Tape stop en fin de phrase."),
+    "Buffer Shuffler 2.0": _d(X, "découpe (Max for Live)", "Découpe l'audio en pas et les réordonne, inverse ou répète.",
+                              "Steps, Order, Reverse, Repeat", "Glitch et réarrangement de breaks."),
+    # CV Tools (matériel modulaire via une interface DC-coupled)
+    "CV In": _d(X, "CV (Max for Live)", "Reçoit une tension de contrôle et la mappe sur un paramètre.",
+                "Input, Map, Range", "Moduler Live depuis un modulaire."),
+    "CV Instrument": _d(X, "CV (Max for Live)", "Joue un oscillateur modulaire (hauteur + gate) depuis le MIDI, avec accordage.",
+                        "Pitch Out, Gate Out, Calibrate", "Séquencer un modulaire depuis Live."),
+    "CV LFO": _d(X, "CV (Max for Live)", "LFO envoyé en tension de contrôle.", "Rate, Shape, Depth", "Moduler un modulaire en sync."),
+    "CV Envelope Follower": _d(X, "CV (Max for Live)", "Suiveur d'enveloppe audio vers CV.", "Gain, Rise, Fall",
+                               "Faire réagir un modulaire à la batterie."),
+    "CV Shaper": _d(X, "CV (Max for Live)", "Enveloppe dessinée envoyée en CV.", "Breakpoints, Rate", "Modulations rythmiques."),
+    "CV Triggers": _d(X, "CV (Max for Live)", "Envoie des triggers/gates depuis des notes MIDI.", "Note, Out", "Déclencher des modules de batterie."),
+    "CV Utility": _d(X, "CV (Max for Live)", "Mixe, décale, atténue des signaux CV.", "Gain, Offset", "Préparer une tension."),
+    "CV Clock In": _d(X, "CV (Max for Live)", "Synchronise le tempo de Live sur une horloge externe.", "Input, PPQN", "Live esclave d'un modulaire."),
+    "CV Clock Out": _d(X, "CV (Max for Live)", "Envoie l'horloge de Live en impulsions.", "Rate, Width", "Modulaire esclave de Live."),
+    "Rotating Rhythm Generator": _d(X, "générateur (Max for Live)", "Rythmes par compteurs en rotation, sortie MIDI ou CV.",
+                                    "Steps, Rotation, Outputs", "Polyrythmies qui se décalent."),
+    # Sequencers
+    "Rhythmic Steps": _d(X, "séquenceur MIDI (Max for Live)", "Séquenceur de batterie pas à pas multipiste.",
+                         "Lanes, Steps, Chance, Velocity", "Patterns de batterie avec probabilité."),
+    "SQ Sequencer": _d(X, "séquenceur MIDI (Max for Live)", "Séquenceur pas à pas inspiré des séquenceurs analogiques à 16 pas.",
+                       "Steps, Pitch, Gate, Direction", "Lignes de basse hypnotiques."),
+    "Step Arp": _d(X, "arpégiateur (Max for Live)", "Arpégiateur programmable pas à pas.", "Steps, Pitch, Gate, Rate",
+                   "Arpèges plus précis que l'Arpeggiator."),
+    # Inspired by Nature
+    "Bouncy Notes": _d(X, "générateur MIDI (Max for Live)", "Notes jouées par des balles qui rebondissent (physique).",
+                       "Gravity, Balls, Pitch", "Rythmes organiques qui accélèrent."),
+    "Emit": _d(X, "instrument (Max for Live)", "Instrument à particules jouant des échantillons.", "Particles, Rate, Sample",
+               "Textures granuleuses, gouttes."),
+    "Tree Tone": _d(X, "instrument (Max for Live)", "Résonateurs organisés en arbre fractal.", "Branches, Decay, Excitation",
+                    "Carillons et textures naturelles."),
+    "Vector Delay": _d(X, "délai (Max for Live)", "Délai multi-têtes déplacées par des particules.", "Particles, Time, Feedback",
+                       "Échos mouvants, spatialisation."),
+    "Vector FM": _d(X, "instrument (Max for Live)", "Synthé FM dont les opérateurs sont des particules.", "Particles, Ratio, Index",
+                    "Timbres FM vivants."),
+    "Vector Grain": _d(X, "granulaire (Max for Live)", "Effet granulaire piloté par particules.", "Particles, Grain Size, Spray",
+                       "Nuages granulaires sur n'importe quelle source."),
+    "Vector Map": _d(X, "modulateur (Max for Live)", "Particules qui modulent des paramètres mappés.", "Particles, Map",
+                     "Modulations imprévisibles mais continues."),
+    # Divers packs officiels
+    "Microtuner": _d(X, "accordage (Max for Live)", "Accordages microtonaux (fichiers Scala) pour les instruments.",
+                     "Scale, Root, Tuning", "Gammes non tempérées, drones."),
+    "PitchLoop89": _d(X, "pitch / délai (Max for Live)", "Délai transpositeur à deux têtes au caractère de harmoniseur numérique des années 80.",
+                      "Pitch, Delay, Feedback, Glitch", "Échos transposés, glitch vintage."),
+    "Surround Panner": _d(X, "spatialisation (Max for Live)", "Panoramique surround multicanal.", "Position, Spread, Outputs",
+                          "Diffusion sur plus de deux enceintes."),
+    "Expressive Chords": _d(X, "MIDI (Max for Live)", "Joue des accords depuis une note avec strum et expression.",
+                            "Chord, Strum, Voicing", "Accords expressifs depuis un seul doigt."),
+    "Arrangement Looper": _d(X, "performance (Max for Live)", "Boucle une section de l'Arrangement en direct.", "Loop, Length",
+                             "Prolonger une partie en live."),
+    "Performer": _d(X, "performance (Max for Live)", "Morphe de nombreux paramètres entre états avec un seul contrôle.",
+                    "Macro, Targets", "Montées et transitions en live."),
+    "Prearranger": _d(X, "performance (Max for Live)", "Enchaîne des scènes selon un ordre et des durées programmés.",
+                      "Scenes, Lengths", "Jouer un arrangement en Session."),
+    "Variations": _d(X, "performance (Max for Live)", "Stocke et rappelle des instantanés de paramètres.", "Snapshots, Morph",
+                     "Passer d'un état de mix à un autre."),
+    "Iota": _d(X, "instrument (Max for Live)", "Lecteur d'échantillons en boucle très modulable.", "Loop, Rate, Modulation",
+               "Textures à partir de fragments."),
+}
+NATIVE.update(PACK_DEVICES)
 
 MIDI_TOOLS_NOTE = (
     "Les MIDI Tools de Live 12 (Transform : Arpeggiate, Chop, Connect, Glissando, LFO, Ornament, Quantize, "
@@ -328,7 +458,8 @@ def lookup(name: str) -> Optional[Dict]:
     low = (name or "").strip().lower()
     for key, entry in NATIVE.items():
         if key.lower() == low:
-            return dict(entry, name=key, source="Ableton Live 12 manual")
+            source = "Ableton Pack (Max for Live)" if key in PACK_DEVICES else "Ableton Live 12 manual"
+            return dict(entry, name=key, source=source)
     text = plugin_description(name)
     if text:
         return {"name": name, "kind": "plug-in", "what": text, "source": "plug-in family"}

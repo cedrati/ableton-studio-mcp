@@ -213,7 +213,7 @@ Indexes start at 0. Times and lengths are in **beats**. Notes use MIDI numbers (
 | `get_device_parameters` · `set_device_parameter` | Every parameter with its range, Live's display string and, for list parameters, the names of the values; narrowed by `names` or `query`, or `brief` (name and value only) for big devices like Operator. |
 | `delete_device` · `move_device` | Remove a device, or move it within its chain (a limiter last on the main track, an EQ before a reverb), on tracks, return tracks and the main track. |
 | `device_inventory` | Every device in the set and what it is for; optionally every installed plug-in by vendor. |
-| `device_knowledge` | Sheet for a native device (Live 12 manual), a bundled Max for Live device or a known plug-in; the native catalogue. |
+| `device_knowledge` | Sheet for a native device (Live 12 manual, legacy effects included), a Max for Live device bundled with Live or from an official Ableton Pack, or a known plug-in; the native catalogue. |
 | `get_device_info` | Real device name, kind, latency, and device-specific state: sidechain, plug-in presets, Simpler, rack. |
 | `set_device_sidechain` | Route a Compressor's sidechain from another track and switch it on (ducking). |
 | `plugin_presets` | List or select a plug-in's presets (as exposed to Live). |
