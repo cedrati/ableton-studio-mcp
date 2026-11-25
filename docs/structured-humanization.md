@@ -36,10 +36,10 @@ $$\text{hit}(n) \iff \{ n\theta + \varphi \} < \tau.$$
 | rotation | value | continued fraction | near-periods | character |
 |---|---|---|---|---|
 | `cedra` | 0.617006 | [0; 1, 1, 1, 1, 1, 1, 3, 29, ...] | 2, 3, 5, 8, 13, **47**, 1376, 1423 | starts like the golden ratio, then a long, almost exact 47-step cycle that slowly slides |
-| `golden` (default) | 0.618034 | [0; 1, 1, 1, ...] | 2, 3, 5, 8, 13, 21, 34, 55, 89 | the most even of all, Fibonacci lengths |
+| `golden` | 0.618034 | [0; 1, 1, 1, ...] | 2, 3, 5, 8, 13, 21, 34, 55, 89 | the most even of all, Fibonacci lengths |
 | `silver` | 0.414214 | [0; 2, 2, 2, ...] | 2, 5, 12, 29, 70 | sparser, other proportions |
 
-Any number between 0 and 1 also works; a rational one gives a plain (periodic) Euclidean-like rhythm.
+The rotation is your choice: `quasiperiodic_rhythm` has no default, and without one it writes nothing and lists the options. Any number between 0 and 1 also works; a rational one gives a plain (periodic) Euclidean-like rhythm.
 
 ## Micro-variations: `transform_clip` with `humanize_structured`
 
@@ -56,7 +56,7 @@ Timing, velocity and length use **three different rotations**: the logarithms of
 
 ## The Cedra rotation
 
-The `cedra` rotation (on request; the default is `golden`) is $\theta = \ln C$ with
+The `cedra` rotation is $\theta = \ln C$ with
 
 $$C = \sqrt{3} + \tfrac{3}{2}\sqrt{2} - 2 \approx 1.853371.$$
 

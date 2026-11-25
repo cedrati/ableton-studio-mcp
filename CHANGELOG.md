@@ -10,7 +10,7 @@ Server only: nothing to reinstall in Live.
 
 ### Changed
 
-- `quasiperiodic_rhythm`: the default rotation is now `golden` (the most even of all). `cedra` stays available on request, like `silver` or any number; humanization in any form is always the user's choice.
+- `quasiperiodic_rhythm`: no default rotation any more. The user chooses `golden`, `cedra`, `silver` or any number; without one the tool writes nothing and lists the options so the assistant asks. Humanization in any form is always the user's choice.
 
 ## 2.5.1
 

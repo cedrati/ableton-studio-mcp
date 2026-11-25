@@ -126,7 +126,7 @@ def test_quasiperiodic_rhythm_tool_maps_roles_and_writes(conn):
     c = conn({"get_drum_rack_map": {"rack_name": "909 Core Kit", "pads": KIT_909},
               "get_track_info": {"clip_slots": [{"has_clip": False}] * 4}})
     out = json.loads(call(tools.quasiperiodic_rhythm, 0, 2, role="closed_hat", bars=4,
-                          accent_role="rim"))
+                          rotation="golden", accent_role="rim"))
     assert out["note"] == 42 and out["accent_note"] == 37
     assert out["steps"] == 64 and out["length_beats"] == 16.0
     assert out["gap_sizes_in_steps"] == [1, 2] and out["near_periods"][:6] == [2, 3, 5, 8, 13, 21]
@@ -136,13 +136,21 @@ def test_quasiperiodic_rhythm_tool_maps_roles_and_writes(conn):
     assert len(written) == out["hits"] + out["accents"]
 
 
+def test_quasiperiodic_rhythm_asks_for_a_rotation(conn):
+    c = conn({"get_drum_rack_map": {"pads": KIT_909}, "get_track_info": {"clip_slots": [{"has_clip": False}]}})
+    reply = call(tools.quasiperiodic_rhythm, 0, 0)
+    assert "ask the user" in reply and "golden" in reply and "cedra" in reply
+    assert "Unknown rotation" in call(tools.quasiperiodic_rhythm, 0, 0, rotation="bronze")
+    assert c.sent == []
+
+
 def test_quasiperiodic_rhythm_near_period_length_and_refusals(conn):
     conn({"get_drum_rack_map": {"pads": KIT_909}, "get_track_info": {"clip_slots": [{"has_clip": True}]}})
-    assert "replace=true" in call(tools.quasiperiodic_rhythm, 0, 0)
+    assert "replace=true" in call(tools.quasiperiodic_rhythm, 0, 0, rotation="cedra")
     conn({"get_drum_rack_map": {"pads": [{"note": 36, "name": "Kick"}]},
           "get_track_info": {"clip_slots": [{"has_clip": False}]}})
-    assert "No pad" in call(tools.quasiperiodic_rhythm, 0, 0, role="closed_hat")
+    assert "No pad" in call(tools.quasiperiodic_rhythm, 0, 0, role="closed_hat", rotation="golden")
     c = conn({"get_drum_rack_map": {"pads": KIT_909}, "get_track_info": {"clip_slots": [{"has_clip": False}]}})
-    out = json.loads(call(tools.quasiperiodic_rhythm, 0, 0, role="42", length_steps=47))
+    out = json.loads(call(tools.quasiperiodic_rhythm, 0, 0, role="42", length_steps=47, rotation="cedra"))
     assert out["steps"] == 47 and out["length_beats"] == 11.75 and out["mapping"] == "note"
     assert ("create_clip", {"track_index": 0, "clip_index": 0, "length": 11.75}) in c.sent
