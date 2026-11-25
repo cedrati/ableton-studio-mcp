@@ -23,7 +23,7 @@ def test_native_sheets_and_plugin_families():
 
 
 def test_legacy_and_pack_devices():
-    legacy = ["Auto Filter Legacy", "Auto Pan", "Chorus", "Erosion Legacy", "Flanger", "Frequency Shifter",
+    legacy = ["Auto Filter Legacy", "Auto Pan Legacy", "Chorus", "Erosion Legacy", "Flanger", "Frequency Shifter",
               "Phaser", "Redux Legacy"]
     for name in legacy:
         entry = dk.lookup(name)
