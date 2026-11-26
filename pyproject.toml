@@ -1,6 +1,6 @@
 [project]
 name = "ableton-studio-mcp"
-version = "2.6.0"
+version = "2.6.1"
 description = "Ableton MCP server: AI music production in Ableton Live 11 and 12 with Claude, Cursor or any MCP client. Compose, arrange, design sounds, mix, master and analyse music."
 readme = "README.md"
 keywords = ["ableton", "ableton-live", "ableton-live-12", "ableton-mcp", "mcp", "mcp-server", "model-context-protocol",
