@@ -102,6 +102,10 @@
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
   .card p { margin: 0; color: var(--muted); font-size: 15.5px; }
+  .grid .card { border-top: 6px solid var(--k); }
+  .grid .card:nth-child(5n+1) { --k: #ff5f1f; } .grid .card:nth-child(5n+2) { --k: #2f6bff; }
+  .grid .card:nth-child(5n+3) { --k: #c6ee00; } .grid .card:nth-child(5n+4) { --k: #00d4ec; }
+  .grid .card:nth-child(5n) { --k: #ff3dbb; }
   pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14.5px; }
   pre { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 14px; overflow-x: auto; margin: 8px 0 18px; }
   code { background: var(--code); padding: 1px 5px; border-radius: 4px; }
@@ -116,7 +120,7 @@
   /* ── Hero: always dark, like a club at 3 am ─────────────────────────── */
   .hero {
     --h-bg: #000000; --h-panel: #0d0d0d; --h-line: #262626; --h-fg: #ffffff; --h-dim: #ffffff;
-    --hot: #d4ff00;
+    --hot: #d4ff00; --c-orange: #ff5f1f; --c-pink: #ff3dbb; --c-blue: #2f6bff; --c-cyan: #00e5ff;
     --acid: var(--hot); --orange: #e6e6e6; --cyan: #b8b8b8; --pink: #8f8f8f; --lime: var(--hot); --violet: #6e6e6e;
     background:
       radial-gradient(1200px 500px at 85% -10%, rgba(212,255,0,.10), transparent 60%),
@@ -169,10 +173,13 @@
   .th { background: var(--h-panel); color: var(--h-dim); padding: 5px 6px; border-radius: 2px; letter-spacing: .06em; white-space: nowrap; overflow: hidden; }
   .clip, .slot, .scene { height: 30px; border-radius: 2px; padding: 0 6px; display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; position: relative; }
   .slot { background: #000; border: 1px dashed #333; }
-  .clip { color: #fff; font-weight: 600; background: #000; border: 1px solid #fff; }
-  .clip i { border-left-color: #fff !important; }
+  .col:nth-child(1) { --c: var(--c-orange); } .col:nth-child(2) { --c: var(--c-blue); } .col:nth-child(3) { --c: var(--hot); }
+  .col:nth-child(4) { --c: var(--c-cyan); } .col:nth-child(5) { --c: var(--c-pink); }
+  .clip { color: var(--c); font-weight: 700; background: #000; border: 1px solid var(--c); }
+  .clip i { border-left-color: var(--c) !important; }
   .clip.on i { border-left-color: #000 !important; }
-  .clip.on { background: var(--hot); border-color: var(--hot); color: #000; }
+  .th { border-top: 3px solid var(--c, #fff); }
+  .clip.on { background: var(--c); border-color: var(--c); color: #000; }
   .hero h1 .hot { color: var(--hot); }
   .clip i { width: 0; height: 0; border-left: 7px solid #0b0b0c; border-top: 5px solid transparent; border-bottom: 5px solid transparent; flex: none; }
   .clip.on::after {
@@ -326,9 +333,9 @@
 (function () {
   var rows = [
     ["KICK", "#d4ff00", "x...x...x...x..."],
-    ["CLAP", "#ffffff", "....x.......x..."],
-    ["HAT",  "#ffffff", "..x...x...x...xx"],
-    ["ACID", "#ffffff", "x.xx.x..x.x.xx.x"]
+    ["CLAP", "#ff3dbb", "....x.......x..."],
+    ["HAT",  "#00e5ff", "..x...x...x...xx"],
+    ["ACID", "#ff5f1f", "x.xx.x..x.x.xx.x"]
   ];
   var seq = document.getElementById("seq");
   var cells = [];
