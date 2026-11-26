@@ -30,11 +30,21 @@ class ChopError(ValueError):
 
 
 def tempo_from_name(name: str) -> Optional[float]:
-    """The tempo written in a sample's name ("..._127_vocal...", "120bpm")."""
-    for match in re.finditer(r"(?<![\d.])(\d{2,3})(?:\s*bpm)?(?![\d.])", name, re.IGNORECASE):
+    """The tempo written in a sample's name ("..._127_vocal...", "120bpm").
+
+    An explicit "bpm" wins. Otherwise only a number standing alone between
+    separators counts, so pack codes glued to letters ("91V", "SM292",
+    "DTK11") are not read as a tempo.
+    """
+    for match in re.finditer(r"(?<![\d.])(\d{2,3}(?:\.\d+)?)\s*-?\s*bpm", name, re.IGNORECASE):
         bpm = float(match.group(1))
         if 60 <= bpm <= 200:
             return bpm
+    for token in re.split(r"[\s_\-.()\[\],]+", name):
+        if re.fullmatch(r"\d{2,3}", token):
+            bpm = float(token)
+            if 60 <= bpm <= 200:
+                return bpm
     return None
 
 

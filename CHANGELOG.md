@@ -16,6 +16,10 @@ Since 2.0 one version number covers the server and the Live control surface; the
 
 - PyPI description, keywords and homepage now point to the website.
 
+### Fixed
+
+- `chop_sample` read a number glued to a pack code as the tempo: `91V_VHA3_128_...` was warped at 91 BPM instead of 128 (#99). An explicit `bpm` now wins, and otherwise only a number standing alone between separators counts.
+
 ## 2.6.0
 
 New control surface series, with a fix in the control surface (listening to a late passage): run `ableton-studio-mcp install` and restart Live.
