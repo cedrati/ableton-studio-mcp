@@ -71,12 +71,12 @@
 <style>
   :root {
     --bg: #fbfaf7; --fg: #17181a; --muted: #5b5f66; --line: #e3e0d8;
-    --card: #ffffff; --accent: #e0662b; --code: #f1eee7;
+    --card: #ffffff; --accent: #111111; --code: #f1eee7;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #111214; --fg: #ececea; --muted: #a2a6ad; --line: #2a2c30;
-      --card: #18191c; --accent: #ff8a4c; --code: #1f2024;
+      --card: #18191c; --accent: #d4ff00; --code: #1f2024;
     }
   }
   * { box-sizing: border-box; }
@@ -95,13 +95,17 @@
     display: inline-block; padding: 11px 18px; border-radius: 8px; text-decoration: none;
     font-weight: 600; border: 1px solid var(--line); color: var(--fg); background: var(--card);
   }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
   section { padding: 36px 0; border-top: 1px solid var(--line); }
   h2 { font-size: 28px; margin: 0 0 18px; letter-spacing: -0.01em; }
   h3 { font-size: 18px; margin: 0 0 6px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
   .card p { margin: 0; color: var(--muted); font-size: 15.5px; }
+  .grid .card { border-top: 6px solid var(--k); }
+  .grid .card:nth-child(5n+1) { --k: #ff5f1f; } .grid .card:nth-child(5n+2) { --k: #2f6bff; }
+  .grid .card:nth-child(5n+3) { --k: #c6ee00; } .grid .card:nth-child(5n+4) { --k: #00d4ec; }
+  .grid .card:nth-child(5n) { --k: #ff3dbb; }
   pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14.5px; }
   pre { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 14px; overflow-x: auto; margin: 8px 0 18px; }
   code { background: var(--code); padding: 1px 5px; border-radius: 4px; }
@@ -115,27 +119,27 @@
 
   /* ── Hero: always dark, like a club at 3 am ─────────────────────────── */
   .hero {
-    --h-bg: #0b0b0c; --h-panel: #1c1d1f; --h-line: #2e3033; --h-fg: #f2f2ee; --h-dim: #8c9096;
-    --acid: #f5d90a; --orange: #ff7a1a; --cyan: #2ee6d6; --pink: #ff4fa3; --lime: #9cff3a; --violet: #9b7bff;
+    --h-bg: #000000; --h-panel: #0d0d0d; --h-line: #262626; --h-fg: #ffffff; --h-dim: #ffffff;
+    --hot: #d4ff00; --c-orange: #ff5f1f; --c-pink: #ff3dbb; --c-blue: #2f6bff; --c-cyan: #00e5ff;
+    --acid: var(--hot); --orange: #e6e6e6; --cyan: #b8b8b8; --pink: #8f8f8f; --lime: var(--hot); --violet: #6e6e6e;
     background:
-      radial-gradient(1200px 500px at 85% -10%, rgba(255,122,26,.18), transparent 60%),
-      radial-gradient(900px 500px at -10% 110%, rgba(46,230,214,.10), transparent 60%),
-      repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 4px),
-      var(--h-bg);
+      radial-gradient(1200px 500px at 85% -10%, rgba(212,255,0,.10), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(255,255,255,.04), transparent 60%),
+            var(--h-bg);
     color: var(--h-fg); padding: 0 0 56px; overflow: hidden;
   }
   .mono, .transport, .kicker, .prompt, .session, .seq, .meter { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   .transport {
     display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px 16px;
-    background: #161718; border-bottom: 1px solid var(--h-line); font-size: 12.5px; color: var(--h-dim);
+    background: #000; border-bottom: 1px solid var(--h-line); font-size: 12.5px; color: var(--h-dim);
   }
   .t-name { color: var(--h-fg); font-weight: 700; letter-spacing: .12em; margin-right: auto; }
   .t-box { background: var(--h-panel); border: 1px solid var(--h-line); padding: 3px 8px; border-radius: 3px; }
   .t-box b { color: var(--acid); font-weight: 700; }
   .t-pos { color: var(--h-fg); min-width: 7.5ch; text-align: center; }
   .t-play { color: var(--lime); padding: 0 4px; }
-  .t-rec { color: #ff3b3b; animation: blink 0.469s steps(1) infinite; padding: 0 4px; }
-  .t-link { color: var(--cyan); }
+  .t-rec { color: var(--hot); animation: blink 0.469s steps(1) infinite; padding: 0 4px; }
+  .t-link { color: #fff; }
   .hero-inner {
     max-width: 1120px; margin: 0 auto; padding: 48px 16px 0;
     display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center;
@@ -145,47 +149,50 @@
   .hero h1 {
     font-size: clamp(44px, 8vw, 84px); line-height: .95; margin: 0 0 18px; letter-spacing: -0.035em;
     font-weight: 900; text-transform: uppercase;
-    background: linear-gradient(90deg, #fff 0%, #fff 55%, var(--orange) 100%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
+    color: #fff;
   }
   .h1-sub {
     display: block; margin-top: 16px; font-size: 18px; line-height: 1.45; letter-spacing: 0;
     font-weight: 500; text-transform: none; color: var(--h-dim); -webkit-text-fill-color: var(--h-dim);
   }
   .h1-sub strong { color: var(--h-fg); -webkit-text-fill-color: var(--h-fg); }
-  .hero .lead { color: #c9cbcf; font-size: 18px; }
+  .hero .lead { color: #ffffff; font-size: 18px; }
   .prompt {
-    margin: 22px 0 0; padding: 12px 14px; background: #121314; border: 1px solid var(--h-line);
+    margin: 22px 0 0; padding: 12px 14px; background: #000; border: 1px solid var(--h-line);
     border-left: 3px solid var(--acid); border-radius: 4px; font-size: 15px; color: var(--h-fg); min-height: 48px;
   }
   .p-caret { color: var(--acid); }
   .cursor { color: var(--acid); animation: blink 0.938s steps(1) infinite; }
-  .btn.ghost { background: transparent; color: var(--h-fg); border-color: #3a3c40; }
-  .btn.ghost:hover { border-color: var(--acid); }
+  .btn.ghost { background: transparent; color: #fff; border-color: #fff; }
+  .btn.ghost:hover { border-color: var(--hot); color: var(--hot); }
   .hero .btn.primary { background: var(--acid); border-color: var(--acid); color: #0b0b0c; }
 
-  .rig { background: #141516; border: 1px solid var(--h-line); border-radius: 8px; padding: 10px; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  .rig { background: #000; border: 1px solid var(--h-line); border-radius: 8px; padding: 10px; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
   .session { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; font-size: 11px; }
   .col { display: grid; gap: 4px; }
   .th { background: var(--h-panel); color: var(--h-dim); padding: 5px 6px; border-radius: 2px; letter-spacing: .06em; white-space: nowrap; overflow: hidden; }
   .clip, .slot, .scene { height: 30px; border-radius: 2px; padding: 0 6px; display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; position: relative; }
-  .slot { background: #1a1b1d; border: 1px dashed #2b2d30; }
-  .clip { color: #0b0b0c; font-weight: 600; opacity: .55; }
-  .clip.on { opacity: 1; }
+  .slot { background: #000; border: 1px dashed #333; }
+  .col:nth-child(1) { --c: var(--c-orange); } .col:nth-child(2) { --c: var(--c-blue); } .col:nth-child(3) { --c: var(--hot); }
+  .col:nth-child(4) { --c: var(--c-cyan); } .col:nth-child(5) { --c: var(--c-pink); }
+  .clip { color: var(--c); font-weight: 700; background: #000; border: 1px solid var(--c); }
+  .clip i { border-left-color: var(--c) !important; }
+  .clip.on i { border-left-color: #000 !important; }
+  .th { border-top: 3px solid var(--c, #fff); }
+  .clip.on { background: var(--c); border-color: var(--c); color: #000; }
+  .hero h1 .hot { color: var(--hot); }
   .clip i { width: 0; height: 0; border-left: 7px solid #0b0b0c; border-top: 5px solid transparent; border-bottom: 5px solid transparent; flex: none; }
   .clip.on::after {
     content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%;
-    background: rgba(0,0,0,.55); transform-origin: left; animation: bar 1.875s linear infinite;
+    background: rgba(0,0,0,.7); transform-origin: left; animation: bar 1.875s linear infinite;
   }
-  .c1 { background: var(--orange); } .c2 { background: var(--violet); } .c3 { background: var(--acid); }
-  .c4 { background: var(--cyan); } .c5 { background: var(--pink); }
   .scene { background: var(--h-panel); color: var(--h-dim); }
-  .scene.live { color: var(--lime); }
+  .scene.live { color: var(--hot); }
   .seq { display: grid; grid-template-columns: 44px repeat(16, 1fr); gap: 3px; margin-top: 10px; font-size: 10px; }
   .seq .lbl { color: var(--h-dim); display: flex; align-items: center; letter-spacing: .06em; }
-  .seq .st { height: 16px; background: #222326; border-radius: 2px; }
-  .seq .st.q { background: #2a2b2e; }
-  .seq .st.x { background: var(--row); opacity: .55; }
+  .seq .st { height: 16px; background: #141414; border-radius: 2px; }
+  .seq .st.q { background: #1f1f1f; }
+  .seq .st.x { background: var(--row); }
   .seq .st.now { outline: 1px solid rgba(255,255,255,.35); }
   .seq .st.x.now { opacity: 1; box-shadow: 0 0 12px var(--row); }
   .meter { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; font-size: 11px; }
@@ -223,7 +230,7 @@
   <div class="hero-inner">
     <div class="hero-copy">
       <p class="kicker">// AI MUSIC PRODUCTION IN ABLETON LIVE 11 &amp; 12</p>
-      <h1>Prompt the groove.<span class="h1-sub">Ableton Studio MCP is the <strong>Ableton Live MCP server</strong> that puts Claude in your set.</span></h1>
+      <h1>Prompt the <span class="hot">groove.</span><span class="h1-sub">Ableton Studio MCP is the <strong>Ableton Live MCP server</strong> that puts Claude in your set.</span></h1>
       <p class="lead">Kicks, acid lines, patches, arrangements, mixdown and a LUFS check, from one sentence. Claude, Cursor or any MCP client works inside Live with you, or takes over. Free, open source, and nothing leaves your computer.</p>
       <div class="prompt" aria-hidden="true">
         <span class="p-caret">&gt;</span> <span id="typed"></span><span class="cursor">_</span>
@@ -325,10 +332,10 @@
 <script>
 (function () {
   var rows = [
-    ["KICK", "#ff7a1a", "x...x...x...x..."],
-    ["CLAP", "#ff4fa3", "....x.......x..."],
-    ["HAT",  "#2ee6d6", "..x...x...x...xx"],
-    ["ACID", "#f5d90a", "x.xx.x..x.x.xx.x"]
+    ["KICK", "#d4ff00", "x...x...x...x..."],
+    ["CLAP", "#ff3dbb", "....x.......x..."],
+    ["HAT",  "#00e5ff", "..x...x...x...xx"],
+    ["ACID", "#ff5f1f", "x.xx.x..x.x.xx.x"]
   ];
   var seq = document.getElementById("seq");
   var cells = [];
