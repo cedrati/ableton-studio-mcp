@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ableton Studio MCP: AI music production in Ableton Live with Claude (MCP server)</title>
+<meta name="description" content="Free, open-source Ableton MCP server: let Claude, Cursor or any MCP client compose, arrange, design synth sounds, chop samples, program drums, mix and master (LUFS) in Ableton Live 11 and 12. No data collected.">
+<meta name="keywords" content="Ableton MCP, Ableton Live MCP server, AI Ableton, Claude Ableton, AI music production, Model Context Protocol, Ableton Live 12, AI mixing, AI mastering, LUFS, sound design, MIDI, music theory">
+<meta name="author" content="Olivier Cedrati">
+<link rel="canonical" href="https://cedrati.github.io/ableton-studio-mcp/">
+<meta name="theme-color" content="#111214">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Ableton Studio MCP">
+<meta property="og:title" content="Ableton Studio MCP: AI music production in Ableton Live">
+<meta property="og:description" content="An MCP server that lets Claude or any AI assistant compose, arrange, design sounds, mix and master in Ableton Live 11 and 12.">
+<meta property="og:url" content="https://cedrati.github.io/ableton-studio-mcp/">
+<meta property="og:image" content="https://cedrati.github.io/ableton-studio-mcp/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="Ableton Studio MCP: AI music production in Ableton Live with Claude">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Ableton Studio MCP: AI music production in Ableton Live">
+<meta name="twitter:description" content="Compose, arrange, design sounds, mix and master in Ableton Live with Claude or any MCP client.">
+<meta name="twitter:image" content="https://cedrati.github.io/ableton-studio-mcp/social-preview.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Ableton Studio MCP",
+  "alternateName": ["Ableton MCP", "ableton-studio-mcp"],
+  "description": "Model Context Protocol (MCP) server and Ableton Remote Script that connect Ableton Live 11 and 12 to Claude, Claude Code, Claude Desktop, Cursor and other MCP clients, for AI-assisted composition, arrangement, sound design, sampling, drum programming, mixing, mastering analysis and music theory.",
+  "applicationCategory": "MultimediaApplication",
+  "applicationSubCategory": "Music production",
+  "operatingSystem": "macOS, Windows",
+  "url": "https://cedrati.github.io/ableton-studio-mcp/",
+  "downloadUrl": "https://pypi.org/project/ableton-studio-mcp/",
+  "installUrl": "https://github.com/cedrati/ableton-studio-mcp#quickstart",
+  "releaseNotes": "https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md",
+  "image": "https://cedrati.github.io/ableton-studio-mcp/social-preview.png",
+  "license": "https://opensource.org/licenses/MIT",
+  "isAccessibleForFree": true,
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "author": {"@type": "Person", "name": "Olivier Cedrati", "url": "https://github.com/cedrati"},
+  "sameAs": [
+    "https://github.com/cedrati/ableton-studio-mcp",
+    "https://pypi.org/project/ableton-studio-mcp/"
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "How do I control Ableton Live with Claude?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Add the ableton-studio-mcp server to Claude Code, Claude Desktop or Cursor, install the Remote Script into Live with 'uvx ableton-studio-mcp install', select AbletonStudioMCP as a control surface in Live's settings, then ask in plain language."}},
+    {"@type": "Question", "name": "Can an AI mix and master in Ableton Live?",
+     "acceptedAnswer": {"@type": "Answer", "text": "It can measure and act: it records the main output and reports integrated loudness (LUFS, EBU R128), true peak, loudness range, tonal balance, resonances and stereo width against a delivery target, then adjusts the mixer, EQ, compressors and limiter through Live's API."}},
+    {"@type": "Question", "name": "Does it work with Ableton Live 11, Live 12 and Max for Live?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes, Live 11 and 12 (Live 12 for the song scale). Max for Live devices and VST/AU plug-ins load like built-in devices; Push and other control surfaces keep working."}},
+    {"@type": "Question", "name": "Does Ableton Studio MCP collect any data?",
+     "acceptedAnswer": {"@type": "Answer", "text": "No. There is no telemetry, no analytics and no account, and the server makes no internet connection: it only talks to Ableton Live on your own computer."}},
+    {"@type": "Question", "name": "Is it free?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. Ableton Studio MCP is free and open source under the MIT License."}}
+  ]
+}
+</script>
+
+<style>
+  :root {
+    --bg: #fbfaf7; --fg: #17181a; --muted: #5b5f66; --line: #e3e0d8;
+    --card: #ffffff; --accent: #e0662b; --code: #f1eee7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111214; --fg: #ececea; --muted: #a2a6ad; --line: #2a2c30;
+      --card: #18191c; --accent: #ff8a4c; --code: #1f2024;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+  header { padding: 56px 0 32px; }
+  header img { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
+  h1 { font-size: clamp(32px, 6vw, 52px); line-height: 1.1; margin: 28px 0 12px; letter-spacing: -0.02em; }
+  .lead { font-size: 20px; color: var(--muted); max-width: 760px; margin: 0; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 0; }
+  .btn {
+    display: inline-block; padding: 11px 18px; border-radius: 8px; text-decoration: none;
+    font-weight: 600; border: 1px solid var(--line); color: var(--fg); background: var(--card);
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  section { padding: 36px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 28px; margin: 0 0 18px; letter-spacing: -0.01em; }
+  h3 { font-size: 18px; margin: 0 0 6px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15.5px; }
+  pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14.5px; }
+  pre { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 14px; overflow-x: auto; margin: 8px 0 18px; }
+  code { background: var(--code); padding: 1px 5px; border-radius: 4px; }
+  pre code { background: none; padding: 0; }
+  ol li { margin-bottom: 4px; }
+  blockquote { margin: 0 0 10px; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--card); border-radius: 0 8px 8px 0; font-style: italic; }
+  details { border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; background: var(--card); }
+  summary { cursor: pointer; font-weight: 600; }
+  details p { margin: 10px 0 0; color: var(--muted); }
+  footer { padding: 32px 0 56px; border-top: 1px solid var(--line); color: var(--muted); font-size: 15px; text-align: center; }
+
+  /* ── Hero: always dark, like a club at 3 am ─────────────────────────── */
+  .hero {
+    --h-bg: #0b0b0c; --h-panel: #1c1d1f; --h-line: #2e3033; --h-fg: #f2f2ee; --h-dim: #8c9096;
+    --acid: #f5d90a; --orange: #ff7a1a; --cyan: #2ee6d6; --pink: #ff4fa3; --lime: #9cff3a; --violet: #9b7bff;
+    background:
+      radial-gradient(1200px 500px at 85% -10%, rgba(255,122,26,.18), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(46,230,214,.10), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 4px),
+      var(--h-bg);
+    color: var(--h-fg); padding: 0 0 56px; overflow: hidden;
+  }
+  .mono, .transport, .kicker, .prompt, .session, .seq, .meter { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .transport {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px 16px;
+    background: #161718; border-bottom: 1px solid var(--h-line); font-size: 12.5px; color: var(--h-dim);
+  }
+  .t-name { color: var(--h-fg); font-weight: 700; letter-spacing: .12em; margin-right: auto; }
+  .t-box { background: var(--h-panel); border: 1px solid var(--h-line); padding: 3px 8px; border-radius: 3px; }
+  .t-box b { color: var(--acid); font-weight: 700; }
+  .t-pos { color: var(--h-fg); min-width: 7.5ch; text-align: center; }
+  .t-play { color: var(--lime); padding: 0 4px; }
+  .t-rec { color: #ff3b3b; animation: blink 0.469s steps(1) infinite; padding: 0 4px; }
+  .t-link { color: var(--cyan); }
+  .hero-inner {
+    max-width: 1120px; margin: 0 auto; padding: 48px 16px 0;
+    display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center;
+  }
+  @media (max-width: 880px) { .hero-inner { grid-template-columns: 1fr; padding-top: 32px; } }
+  .kicker { color: var(--acid); font-size: 13px; letter-spacing: .14em; margin: 0 0 14px; }
+  .hero h1 {
+    font-size: clamp(44px, 8vw, 84px); line-height: .95; margin: 0 0 18px; letter-spacing: -0.035em;
+    font-weight: 900; text-transform: uppercase;
+    background: linear-gradient(90deg, #fff 0%, #fff 55%, var(--orange) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .h1-sub {
+    display: block; margin-top: 16px; font-size: 18px; line-height: 1.45; letter-spacing: 0;
+    font-weight: 500; text-transform: none; color: var(--h-dim); -webkit-text-fill-color: var(--h-dim);
+  }
+  .h1-sub strong { color: var(--h-fg); -webkit-text-fill-color: var(--h-fg); }
+  .hero .lead { color: #c9cbcf; font-size: 18px; }
+  .prompt {
+    margin: 22px 0 0; padding: 12px 14px; background: #121314; border: 1px solid var(--h-line);
+    border-left: 3px solid var(--acid); border-radius: 4px; font-size: 15px; color: var(--h-fg); min-height: 48px;
+  }
+  .p-caret { color: var(--acid); }
+  .cursor { color: var(--acid); animation: blink 0.938s steps(1) infinite; }
+  .btn.ghost { background: transparent; color: var(--h-fg); border-color: #3a3c40; }
+  .btn.ghost:hover { border-color: var(--acid); }
+  .hero .btn.primary { background: var(--acid); border-color: var(--acid); color: #0b0b0c; }
+
+  .rig { background: #141516; border: 1px solid var(--h-line); border-radius: 8px; padding: 10px; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  .session { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; font-size: 11px; }
+  .col { display: grid; gap: 4px; }
+  .th { background: var(--h-panel); color: var(--h-dim); padding: 5px 6px; border-radius: 2px; letter-spacing: .06em; white-space: nowrap; overflow: hidden; }
+  .clip, .slot, .scene { height: 30px; border-radius: 2px; padding: 0 6px; display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; position: relative; }
+  .slot { background: #1a1b1d; border: 1px dashed #2b2d30; }
+  .clip { color: #0b0b0c; font-weight: 600; opacity: .55; }
+  .clip.on { opacity: 1; }
+  .clip i { width: 0; height: 0; border-left: 7px solid #0b0b0c; border-top: 5px solid transparent; border-bottom: 5px solid transparent; flex: none; }
+  .clip.on::after {
+    content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%;
+    background: rgba(0,0,0,.55); transform-origin: left; animation: bar 1.875s linear infinite;
+  }
+  .c1 { background: var(--orange); } .c2 { background: var(--violet); } .c3 { background: var(--acid); }
+  .c4 { background: var(--cyan); } .c5 { background: var(--pink); }
+  .scene { background: var(--h-panel); color: var(--h-dim); }
+  .scene.live { color: var(--lime); }
+  .seq { display: grid; grid-template-columns: 44px repeat(16, 1fr); gap: 3px; margin-top: 10px; font-size: 10px; }
+  .seq .lbl { color: var(--h-dim); display: flex; align-items: center; letter-spacing: .06em; }
+  .seq .st { height: 16px; background: #222326; border-radius: 2px; }
+  .seq .st.q { background: #2a2b2e; }
+  .seq .st.x { background: var(--row); opacity: .55; }
+  .seq .st.now { outline: 1px solid rgba(255,255,255,.35); }
+  .seq .st.x.now { opacity: 1; box-shadow: 0 0 12px var(--row); }
+  .meter { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; font-size: 11px; }
+  .meter span { background: var(--h-panel); color: var(--h-dim); padding: 4px 8px; border-radius: 2px; }
+  .meter .ok { color: var(--lime); margin-left: auto; }
+  @media (max-width: 520px) {
+    .session { grid-template-columns: repeat(3, 1fr); }
+    .col:nth-child(n+4) { display: none; }
+    .seq { grid-template-columns: 36px repeat(16, 1fr); gap: 2px; }
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  @keyframes bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @media (prefers-reduced-motion: reduce) {
+    .t-rec, .cursor, .clip.on::after { animation: none; }
+  }
+  header + .wrap section:first-child { border-top: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+</div>
+
+<header class="hero">
+  <div class="transport" aria-hidden="true">
+    <span class="t-name">ABLETON STUDIO MCP</span>
+    <span class="t-box"><b>128.00</b> BPM</span>
+    <span class="t-box">4 / 4</span>
+    <span class="t-box t-pos" id="pos">1. 1. 1</span>
+    <span class="t-play">&#9654;</span>
+    <span class="t-rec">&#9679;</span>
+    <span class="t-box t-link">MCP &#8644; LIVE</span>
+  </div>
+
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <p class="kicker">// AI MUSIC PRODUCTION IN ABLETON LIVE 11 &amp; 12</p>
+      <h1>Prompt the groove.<span class="h1-sub">Ableton Studio MCP is the <strong>Ableton Live MCP server</strong> that puts Claude in your set.</span></h1>
+      <p class="lead">Kicks, acid lines, patches, arrangements, mixdown and a LUFS check, from one sentence. Claude, Cursor or any MCP client works inside Live with you, or takes over. Free, open source, and nothing leaves your computer.</p>
+      <div class="prompt" aria-hidden="true">
+        <span class="p-caret">&gt;</span> <span id="typed"></span><span class="cursor">_</span>
+      </div>
+      <div class="cta">
+        <a class="btn primary" href="#quickstart">Get started</a>
+        <a class="btn ghost" href="https://github.com/cedrati/ableton-studio-mcp">View on GitHub</a>
+        <a class="btn ghost" href="https://pypi.org/project/ableton-studio-mcp/">PyPI package</a>
+      </div>
+    </div>
+
+    <div class="rig" aria-hidden="true">
+      <div class="session">
+        <div class="col"><div class="th">1 KICK</div><div class="clip c1 on"><i></i>909 Rumble</div><div class="clip c1">Four Floor</div><div class="slot"></div></div>
+        <div class="col"><div class="th">2 BASS</div><div class="clip c2">Sub Drift</div><div class="clip c2 on"><i></i>Offbeat</div><div class="slot"></div></div>
+        <div class="col"><div class="th">3 ACID</div><div class="clip c3 on"><i></i>Squelch</div><div class="slot"></div><div class="clip c3">Resonance</div></div>
+        <div class="col"><div class="th">4 HATS</div><div class="clip c4 on"><i></i>Open 16th</div><div class="clip c4">Quasi</div><div class="slot"></div></div>
+        <div class="col"><div class="th">5 DUB</div><div class="slot"></div><div class="clip c5 on"><i></i>Chord Stab</div><div class="clip c5">47 Steps</div></div>
+        <div class="col"><div class="th">MAIN</div><div class="scene">&#9654; Intro</div><div class="scene live">&#9654; Peak</div><div class="scene">&#9654; Break</div></div>
+      </div>
+      <div class="seq" id="seq"></div>
+      <div class="meter"><span>-14.0 LUFS</span><span>TP -1.0 dB</span><span class="ok">STREAMING READY</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+<main>
+
+<section id="what">
+  <h2>AI music production inside Ableton Live</h2>
+  <p>Ableton Studio MCP is a <a href="https://modelcontextprotocol.io">Model Context Protocol</a> (MCP) server and an Ableton Remote Script. Together they connect Ableton Live to Claude Code, Claude Desktop, Cursor and other MCP clients. The assistant can assist you, or take over: it writes MIDI, builds patches like a synth programmer, listens to the result like a mastering engineer and reasons about harmony with real music-theory knowledge.</p>
+</section>
+
+<section id="features">
+  <h2>Features</h2>
+  <div class="grid">
+    <div class="card"><h3>Compose and arrange</h3><p>MIDI clips, voice-led chord progressions, 18 clip transformations, whole Arrangements built from Session clips by section, with locators.</p></div>
+    <div class="card"><h3>Sound design</h3><p>Search and read presets, build classic sounds (sub, acid, reese, pluck, pad, supersaw, FM bell), set every parameter with musical values, audition and save to your User Library.</p></div>
+    <div class="card"><h3>Mixing</h3><p>Volume, pan, sends, routing, return and main-track effects, Compressor sidechain, every parameter read as Live displays it.</p></div>
+    <div class="card"><h3>Listening and mastering analysis</h3><p>Records the main output: LUFS (EBU R128), true peak, loudness range, tonal balance, resonances, stereo width, a spectrogram, ranked fixes for streaming, club or broadcast.</p></div>
+    <div class="card"><h3>Drums and groove</h3><p>19 electronic drum patterns or your own step grids: Euclidean and polyrhythmic layers, ratchets, ghost notes, probability, fills, swing, Groove Pool.</p></div>
+    <div class="card"><h3>Sampling</h3><p>Load and slice samples in Simpler; chop a loop in one call, warped to the tempo and transposed to the song's key.</p></div>
+    <div class="card"><h3>Music theory</h3><p>About 50 scales and modes, 24 style sheets from baroque to techno, key and chord analysis with roman numerals, Live 12's song scale.</p></div>
+    <div class="card"><h3>Structured humanization</h3><p>Quasi-periodic rhythms and irrational rotations: variation that never repeats but stays even, instead of random noise. Always your choice, never applied by default.</p></div>
+  </div>
+</section>
+
+<section id="ask">
+  <h2>What you can ask</h2>
+  <blockquote>Program 8 bars of rolling techno on the 909 kit, with a 5-in-16 percussion layer and a clap roll every 4 bars.</blockquote>
+  <blockquote>Build a reese bass, play it to check the low end, and save it to my User Library.</blockquote>
+  <blockquote>Give me a deep house progression in A minor with offbeat stabs, then a rolling bassline.</blockquote>
+  <blockquote>Listen to the whole track and tell me if it's ready for streaming.</blockquote>
+  <blockquote>The low end is muddy. Find out why and fix it.</blockquote>
+</section>
+
+<section id="quickstart">
+  <h2>Quickstart</h2>
+  <p>You need Ableton Live 11 or 12, <a href="https://docs.astral.sh/uv/getting-started/installation/">uv</a> and an MCP client. Python and the dependencies are installed by uv.</p>
+  <ol>
+    <li><strong>Add the server to your MCP client.</strong> In Claude Code:
+      <pre><code>claude mcp add ableton -s user -- uvx ableton-studio-mcp</code></pre>
+      In Claude Desktop or Cursor, use the command <code>uvx ableton-studio-mcp</code>.</li>
+    <li><strong>Install the Remote Script into Live:</strong>
+      <pre><code>uvx ableton-studio-mcp install</code></pre></li>
+    <li><strong>Enable it:</strong> restart Live, then Settings, Link, Tempo &amp; MIDI, Control Surface: <strong>AbletonStudioMCP</strong> (Input and Output: None).</li>
+    <li><strong>Check:</strong>
+      <pre><code>uvx ableton-studio-mcp doctor</code></pre></li>
+  </ol>
+  <p>Full instructions, updating and troubleshooting: <a href="https://github.com/cedrati/ableton-studio-mcp#quickstart">README on GitHub</a>.</p>
+</section>
+
+<section id="faq">
+  <h2>FAQ</h2>
+  <details open><summary>How do I control Ableton Live with Claude?</summary>
+    <p>Add the server to Claude Code, Claude Desktop or Cursor, install the Remote Script into Live, select AbletonStudioMCP as a control surface, then ask in plain language.</p></details>
+  <details><summary>Can an AI mix and master in Ableton Live?</summary>
+    <p>It can measure and act: it records the main output and reports integrated loudness (LUFS), true peak, loudness range, tonal balance, resonances and stereo width against a target, then adjusts the mixer, EQ Eight, Compressor and Limiter.</p></details>
+  <details><summary>Does it work with Live 11, Live 12, Max for Live and plug-ins?</summary>
+    <p>Live 11 and 12 (Live 12 for the song scale). Max for Live devices and VST/AU plug-ins load like built-in devices; Push keeps working alongside it.</p></details>
+  <details><summary>Does it run on macOS and Windows?</summary>
+    <p>It is developed and tested end to end on macOS. The installer and the preset search also handle Windows paths; Windows has not been tested end to end yet, so reports are welcome in the issues.</p></details>
+  <details><summary>Does it collect any data?</summary>
+    <p>No telemetry, no analytics, no account. The server only talks to Live on your own computer and makes no internet connection.</p></details>
+  <details><summary>Which MCP clients are supported?</summary>
+    <p>Any client that speaks the Model Context Protocol: Claude Code, Claude Desktop, Cursor and others.</p></details>
+</section>
+
+</main>
+
+<footer>
+  Ableton Studio MCP by <a href="https://github.com/cedrati">Olivier Cedrati</a>. MIT License.<br>
+  A third-party integration, not made or endorsed by Ableton.
+</footer>
+
+</div>
+
+<script>
+(function () {
+  var rows = [
+    ["KICK", "#ff7a1a", "x...x...x...x..."],
+    ["CLAP", "#ff4fa3", "....x.......x..."],
+    ["HAT",  "#2ee6d6", "..x...x...x...xx"],
+    ["ACID", "#f5d90a", "x.xx.x..x.x.xx.x"]
+  ];
+  var seq = document.getElementById("seq");
+  var cells = [];
+  rows.forEach(function (r) {
+    var l = document.createElement("div");
+    l.className = "lbl"; l.textContent = r[0]; seq.appendChild(l);
+    for (var i = 0; i < 16; i++) {
+      var c = document.createElement("div");
+      c.className = "st" + (r[2][i] === "x" ? " x" : "") + (Math.floor(i / 4) % 2 ? " q" : "");
+      c.style.setProperty("--row", r[1]);
+      seq.appendChild(c);
+      (cells[i] = cells[i] || []).push(c);
+    }
+  });
+
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var pos = document.getElementById("pos");
+  var step = 0, bar = 1;
+  function tick() {
+    cells[(step + 15) % 16].forEach(function (c) { c.classList.remove("now"); });
+    cells[step].forEach(function (c) { c.classList.add("now"); });
+    pos.textContent = bar + ". " + (Math.floor(step / 4) + 1) + ". " + (step % 4 + 1);
+    step = (step + 1) % 16;
+    if (step === 0) bar = bar % 64 + 1;
+  }
+  tick();
+  if (!reduce) setInterval(tick, 60000 / 128 / 4);
+
+  var prompts = [
+    "program 8 bars of rolling techno on the 909 kit",
+    "make the acid line squelch harder from bar 33",
+    "build a reese bass and check the low end",
+    "duck the bass with the kick",
+    "listen to the drop: is it ready for the club?"
+  ];
+  var typed = document.getElementById("typed");
+  if (reduce) { typed.textContent = prompts[0]; return; }
+  var p = 0, ch = 0, del = false;
+  (function type() {
+    var s = prompts[p];
+    if (!del) {
+      typed.textContent = s.slice(0, ++ch);
+      if (ch === s.length) { del = true; return setTimeout(type, 2200); }
+      return setTimeout(type, 38);
+    }
+    typed.textContent = s.slice(0, --ch);
+    if (ch === 0) { del = false; p = (p + 1) % prompts.length; return setTimeout(type, 300); }
+    setTimeout(type, 14);
+  })();
+})();
+</script>
+</body>
+</html>

@@ -15,7 +15,7 @@ By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)).
 ![Live](https://img.shields.io/badge/Ableton%20Live-11%20%7C%2012-black)
 [![Tests](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml/badge.svg)](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml)
 
-[Quickstart](#quickstart) · [Features](#features) · [Tools](#tool-reference) · [FAQ](#faq) · [Roadmap](https://github.com/cedrati/ableton-studio-mcp/issues?q=is%3Aissue+is%3Aopen+label%3Aroadmap) · [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) · [Issues](https://github.com/cedrati/ableton-studio-mcp/issues)
+[Website](https://cedrati.github.io/ableton-studio-mcp/) · [Quickstart](#quickstart) · [Features](#features) · [Tools](#tool-reference) · [FAQ](#faq) · [Roadmap](https://github.com/cedrati/ableton-studio-mcp/issues?q=is%3Aissue+is%3Aopen+label%3Aroadmap) · [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) · [Issues](https://github.com/cedrati/ableton-studio-mcp/issues)
 
 </div>
 
@@ -309,6 +309,9 @@ It can measure and act: `listen_to_arrangement` records the main output and repo
 
 **Does it work with Ableton Live 12, Live 11, Push, Max for Live?**
 Live 11 and 12 (Live 12 for the song scale and some device features). Max for Live devices and VST/AU plug-ins load like built-in devices; Push and other control surfaces keep working alongside it.
+
+**Does it run on macOS and Windows?**
+It is developed and tested end to end on macOS. The installer and the preset search also handle Windows paths (`%APPDATA%\Ableton`, `C:\ProgramData\Ableton`); Windows has not been tested end to end yet, so reports are welcome in the [issues](https://github.com/cedrati/ableton-studio-mcp/issues).
 
 **Which MCP clients are supported?**
 Any MCP client: Claude Code, Claude Desktop, Cursor, and others that speak the Model Context Protocol.

@@ -4,6 +4,17 @@ Ableton Studio MCP by Olivier Cedrati ([cedrati/ableton-studio-mcp](https://gith
 
 Since 2.0 one version number covers the server and the Live control surface; the server refuses a control surface of another version. After updating, run `ableton-studio-mcp install` and **restart Live**: re-selecting the control surface does not reload the code. (1.x versions below are the Remote Script version.)
 
+## Unreleased
+
+### Added
+
+- Project website on GitHub Pages (`docs/index.html`): <https://cedrati.github.io/ableton-studio-mcp/>, with a sitemap and structured data.
+- README FAQ: macOS and Windows support.
+
+### Changed
+
+- PyPI description, keywords and homepage now point to the website.
+
 ## 2.6.0
 
 New control surface series, with a fix in the control surface (listening to a late passage): run `ableton-studio-mcp install` and restart Live.
