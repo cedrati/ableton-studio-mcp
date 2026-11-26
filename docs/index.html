@@ -228,7 +228,7 @@
   }
   @keyframes draw { to { stroke-dashoffset: 0; } }
 
-  /* ── Collage around the Session rig: sticker and handwritten note ──── */
+  /* ── Collage around the Session rig: sticker ───────────────────────── */
   .rig-wrap { position: relative; }
   .sticker {
     position: absolute; left: 28px; bottom: -122px; width: 300px; z-index: 2;
@@ -237,18 +237,11 @@
   }
   .sticker b { display: block; font-size: 11px; letter-spacing: .14em; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,.6); margin-bottom: 8px; }
   .sticker span { font-size: 15px; line-height: 1.5; font-weight: 700; }
-  .note {
-    position: absolute; right: 6px; top: -58px; color: var(--beige); transform: rotate(-5deg);
-    font: 24px/1 "Marker Felt", "Bradley Hand", "Segoe Print", "Comic Sans MS", cursive; display: flex; align-items: flex-end; gap: 4px;
-  }
-  .note svg { width: 54px; height: 44px; margin-bottom: -30px; }
-  .note path { fill: none; stroke: var(--beige); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
   @media (max-width: 880px) {
     .hero { padding-bottom: 56px; }
     .sticker { position: relative; left: 10px; bottom: auto; margin-top: -16px; }
-    .note { top: -44px; }
   }
-  @media (max-width: 520px) { .note { display: none; } .sticker { width: auto; max-width: 92%; } }
+  @media (max-width: 520px) { .sticker { width: auto; max-width: 92%; } }
 
   /* ── Serif slogan ──────────────────────────────────────────────────── */
   .serif { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif; font-weight: 400; }
@@ -352,7 +345,6 @@
     </div>
 
     <div class="rig-wrap">
-    <div class="note" aria-hidden="true">made from one prompt<svg viewBox="0 0 54 44"><path d="M4 6 C 22 4, 40 12, 44 34 M 36 28 L 44 36 L 50 26"/></svg></div>
     <div class="rig" aria-hidden="true">
       <div class="session">
         <div class="col"><div class="th">1 KICK</div><div class="clip c1 on"><i></i>909 Rumble</div><div class="clip c1">Four Floor</div><div class="slot"></div></div>
