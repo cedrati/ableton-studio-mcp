@@ -71,12 +71,12 @@
 <style>
   :root {
     --bg: #fbfaf7; --fg: #17181a; --muted: #5b5f66; --line: #e3e0d8;
-    --card: #ffffff; --accent: #e0662b; --code: #f1eee7;
+    --card: #ffffff; --accent: #111111; --code: #f1eee7;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #111214; --fg: #ececea; --muted: #a2a6ad; --line: #2a2c30;
-      --card: #18191c; --accent: #ff8a4c; --code: #1f2024;
+      --card: #18191c; --accent: #d4ff00; --code: #1f2024;
     }
   }
   * { box-sizing: border-box; }
@@ -95,7 +95,7 @@
     display: inline-block; padding: 11px 18px; border-radius: 8px; text-decoration: none;
     font-weight: 600; border: 1px solid var(--line); color: var(--fg); background: var(--card);
   }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
   section { padding: 36px 0; border-top: 1px solid var(--line); }
   h2 { font-size: 28px; margin: 0 0 18px; letter-spacing: -0.01em; }
   h3 { font-size: 18px; margin: 0 0 6px; }
@@ -116,10 +116,11 @@
   /* ── Hero: always dark, like a club at 3 am ─────────────────────────── */
   .hero {
     --h-bg: #0b0b0c; --h-panel: #1c1d1f; --h-line: #2e3033; --h-fg: #f2f2ee; --h-dim: #8c9096;
-    --acid: #f5d90a; --orange: #ff7a1a; --cyan: #2ee6d6; --pink: #ff4fa3; --lime: #9cff3a; --violet: #9b7bff;
+    --hot: #d4ff00;
+    --acid: var(--hot); --orange: #e6e6e6; --cyan: #b8b8b8; --pink: #8f8f8f; --lime: var(--hot); --violet: #6e6e6e;
     background:
-      radial-gradient(1200px 500px at 85% -10%, rgba(255,122,26,.18), transparent 60%),
-      radial-gradient(900px 500px at -10% 110%, rgba(46,230,214,.10), transparent 60%),
+      radial-gradient(1200px 500px at 85% -10%, rgba(212,255,0,.10), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(255,255,255,.04), transparent 60%),
       repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 4px),
       var(--h-bg);
     color: var(--h-fg); padding: 0 0 56px; overflow: hidden;
@@ -134,8 +135,8 @@
   .t-box b { color: var(--acid); font-weight: 700; }
   .t-pos { color: var(--h-fg); min-width: 7.5ch; text-align: center; }
   .t-play { color: var(--lime); padding: 0 4px; }
-  .t-rec { color: #ff3b3b; animation: blink 0.469s steps(1) infinite; padding: 0 4px; }
-  .t-link { color: var(--cyan); }
+  .t-rec { color: var(--hot); animation: blink 0.469s steps(1) infinite; padding: 0 4px; }
+  .t-link { color: #fff; }
   .hero-inner {
     max-width: 1120px; margin: 0 auto; padding: 48px 16px 0;
     display: grid; grid-template-columns: 1.05fr 1fr; gap: 40px; align-items: center;
@@ -145,8 +146,7 @@
   .hero h1 {
     font-size: clamp(44px, 8vw, 84px); line-height: .95; margin: 0 0 18px; letter-spacing: -0.035em;
     font-weight: 900; text-transform: uppercase;
-    background: linear-gradient(90deg, #fff 0%, #fff 55%, var(--orange) 100%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
+    color: #fff;
   }
   .h1-sub {
     display: block; margin-top: 16px; font-size: 18px; line-height: 1.45; letter-spacing: 0;
@@ -170,14 +170,15 @@
   .th { background: var(--h-panel); color: var(--h-dim); padding: 5px 6px; border-radius: 2px; letter-spacing: .06em; white-space: nowrap; overflow: hidden; }
   .clip, .slot, .scene { height: 30px; border-radius: 2px; padding: 0 6px; display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; position: relative; }
   .slot { background: #1a1b1d; border: 1px dashed #2b2d30; }
-  .clip { color: #0b0b0c; font-weight: 600; opacity: .55; }
-  .clip.on { opacity: 1; }
+  .clip { color: #0b0b0c; font-weight: 600; opacity: .35; }
+  .clip.on { opacity: 1; background: var(--hot); }
+  .hero h1 .hot { color: var(--hot); }
   .clip i { width: 0; height: 0; border-left: 7px solid #0b0b0c; border-top: 5px solid transparent; border-bottom: 5px solid transparent; flex: none; }
   .clip.on::after {
     content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%;
-    background: rgba(0,0,0,.55); transform-origin: left; animation: bar 1.875s linear infinite;
+    background: rgba(0,0,0,.7); transform-origin: left; animation: bar 1.875s linear infinite;
   }
-  .c1 { background: var(--orange); } .c2 { background: var(--violet); } .c3 { background: var(--acid); }
+  .c1 { background: var(--orange); } .c2 { background: var(--violet); } .c3 { background: #d0d0d0; }
   .c4 { background: var(--cyan); } .c5 { background: var(--pink); }
   .scene { background: var(--h-panel); color: var(--h-dim); }
   .scene.live { color: var(--lime); }
@@ -223,7 +224,7 @@
   <div class="hero-inner">
     <div class="hero-copy">
       <p class="kicker">// AI MUSIC PRODUCTION IN ABLETON LIVE 11 &amp; 12</p>
-      <h1>Prompt the groove.<span class="h1-sub">Ableton Studio MCP is the <strong>Ableton Live MCP server</strong> that puts Claude in your set.</span></h1>
+      <h1>Prompt the <span class="hot">groove.</span><span class="h1-sub">Ableton Studio MCP is the <strong>Ableton Live MCP server</strong> that puts Claude in your set.</span></h1>
       <p class="lead">Kicks, acid lines, patches, arrangements, mixdown and a LUFS check, from one sentence. Claude, Cursor or any MCP client works inside Live with you, or takes over. Free, open source, and nothing leaves your computer.</p>
       <div class="prompt" aria-hidden="true">
         <span class="p-caret">&gt;</span> <span id="typed"></span><span class="cursor">_</span>
@@ -325,10 +326,10 @@
 <script>
 (function () {
   var rows = [
-    ["KICK", "#ff7a1a", "x...x...x...x..."],
-    ["CLAP", "#ff4fa3", "....x.......x..."],
-    ["HAT",  "#2ee6d6", "..x...x...x...xx"],
-    ["ACID", "#f5d90a", "x.xx.x..x.x.xx.x"]
+    ["KICK", "#d4ff00", "x...x...x...x..."],
+    ["CLAP", "#bdbdbd", "....x.......x..."],
+    ["HAT",  "#8a8a8a", "..x...x...x...xx"],
+    ["ACID", "#ffffff", "x.xx.x..x.x.xx.x"]
   ];
   var seq = document.getElementById("seq");
   var cells = [];
