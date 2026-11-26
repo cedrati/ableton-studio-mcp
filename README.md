@@ -52,7 +52,7 @@ It is developed on the `main` branch of [cedrati/ableton-studio-mcp](https://git
 
 > *"Cedra adds a very human vibe."* Olivier Cedrati, after the first track made with structured humanization (hats, bass, a 47-step dub stab and a pad, all driven by the Cedra rotations).
 
-Everything is covered by automated tests (412) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
+Everything is covered by automated tests (414) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
@@ -368,7 +368,7 @@ MCP client (Claude…)  ⇄  MCP server (ableton_studio_mcp/, Python)  ⇄  TCP 
 ```bash
 git clone https://github.com/cedrati/ableton-studio-mcp
 cd ableton-studio-mcp
-uv run --with pytest pytest -q             # 412 tests, no Live needed
+uv run --with pytest pytest -q             # 414 tests, no Live needed
 uv run ableton-studio-mcp install          # install your working copy into Live
 uv run ableton-studio-mcp doctor           # check the whole chain
 ```

@@ -19,6 +19,23 @@ def test_tempo_and_key_from_splice_style_names():
     assert chops.key_from_name("VOX_LCH_128_top_tribal.wav") is None
 
 
+def test_tempo_ignores_numbers_glued_to_pack_codes():
+    # A pack prefix such as "91V" came before the real tempo and was read as 91 BPM (#99).
+    assert chops.tempo_from_name("91V_VHA3_128_vocal_chop_make_you_feel_Am.wav") == 128
+    assert chops.tempo_from_name("SS_XLLRB_150_drum_loop.wav") == 150
+    assert chops.tempo_from_name("SM292_DTK11_loop_96.wav") == 96
+    assert chops.tempo_from_name("osr_drum_break_loop_gaia_128") == 128
+    assert chops.tempo_from_name("808 Kick Long") is None
+    assert chops.tempo_from_name("91V_vocal_one_shot.wav") is None
+
+
+def test_an_explicit_bpm_wins_over_other_numbers():
+    assert chops.tempo_from_name("Breaks 4 Days groove 01 86 bpm.wav") == 86
+    assert chops.tempo_from_name("pack_100_loop_124BPM.wav") == 124
+    assert chops.tempo_from_name("loop_174-bpm.wav") == 174
+    assert chops.tempo_from_name("swing 86.5bpm.aif") == 86.5
+
+
 def test_transpose_the_shortest_way_and_warp_to_whole_bars():
     assert chops.transpose_to("D#", "F") == 2
     assert chops.transpose_to("C", "A") == -3
