@@ -254,9 +254,29 @@
   .serif { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif; font-weight: 400; }
   .slogan { padding: 64px 0 24px; }
   .slogan p.serif {
-    font-size: clamp(46px, 9.5vw, 116px); line-height: .98; letter-spacing: -0.045em; margin: 0;
+    font-size: clamp(46px, 9.5vw, 116px); line-height: .98; letter-spacing: -0.05em; margin: 0; font-weight: 700;
   }
-  .slogan em { font-style: italic; color: var(--hot, #2f6bff); }
+  .slogan em { font-style: italic; padding-right: .08em; }
+
+  /* ── Holographic touches (three places only) ───────────────────────── */
+  .holo-text {
+    background: linear-gradient(100deg, #2f6bff 0%, #7b4dff 18%, #d63fa8 34%, #ff6a3d 48%, #2f6bff 62%, #0fa3b8 78%, #7b4dff 90%, #2f6bff 100%);
+    background-size: 260% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: holo 6s ease-in-out infinite alternate;
+  }
+  .holo-light {
+    background: linear-gradient(100deg, #9fb8ff 0%, #d7b8ff 18%, #ffb8e6 34%, #fff0b3 48%, #b8fff0 62%, #9fd8ff 78%, #d7b8ff 90%, #9fb8ff 100%);
+    background-size: 260% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: holo 6s ease-in-out infinite alternate;
+  }
+  @keyframes holo { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+  .sticker { overflow: hidden; }
+  .sticker::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen;
+    background: linear-gradient(115deg, transparent 25%, rgba(255,140,220,.45) 38%, rgba(140,255,240,.5) 46%, rgba(255,250,170,.45) 54%, rgba(190,150,255,.45) 62%, transparent 75%);
+    background-size: 300% 100%; animation: sheen 4.5s ease-in-out infinite;
+  }
+  @keyframes sheen { 0% { background-position: 100% 0; } 60%, 100% { background-position: 0% 0; } }
   .slogan small { display: block; margin-top: 18px; font-size: 18px; color: var(--muted); max-width: 640px; }
   main h2 {
     font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
@@ -297,8 +317,10 @@
     font: 900 clamp(54px, 15.5vw, 230px)/.82 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     letter-spacing: -0.06em; color: #fff; white-space: nowrap; margin: 36px 0 0 -0.04em; padding-bottom: .04em;
   }
-  .wordmark span { color: #2f6bff; }
-  @media (prefers-reduced-motion: reduce) { .scribble path { animation: none; stroke-dashoffset: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .scribble path { animation: none; stroke-dashoffset: 0; }
+    .holo-text, .holo-light, .sticker::after { animation: none; }
+  }
 </style>
 </head>
 <body>
@@ -352,7 +374,7 @@
 <main>
 
 <section class="slogan">
-  <p class="serif">Write. Tweak.<br>Listen. <em>Repeat.</em></p>
+  <p class="serif">Write. Tweak.<br>Listen. <em class="holo-text">Repeat.</em></p>
   <small>The loop every producer knows, with an assistant that can hear what it made.</small>
 </section>
 
@@ -474,7 +496,7 @@
     <a href="https://github.com/cedrati/ableton-studio-mcp">GitHub</a> &middot; <a href="https://pypi.org/project/ableton-studio-mcp/">PyPI</a> &middot; <a href="https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md">Changelog</a><br>
     A third-party integration, not made or endorsed by Ableton.
   </div>
-  <div class="wordmark" aria-hidden="true">STUDIO <span>MCP</span></div>
+  <div class="wordmark" aria-hidden="true">STUDIO <span class="holo-light">MCP</span></div>
 </footer>
 
 <script>
