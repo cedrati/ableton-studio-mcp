@@ -14,7 +14,7 @@ By **Olivier Cedrati** ([@cedrati](https://github.com/cedrati)).
 ![Remote Script](https://img.shields.io/badge/Remote%20Script-2.6.0-blue)
 ![Live](https://img.shields.io/badge/Ableton%20Live-11%20%7C%2012-black)
 [![Tests](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml/badge.svg)](https://github.com/cedrati/ableton-studio-mcp/actions/workflows/tests.yml)
-[![Glama](https://glama.ai/mcp/servers/@cedrati/ableton-studio-mcp/badges/score.svg)](https://glama.ai/mcp/servers/@cedrati/ableton-studio-mcp)
+[![Glama](https://glama.ai/mcp/servers/cedrati/ableton-studio-mcp/badges/score.svg)](https://glama.ai/mcp/servers/cedrati/ableton-studio-mcp)
 
 [Website](https://cedrati.github.io/ableton-studio-mcp/) · [Quickstart](#quickstart) · [Features](#features) · [Tools](#tool-reference) · [FAQ](#faq) · [Roadmap](https://github.com/cedrati/ableton-studio-mcp/issues?q=is%3Aissue+is%3Aopen+label%3Aroadmap) · [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) · [Issues](https://github.com/cedrati/ableton-studio-mcp/issues)
 
