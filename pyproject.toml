@@ -1,10 +1,12 @@
 [project]
 name = "ableton-studio-mcp"
 version = "2.6.0"
-description = "Ableton Live integration through the Model Context Protocol: AI music production: compose, arrange, design sounds, mix, master and analyse in Ableton Live"
+description = "Ableton MCP server: AI music production in Ableton Live 11 and 12 with Claude, Cursor or any MCP client. Compose, arrange, design sounds, mix, master and analyse music."
 readme = "README.md"
-keywords = ["ableton", "ableton-live", "mcp", "mcp-server", "model-context-protocol", "claude", "ai-music",
-            "music-production", "daw", "midi", "mixing", "mastering", "lufs", "music-theory", "techno"]
+keywords = ["ableton", "ableton-live", "ableton-live-12", "ableton-mcp", "mcp", "mcp-server", "model-context-protocol",
+            "claude", "claude-code", "cursor", "ai", "ai-music", "music-production", "daw", "midi", "mixing",
+            "mastering", "lufs", "sound-design", "synthesizer", "sampling", "drum-machine", "music-theory",
+            "audio-analysis", "techno"]
 requires-python = ">=3.10"
 authors = [{name = "Olivier Cedrati"}]
 license = {text = "MIT"}
@@ -39,7 +41,8 @@ packages = ["ableton_studio_mcp", "ableton_studio_mcp.tools"]
 ableton_studio_mcp = ["live_script/AbletonStudioMCP/*.py"]
 
 [project.urls]
-"Homepage" = "https://github.com/cedrati/ableton-studio-mcp"
+"Homepage" = "https://cedrati.github.io/ableton-studio-mcp/"
+"Source" = "https://github.com/cedrati/ableton-studio-mcp"
 "Bug Tracker" = "https://github.com/cedrati/ableton-studio-mcp/issues"
 "Changelog" = "https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md"
 [tool.ruff]
