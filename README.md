@@ -32,31 +32,6 @@ It is developed on the `main` branch of [cedrati/ableton-studio-mcp](https://git
 
 **No data is collected:** no telemetry, no analytics, nothing sent anywhere (see [Privacy](#privacy)).
 
-## Features
-
-| Area | What the assistant can do |
-|---|---|
-| **Mixing** | Volume, pan, sends, mute, solo, arm on tracks, return tracks and the main track. Load effects on return tracks and the main track (a shared reverb, a limiter). Read every parameter as Live displays it (`Bell`, `1.56 kHz`, `-6.0 dB`). |
-| **Routing** | Set track inputs, outputs and monitoring: layer one MIDI part on several instruments, resample the main output, route to a return. |
-| **Listening & mastering analysis** | Record the main output in real time and get a report: loudness per ITU-R BS.1770 / EBU R128 (integrated, short-term, momentary, loudness range), true peak, PLR, tonal balance against a reference curve, resonances, stereo width per band, low-end mono, each track's meter level, a spectrogram image, and ranked findings with fixes for a delivery target (streaming, club, classical, broadcast, podcast). |
-| **Sound design** | Search and read the presets of Live's native devices, racks and packs; build classic sounds from recipes (sub, acid and reese bass, dub chord stab, pluck, warm pad, supersaw, FM bell); set any parameter with musical values (`800 Hz`, `5 ms`, `PRD`, `Saw D`); audition a patch (a test phrase played after the song, recorded, measured, then removed) and save the finished sound to your User Library. |
-| **Sampling** | Load and slice samples in Simpler (transient, beat, region); chop a loop in one call: warped from the tempo in its name, transposed to the song's key, written as a hook, a rearrangement or a stutter. |
-| **Drums** | Program a Drum Rack from 19 electronic patterns (techno, house, garage, breaks, d'n'b...) or your own step grids: pads found by name, Euclidean and polyrhythmic layers, ratchets, ghost notes, per-note probability, fills, swing, Live's Groove Pool. |
-| **Structured humanization** | Variation that never repeats but stays even, instead of random noise: quasi-periodic rhythms (the infinite relatives of Euclidean rhythms, a loop that seems to repeat but slowly slides) with dynamics that never settle and accents where the pattern slips; micro-timing, velocity and length moved by irrational rotations with a slow push and lay-back curve. See [Structured humanization](https://github.com/cedrati/ableton-studio-mcp/blob/main/docs/structured-humanization.md). |
-| **Long-form evolution & arrangement** | Curves over 16–64 bars (filter builds, reverb swells, slow LFOs, phrase steps) on extended clips; whole Arrangements built from Session clips by section (DJ-friendly techno, compact 64 bars, minimal, house) with locators; the clip envelopes play as track automation. |
-| **Music theory** | ~50 scales and modes with their character and typical styles; 24 style sheets (baroque to techno); key, mode and chord analysis of a clip with roman numerals; 18 clip transformations (mode change, diatonic transposition, harmonization, arpeggios, voicings, swing, structured humanization...); voice-led chord progressions; Live 12's song scale. |
-| **Clips** | Notes in Arrangement clips, partial note removal, loop brace and markers, warp (modes, markers, conform a loop to the tempo), clip automation envelopes. |
-| **Files** | Import Standard MIDI Files into clips; analyse any WAV/AIFF. |
-| **Session** | Duplicate and delete tracks; list, create, rename, duplicate, launch and delete scenes; delete Arrangement clips. |
-| **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
-| **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
-
-> *"Cedra adds a very human vibe."* Olivier Cedrati, after the first track made with structured humanization (hats, bass, a 47-step dub stab and a pad, all driven by the Cedra rotations).
-
-Everything is covered by automated tests (414) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
-
----
-
 ## Quickstart
 
 ### Requirements
@@ -137,6 +112,31 @@ Or ask the assistant to run `get_remote_script_info`: it should report `script_v
 4. `uvx ableton-studio-mcp doctor` confirms that everything matches.
 
 To try unreleased changes, use the development branch instead of PyPI: replace `ableton-studio-mcp` with `--from git+https://github.com/cedrati/ableton-studio-mcp@main ableton-studio-mcp` in the commands above.
+
+---
+
+## Features
+
+| Area | What the assistant can do |
+|---|---|
+| **Mixing** | Volume, pan, sends, mute, solo, arm on tracks, return tracks and the main track. Load effects on return tracks and the main track (a shared reverb, a limiter). Read every parameter as Live displays it (`Bell`, `1.56 kHz`, `-6.0 dB`). |
+| **Routing** | Set track inputs, outputs and monitoring: layer one MIDI part on several instruments, resample the main output, route to a return. |
+| **Listening & mastering analysis** | Record the main output in real time and get a report: loudness per ITU-R BS.1770 / EBU R128 (integrated, short-term, momentary, loudness range), true peak, PLR, tonal balance against a reference curve, resonances, stereo width per band, low-end mono, each track's meter level, a spectrogram image, and ranked findings with fixes for a delivery target (streaming, club, classical, broadcast, podcast). |
+| **Sound design** | Search and read the presets of Live's native devices, racks and packs; build classic sounds from recipes (sub, acid and reese bass, dub chord stab, pluck, warm pad, supersaw, FM bell); set any parameter with musical values (`800 Hz`, `5 ms`, `PRD`, `Saw D`); audition a patch (a test phrase played after the song, recorded, measured, then removed) and save the finished sound to your User Library. |
+| **Sampling** | Load and slice samples in Simpler (transient, beat, region); chop a loop in one call: warped from the tempo in its name, transposed to the song's key, written as a hook, a rearrangement or a stutter. |
+| **Drums** | Program a Drum Rack from 19 electronic patterns (techno, house, garage, breaks, d'n'b...) or your own step grids: pads found by name, Euclidean and polyrhythmic layers, ratchets, ghost notes, per-note probability, fills, swing, Live's Groove Pool. |
+| **Structured humanization** | Variation that never repeats but stays even, instead of random noise: quasi-periodic rhythms (the infinite relatives of Euclidean rhythms, a loop that seems to repeat but slowly slides) with dynamics that never settle and accents where the pattern slips; micro-timing, velocity and length moved by irrational rotations with a slow push and lay-back curve. See [Structured humanization](https://github.com/cedrati/ableton-studio-mcp/blob/main/docs/structured-humanization.md). |
+| **Long-form evolution & arrangement** | Curves over 16–64 bars (filter builds, reverb swells, slow LFOs, phrase steps) on extended clips; whole Arrangements built from Session clips by section (DJ-friendly techno, compact 64 bars, minimal, house) with locators; the clip envelopes play as track automation. |
+| **Music theory** | ~50 scales and modes with their character and typical styles; 24 style sheets (baroque to techno); key, mode and chord analysis of a clip with roman numerals; 18 clip transformations (mode change, diatonic transposition, harmonization, arpeggios, voicings, swing, structured humanization...); voice-led chord progressions; Live 12's song scale. |
+| **Clips** | Notes in Arrangement clips, partial note removal, loop brace and markers, warp (modes, markers, conform a loop to the tempo), clip automation envelopes. |
+| **Files** | Import Standard MIDI Files into clips; analyse any WAV/AIFF. |
+| **Session** | Duplicate and delete tracks; list, create, rename, duplicate, launch and delete scenes; delete Arrangement clips. |
+| **Devices & browser** | Know every device in the set and what it does (native devices from the Live 12 manual, Max for Live, plug-in families) and every installed plug-in; route a Compressor's sidechain; plug-in presets; Simpler sample loading and slicing; rack variations; drum choke groups. Plugins (VST, VST3, AU), User Library and Packs load like built-in devices. |
+| **Reliability** | Playhead moves, locator creation and device loading reply only once Live has applied them; version handshake between server and Remote Script; capability checks so a newer server never sends a command an older script would misread. |
+
+> *"Cedra adds a very human vibe."* Olivier Cedrati, after the first track made with structured humanization (hats, bass, a 47-step dub stab and a pad, all driven by the Cedra rotations).
+
+Everything is covered by automated tests (414) and checked end to end in Ableton Live 12. See the [Changelog](https://github.com/cedrati/ableton-studio-mcp/blob/main/CHANGELOG.md) for the details of each release.
 
 ---
 
