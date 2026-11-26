@@ -1,0 +1,125 @@
+<!doctype html>
+<!-- Source of docs/readme-banner.png. Render at 1280x640 with a device scale factor of 2. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ableton Studio MCP banner</title>
+<style>
+  :root {
+    --hot: #2f6bff; --orange: #ff5f1f; --salmon: #be7b5e; --beige: #e8dcc4;
+    --panel: #0d0d0d; --line: #262626;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1280px; height: 640px; overflow: hidden; }
+  body {
+    background: radial-gradient(900px 420px at 88% -10%, rgba(47,107,255,.18), transparent 60%), #000;
+    color: #fff; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; position: relative;
+  }
+  .transport {
+    display: flex; gap: 6px; align-items: center; padding: 12px 24px; border-bottom: 1px solid var(--line);
+    font: 13px var(--mono); color: var(--beige);
+  }
+  .t-name { color: #fff; font-weight: 700; letter-spacing: .14em; margin-right: auto; }
+  .t-box { background: var(--panel); border: 1px solid var(--line); padding: 3px 9px; border-radius: 3px; }
+  .t-box b { color: var(--hot); }
+  .t-play { color: var(--hot); padding: 0 4px; }
+  .t-rec { color: var(--salmon); padding: 0 4px; }
+
+  .copy { position: absolute; left: 64px; top: 112px; width: 620px; }
+  .kicker { font: 14px var(--mono); letter-spacing: .14em; color: var(--hot); margin-bottom: 18px; }
+  h1 { font-size: 92px; line-height: .93; white-space: nowrap; font-weight: 900; letter-spacing: -0.04em; text-transform: uppercase; }
+  h1 .hot { color: var(--hot); position: relative; display: inline-block; }
+  .scribble { position: absolute; left: -2%; bottom: -.2em; width: 104%; height: .42em; overflow: visible; }
+  .scribble path { fill: none; stroke: #fff; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+  .sub { margin-top: 38px; font-size: 21px; line-height: 1.4; color: var(--beige); max-width: 540px; }
+  .sub strong { color: #fff; }
+  .prompt {
+    margin-top: 26px; padding: 12px 16px; border: 1px solid var(--line); border-left: 3px solid var(--hot);
+    border-radius: 4px; font: 17px var(--mono); width: 540px;
+  }
+  .prompt span { color: var(--hot); }
+
+  .rig {
+    position: absolute; right: 56px; top: 150px; width: 520px; background: #000;
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px; box-shadow: 0 30px 80px rgba(0,0,0,.6);
+  }
+  .session { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; font: 11px var(--mono); }
+  .col { display: grid; gap: 4px; --c: var(--hot); }
+  .col:first-child { --c: var(--orange); }
+  .th { background: var(--panel); color: var(--beige); padding: 5px 6px; border-radius: 2px; border-top: 3px solid var(--c); white-space: nowrap; overflow: hidden; }
+  .col:last-child .th { border-top-color: #fff; }
+  .clip, .slot, .scene { height: 30px; border-radius: 2px; padding: 0 6px; display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; }
+  .slot { border: 1px dashed #333; }
+  .clip { color: var(--beige); font-weight: 700; border: 1px solid var(--beige); }
+  .clip.on { background: var(--c); border-color: var(--c); color: #fff; }
+  .col:first-child .clip.on { color: #000; }
+  .clip.on i { width: 0; height: 0; border-left: 7px solid currentColor; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+  .scene { background: var(--panel); color: var(--beige); }
+  .scene.live { color: var(--hot); }
+  .seq { display: grid; grid-template-columns: 44px repeat(16, 1fr); gap: 3px; margin-top: 10px; font: 10px var(--mono); }
+  .lbl { color: var(--beige); display: flex; align-items: center; }
+  .st { height: 16px; background: #141414; border-radius: 2px; }
+  .st.q { background: #1f1f1f; }
+  .meter { display: flex; gap: 6px; margin-top: 10px; font: 11px var(--mono); }
+  .meter span { background: var(--panel); color: var(--beige); padding: 4px 8px; border-radius: 2px; }
+  .meter .ok { color: var(--hot); margin-left: auto; }
+
+  .sticker {
+    position: absolute; right: 300px; top: 392px; width: 290px; background: var(--hot); color: #fff;
+    padding: 12px 14px 14px; transform: rotate(-4deg); box-shadow: 0 14px 30px rgba(0,0,0,.45); font-family: var(--mono);
+  }
+  .sticker b { display: block; font-size: 11px; letter-spacing: .14em; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,.6); margin-bottom: 8px; }
+  .sticker span { font-size: 15px; line-height: 1.5; font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="transport">
+    <span class="t-name">ABLETON STUDIO MCP</span>
+    <span class="t-box"><b>128.00</b> BPM</span>
+    <span class="t-box">4 / 4</span>
+    <span class="t-box">33. 1. 1</span>
+    <span class="t-play">&#9654;</span>
+    <span class="t-rec">&#9679;</span>
+    <span class="t-box">MCP &#8644; LIVE</span>
+  </div>
+
+  <div class="copy">
+    <p class="kicker">// AI MUSIC PRODUCTION IN ABLETON LIVE 11 &amp; 12</p>
+    <h1>Prompt the<br><span class="hot">groove.<svg class="scribble" viewBox="0 0 400 50" preserveAspectRatio="none"><path d="M6 30 C 40 14, 62 40, 96 26 S 150 6, 176 24 C 196 38, 214 42, 236 22 C 252 8, 268 10, 262 26 C 256 40, 238 30, 256 18 C 286 2, 320 40, 352 22 S 386 12, 396 20"/></svg></span></h1>
+    <p class="sub">The <strong>Ableton Live MCP server</strong> that puts Claude, Cursor or any MCP client in your set.</p>
+    <div class="prompt"><span>&gt;</span> program 8 bars of rolling techno_</div>
+  </div>
+
+  <div class="rig">
+    <div class="session">
+      <div class="col"><div class="th">1 KICK</div><div class="clip on"><i></i>909 Rumble</div><div class="clip">Four Floor</div><div class="slot"></div></div>
+      <div class="col"><div class="th">2 BASS</div><div class="clip">Sub Drift</div><div class="clip on"><i></i>Offbeat</div><div class="slot"></div></div>
+      <div class="col"><div class="th">3 ACID</div><div class="clip on"><i></i>Squelch</div><div class="slot"></div><div class="clip">Resonance</div></div>
+      <div class="col"><div class="th">4 HATS</div><div class="clip on"><i></i>Open 16th</div><div class="clip">Quasi</div><div class="slot"></div></div>
+      <div class="col"><div class="th">5 DUB</div><div class="slot"></div><div class="clip on"><i></i>Chord Stab</div><div class="clip">47 Steps</div></div>
+      <div class="col"><div class="th">MAIN</div><div class="scene">&#9654; Intro</div><div class="scene live">&#9654; Peak</div><div class="scene">&#9654; Break</div></div>
+    </div>
+    <div class="seq" id="seq"></div>
+    <div class="meter"><span>-14.0 LUFS</span><span>TP -1.0 dB</span><span class="ok">STREAMING READY</span></div>
+  </div>
+
+  <div class="sticker"><b>WHAT IT DOES</b><span>Compose, arrange, sound design, sampling, drums, mix, master, listen.</span></div>
+
+<script>
+  var rows = [["KICK", "#ff5f1f", "x...x...x...x..."], ["CLAP", "#e8dcc4", "....x.......x..."],
+              ["HAT", "#e8dcc4", "..x...x...x...xx"], ["ACID", "#2f6bff", "x.xx.x..x.x.xx.x"]];
+  var seq = document.getElementById("seq");
+  rows.forEach(function (r) {
+    var l = document.createElement("div"); l.className = "lbl"; l.textContent = r[0]; seq.appendChild(l);
+    for (var i = 0; i < 16; i++) {
+      var c = document.createElement("div");
+      c.className = "st" + (Math.floor(i / 4) % 2 ? " q" : "");
+      if (r[2][i] === "x") c.style.background = r[1];
+      if (i === 6) c.style.outline = "1px solid rgba(255,255,255,.45)";
+      seq.appendChild(c);
+    }
+  });
+</script>
+</body>
+</html>

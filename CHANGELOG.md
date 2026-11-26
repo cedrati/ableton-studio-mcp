@@ -10,6 +10,7 @@ Since 2.0 one version number covers the server and the Live control surface; the
 
 - Project website on GitHub Pages (`docs/index.html`): <https://cedrati.github.io/ableton-studio-mcp/>, with a sitemap and structured data.
 - README FAQ: macOS and Windows support.
+- README header and social preview image in the website's style (`docs/readme-banner.png`, source in `.github/assets/readme-banner.html`).
 
 ### Changed
 
