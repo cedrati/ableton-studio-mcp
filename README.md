@@ -1,7 +1,7 @@
 <!-- mcp-name: io.github.cedrati/ableton-studio-mcp -->
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/cedrati/ableton-studio-mcp/main/docs/social-preview.png" alt="Ableton Studio MCP: AI music production in Ableton Live with Claude: compose, arrange, sound design, mix, master, listen, music theory, techno drums" width="100%">
+<a href="https://cedrati.github.io/ableton-studio-mcp/"><img src="https://raw.githubusercontent.com/cedrati/ableton-studio-mcp/main/docs/readme-banner.png" alt="Ableton Studio MCP: prompt the groove. The Ableton Live MCP server for Claude, Cursor or any MCP client: compose, arrange, sound design, sampling, drums, mix, master, listen" width="100%"></a>
 
 # Ableton Studio MCP
 
